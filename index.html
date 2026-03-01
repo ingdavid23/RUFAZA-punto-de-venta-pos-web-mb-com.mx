@@ -875,20 +875,25 @@ function clearAllNotifications() {
 
             return filtered.map(p => {
                 const categoryIcons = { pizza: '🍕', drink: '🥤', extra: '🍟', promo: '🎉' };
-                const displayIcon = p.icon || categoryIcons[p.category] || '🍽️';
-                
-                // Verificamos si hay ingredientes suficientes
                 const available = hasEnoughStock(p);
+                
+                const imageHtml = p.image 
+                    ? `<img src="${p.image}" class="w-12 h-12 md:w-16 md:h-16 object-cover rounded-xl mb-1 shadow-sm shrink-0 ${!available ? 'grayscale opacity-50' : ''}">` 
+                    : `<div class="text-4xl md:text-5xl mb-1 drop-shadow-sm shrink-0 ${!available ? 'grayscale opacity-50' : ''}">${p.icon || categoryIcons[p.category] || '🍽️'}</div>`;
 
                 return `
                     <div ${available ? `onclick="addToCart(${p.id})"` : ''} 
-                        class="bg-white/80 rounded-xl p-4 ${available ? 'cursor-pointer card-hover hover:border-theme-green border-transparent' : 'cursor-not-allowed opacity-70 border-red-400 bg-red-50'} border-2 shadow-sm flex flex-col items-center text-center relative overflow-hidden transition-all">
+                        class="bg-white/80 rounded-xl p-3 md:p-4 flex flex-col items-center text-center relative overflow-hidden transition-all shadow-sm border-2 min-h-[140px] md:min-h-[160px] ${available ? 'cursor-pointer card-hover hover:border-theme-green border-transparent' : 'cursor-not-allowed opacity-70 border-red-400 bg-red-50'}">
                         
-                        ${!available ? '<div class="absolute top-0 w-full bg-red-500 text-white text-[10px] font-extrabold py-0.5 tracking-wider">AGOTADO</div>' : ''}
+                        ${!available ? '<div class="absolute top-0 left-0 w-full bg-red-500 text-white text-[10px] font-extrabold py-0.5 tracking-wider z-10">AGOTADO</div>' : ''}
                         
-                        <div class="text-4xl mb-2 drop-shadow-sm ${!available ? 'mt-3 grayscale' : ''}">${displayIcon}</div>
-                        <h4 class="font-bold text-sm mb-1 line-clamp-2 ${!available ? 'text-red-800' : 'text-theme-text'}">${p.name}</h4>
-                        <p class="${!available ? 'text-red-600' : 'text-theme-greenDark'} font-extrabold text-lg">$${p.price}</p>
+                        ${imageHtml}
+                        
+                        <div class="flex flex-col flex-1 justify-between w-full mt-1">
+                            <h4 class="font-bold text-xs md:text-sm mb-1 leading-tight flex-1 flex items-center justify-center ${!available ? 'text-red-800' : 'text-theme-text'}">${p.name}</h4>
+                            
+                            <p class="${!available ? 'text-red-600' : 'text-theme-greenDark'} font-extrabold text-base md:text-lg shrink-0 leading-none pb-1">$${p.price}</p>
+                        </div>
                     </div>
                 `;
             }).join('') || '<p class="col-span-full text-center text-theme-textMuted py-8">No hay productos en esta categoría</p>';
@@ -1549,7 +1554,7 @@ function clearAllNotifications() {
 
             const modal = document.getElementById('modalContainer');
             modal.innerHTML = `
-                <div class="glass bg-white/90 rounded-3xl p-6 w-full max-w-4xl animate-slideIn max-h-[90%] overflow-auto shadow-2xl border-2 border-white">
+                <div class="glass bg-white/90 rounded-3xl p-6 w-[95%] max-w-4xl animate-slideIn max-h-[90vh] overflow-auto shadow-2xl border-2 border-white scrollbar-thin">
                     <div class="flex items-center justify-between mb-6 border-b border-theme-beige pb-4">
                         <h3 class="text-xl font-bold flex items-center gap-2 text-theme-greenDark">🍽️ ${table.name}</h3>
                         <button onclick="closeModal()" class="p-2 bg-white rounded-lg transition text-theme-textMuted hover:bg-theme-beige border border-theme-beige font-bold">✕</button>
@@ -1576,22 +1581,26 @@ function clearAllNotifications() {
                         </div>
                     ` : ''}
 
-                    <div class="flex-1">
+                    <div class="flex gap-4 flex-col lg:flex-row">
+                        <div class="flex-1">
                             <h4 class="font-bold mb-3 text-theme-text">Agregar Productos</h4>
                             <div class="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-60 overflow-auto scrollbar-thin pr-2">
                                 ${state.products.filter(p => p.active).map(p => {
                                     const categoryIcons = { pizza: '🍕', drink: '🥤', extra: '🍟', promo: '🎉' };
-                                    const displayIcon = p.icon || categoryIcons[p.category] || '🍽️';
                                     const available = hasEnoughStock(p);
+                                    
+                                    const imageHtml = p.image 
+                                        ? `<img src="${p.image}" class="w-12 h-12 md:w-16 md:h-16 object-cover rounded-xl mb-1 shadow-sm ${!available ? 'grayscale opacity-50' : ''}">` 
+                                        : `<span class="text-3xl drop-shadow-sm ${!available ? 'grayscale opacity-50' : ''}">${p.icon || categoryIcons[p.category] || '🍽️'}</span>`;
                                     
                                     return `
                                         <div ${available ? `onclick="addToTableOrder(${p.id})"` : ''} 
-                                            class="p-3 rounded-xl ${available ? 'bg-white border-theme-beige hover:border-theme-green cursor-pointer' : 'bg-red-50 border-red-300 opacity-70 cursor-not-allowed'} border-2 shadow-sm transition text-center flex flex-col items-center justify-center gap-1 relative overflow-hidden">
+                                            class="p-2 md:p-3 rounded-xl ${available ? 'bg-white border-theme-beige hover:border-theme-green cursor-pointer' : 'bg-red-50 border-red-300 opacity-70 cursor-not-allowed'} border-2 shadow-sm transition text-center flex flex-col items-center justify-center gap-1 relative overflow-hidden">
                                             
-                                            ${!available ? '<div class="absolute top-0 w-full bg-red-500 text-white text-[9px] font-extrabold py-0.5 tracking-wider">AGOTADO</div>' : ''}
+                                            ${!available ? '<div class="absolute top-0 w-full bg-red-500 text-white text-[9px] font-extrabold py-0.5 tracking-wider z-10">AGOTADO</div>' : ''}
                                             
-                                            <span class="text-2xl drop-shadow-sm ${!available ? 'mt-2 grayscale' : ''}">${displayIcon}</span>
-                                            <p class="text-sm font-bold ${!available ? 'text-red-800' : 'text-theme-text'} line-clamp-1">${p.name}</p>
+                                            ${imageHtml}
+                                            <p class="text-xs md:text-sm font-bold ${!available ? 'text-red-800' : 'text-theme-text'} line-clamp-1">${p.name}</p>
                                             <p class="${!available ? 'text-red-600' : 'text-theme-greenDark'} font-extrabold text-sm">$${p.price}</p>
                                         </div>
                                     `;
@@ -1603,13 +1612,13 @@ function clearAllNotifications() {
                             <h4 class="font-bold mb-3 text-theme-text">Nueva Orden</h4>
                             <div id="tableCart" class="space-y-3 max-h-40 overflow-auto scrollbar-thin pr-2 mb-4">
                                 ${currentCart.length === 0 ? '<p class="text-theme-textMuted text-sm text-center py-4 font-medium">Sin productos</p>' :
-                    currentCart.map(item => `
+                                    currentCart.map(item => `
                                         <div class="flex justify-between text-sm font-medium border-b border-theme-bg pb-2 last:border-0">
                                             <span><strong class="text-theme-greenDark">${item.quantity}x</strong> ${item.name}</span>
                                             <span class="font-bold">$${(item.price * item.quantity).toLocaleString()}</span>
                                         </div>
                                     `).join('')
-                }
+                                }
                             </div>
                             <div class="border-t border-theme-beige pt-3 mb-4">
                                 <div class="flex justify-between font-extrabold text-lg text-theme-greenDark">
@@ -2058,301 +2067,347 @@ function clearAllNotifications() {
             renderInventory(document.getElementById('contentArea'));
         }
 
-        // ==================== PRODUCTS MODULE ====================
-        function renderProducts(container) {
-            const categories = ['pizza', 'drink', 'extra', 'promo'];
-            const categoryNames = { pizza: 'Pizzas', drink: 'Bebidas', extra: 'Extras', promo: 'Promociones' };
-            const categoryIcons = { pizza: '🍕', drink: '🥤', extra: '🍟', promo: '🎉' };
-
-            container.innerHTML = `
-                <div class="animate-slideIn">
-                    <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-2xl font-bold flex items-center gap-3 text-theme-greenDark">🍕 Productos</h2>
-                        <button onclick="showAddProductModal()" class="btn-primary px-4 py-2 rounded-xl flex items-center gap-2 font-bold shadow-md">
-                            ➕ Nuevo Producto
-                        </button>
-                    </div>
-
-                    ${categories.map(cat => `
-                        <div class="mb-6">
-                            <h3 class="text-lg font-bold mb-4 flex items-center gap-2 border-b border-theme-beige pb-2 text-theme-text">${categoryIcons[cat]} ${categoryNames[cat]}</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                ${state.products.filter(p => p.category === cat).map(p => {
-                const displayIcon = p.icon || categoryIcons[p.category] || '🍽️';
-                return `
-                                        <div class="glass bg-white/60 border border-white rounded-2xl p-5 shadow-sm ${!p.active ? 'opacity-50 grayscale' : ''}">
-                                            <div class="flex items-start justify-between">
-                                                <div>
-                                                    <h4 class="font-bold flex items-center gap-2 text-theme-text"><span class="text-2xl drop-shadow-sm">${displayIcon}</span> ${p.name}</h4>
-                                                    <p class="text-theme-greenDark font-extrabold text-lg mt-1">$${p.price}</p>
-                                                </div>
-                                                <div class="flex gap-1 bg-theme-bg p-1 rounded-xl border border-theme-beige">
-                                                    <button onclick="editProduct(${p.id})" class="p-2 hover:bg-white rounded-lg transition text-sm">✏️</button>
-                                                    <button onclick="toggleProductActive(${p.id})" class="p-2 hover:bg-white rounded-lg transition text-sm">
-                                                        ${p.active ? '🟢' : '🔴'}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            <p class="text-xs font-bold mt-3 inline-block px-2 py-1 rounded-md ${p.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${p.active ? 'Activo en Menú' : 'Oculto'}</p>
-                                        </div>
-                                    `;
-            }).join('') || '<p class="text-theme-textMuted font-medium col-span-full py-4 bg-white/40 text-center rounded-xl border border-dashed border-theme-beige">Sin productos en esta categoría</p>'}
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-        }
-
-        function toggleProductActive(productId) {
-            const product = state.products.find(p => p.id === productId);
-            if (product) {
-                product.active = !product.active;
-                logActivity('PRODUCT_TOGGLE', `Producto ${product.name} ${product.active ? 'activado' : 'desactivado'}`);
-                saveToStorage();
-                showToast(`Producto ${product.active ? 'activado' : 'desactivado'}`, 'success');
-                renderProducts(document.getElementById('contentArea'));
+        // ==================== CONVERTIDOR DE IMAGEN SIMPLE ====================
+        function convertImageToBase64(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // Guarda la imagen en un input oculto
+                    document.getElementById('hiddenImageBase64').value = e.target.result;
+                    showToast('✅ Imagen cargada correctamente', 'success');
+                };
+                reader.readAsDataURL(input.files[0]);
             }
         }
 
-        function showAddProductModal() {
-            const modal = document.getElementById('modalContainer');
-            modal.innerHTML = `
-                <div class="glass bg-white/90 rounded-3xl p-6 w-full max-w-md animate-slideIn shadow-2xl border-2 border-white">
-                    <h3 class="text-xl font-bold mb-4 text-theme-greenDark">➕ Nuevo Producto</h3>
-                    <div class="space-y-4">
-                        <div class="grid grid-cols-4 gap-4">
-                            <div class="col-span-3">
-                                <label class="block text-sm font-bold mb-2 text-theme-text">Nombre del producto</label>
-                                <input type="text" id="prodName" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium" placeholder="Ej: Pizza Especial">
-                            </div>
-                            <div class="col-span-1">
-                                <label class="block text-sm font-bold mb-2 text-theme-text">Emoji</label>
-                                <input type="text" id="prodIcon" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-center text-xl" placeholder="🍕">
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-bold mb-2 text-theme-text">Categoría</label>
-                                <select id="prodCategory" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium">
-                                    <option value="pizza">🍕 Pizza</option>
-                                    <option value="drink">🥤 Bebida</option>
-                                    <option value="extra">🍟 Extra</option>
-                                    <option value="promo">🎉 Promoción</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-bold mb-2 text-theme-text">Precio</label>
-                                <input type="number" id="prodPrice" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium" placeholder="0">
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-3 pt-2">
-                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text">Cancelar</button>
-                            <button onclick="saveNewProduct()" class="btn-primary py-3 rounded-xl font-bold shadow-md">Guardar</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            modal.classList.remove('hidden');
-        }
-
-        function saveNewProduct() {
-            const name = document.getElementById('prodName').value.trim();
-            const icon = document.getElementById('prodIcon').value.trim();
-            const category = document.getElementById('prodCategory').value;
-            const price = parseFloat(document.getElementById('prodPrice').value) || 0;
-
-            if (!name || price <= 0) {
-                showToast('Completa los campos principales', 'warning');
-                return;
-            }
-
-            const newProduct = {
-                id: Date.now(),
-                name,
-                category,
-                price,
-                icon: icon || null,
-                ingredients: [],
-                active: true
-            };
-
-            state.products.push(newProduct);
-            logActivity('PRODUCT_ADD', `Nuevo producto: ${name}`);
-            saveToStorage();
-            showToast('Producto agregado correctamente', 'success');
-            closeModal();
-            renderProducts(document.getElementById('contentArea'));
-        }
-
         // ==================== PRODUCTS MODULE ====================
-        let currentEditIngredients = []; // Variable temporal para la receta mientras se edita
+       // ==================== PRODUCTS MODULE ====================
+       let currentEditIngredients = []; // Variable para la receta temporal
 
-        // ... (Aquí dejas intactas tus funciones renderProducts, toggleProductActive, showAddProductModal, saveNewProduct) ...
-
-        function editProduct(productId) {
-            const product = state.products.find(p => p.id === productId);
-            
-            // Clonamos los ingredientes actuales para no afectar la base de datos hasta que le den "Guardar"
-            currentEditIngredients = JSON.parse(JSON.stringify(product.ingredients || []));
-            
-            const modal = document.getElementById('modalContainer');
-            modal.innerHTML = `
-                <div class="glass bg-white/90 rounded-3xl p-5 md:p-6 w-[95%] max-w-lg animate-slideIn shadow-2xl border-2 border-white max-h-[90vh] overflow-y-auto scrollbar-thin">
-                    <div class="flex items-center justify-between mb-4 pb-2 border-b border-theme-beige">
-                        <h3 class="text-xl font-bold text-theme-greenDark">✏️ Editar Producto y Receta</h3>
-                        <button onclick="closeModal()" class="p-2 bg-white rounded-lg transition text-theme-textMuted hover:bg-theme-beige border border-theme-beige">✕</button>
-                    </div>
-                    
-                    <div class="space-y-4">
-                        <div class="grid grid-cols-4 gap-4">
-                            <div class="col-span-3">
-                                <label class="block text-sm font-bold mb-1 text-theme-text">Nombre</label>
-                                <input type="text" id="editProdName" value="${product.name}" class="w-full px-4 py-2 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium">
-                            </div>
-                            <div class="col-span-1">
-                                <label class="block text-sm font-bold mb-1 text-theme-text">Emoji</label>
-                                <input type="text" id="editProdIcon" value="${product.icon || ''}" class="w-full px-4 py-2 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-center text-xl" placeholder="🍕">
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-bold mb-1 text-theme-text">Categoría</label>
-                                <select id="editProdCategory" class="w-full px-4 py-2 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium">
-                                    <option value="pizza" ${product.category === 'pizza' ? 'selected' : ''}>🍕 Pizza</option>
-                                    <option value="drink" ${product.category === 'drink' ? 'selected' : ''}>🥤 Bebida</option>
-                                    <option value="extra" ${product.category === 'extra' ? 'selected' : ''}>🍟 Extra</option>
-                                    <option value="promo" ${product.category === 'promo' ? 'selected' : ''}>🎉 Promoción</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-bold mb-1 text-theme-text">Precio</label>
-                                <input type="number" id="editProdPrice" value="${product.price}" class="w-full px-4 py-2 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium">
-                            </div>
-                        </div>
+// Convertidor de imagen simple
+// ==================== CONVERTIDOR DE IMAGEN CON COMPRESIÓN ====================
+function convertImageToBase64(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        // 1. Crear un canvas para redimensionar la imagen
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
                         
-                        <div class="mt-6 border-t border-theme-beige pt-4">
-                            <h4 class="font-bold text-theme-text mb-3 flex items-center gap-2">📝 Receta / Insumos a descontar</h4>
+                        // 2. Definir tamaño máximo (400px es perfecto para los cuadritos del sistema)
+                        const MAX_WIDTH = 400;
+                        const MAX_HEIGHT = 400;
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > height) {
+                            if (width > MAX_WIDTH) {
+                                height *= MAX_WIDTH / width;
+                                width = MAX_WIDTH;
+                            }
+                        } else {
+                            if (height > MAX_HEIGHT) {
+                                width *= MAX_HEIGHT / height;
+                                height = MAX_HEIGHT;
+                            }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        
+                        // 3. Dibujar la imagen en tamaño pequeño
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        // 4. Convertirla a formato Web con 70% de calidad para que no pese casi nada
+                        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                        
+                        // 5. Guardarla en el input oculto
+                        document.getElementById('hiddenImageBase64').value = compressedBase64;
+                        showToast('✅ Foto cargada y optimizada', 'success');
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+function renderProducts(container) {
+    const categories = ['pizza', 'drink', 'extra', 'promo'];
+    const categoryNames = { pizza: 'Pizzas', drink: 'Bebidas', extra: 'Extras', promo: 'Promociones' };
+    const categoryIcons = { pizza: '🍕', drink: '🥤', extra: '🍟', promo: '🎉' };
+
+    container.innerHTML = `
+        <div class="animate-slideIn">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold flex items-center gap-3 text-theme-greenDark">🍕 Productos</h2>
+                <button onclick="showAddProductModal()" class="btn-primary px-4 py-2 rounded-xl flex items-center gap-2 font-bold shadow-md">
+                    ➕ Nuevo Producto
+                </button>
+            </div>
+
+            ${categories.map(cat => `
+                <div class="mb-6">
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2 border-b border-theme-beige pb-2 text-theme-text">${categoryIcons[cat]} ${categoryNames[cat]}</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        ${state.products.filter(p => p.category === cat).map(p => {
+                            const available = hasEnoughStock(p);
                             
-                            <div class="flex gap-2 mb-3 bg-theme-bg p-3 rounded-xl border border-theme-beige">
-                                <div class="flex-1">
-                                    <select id="recipeIngredientSelect" class="w-full px-2 py-2 bg-white border border-theme-beige rounded-lg focus:outline-none focus:border-theme-green text-sm font-medium truncate">
-                                        <option value="">Seleccionar insumo...</option>
-                                        ${state.inventory.map(i => `<option value="${i.id}">${i.name} (${i.unit})</option>`).join('')}
-                                    </select>
+                            // Muestra Imagen si la hay, sino el icono por defecto
+                            const imageHTML = p.image 
+                                ? `<img src="${p.image}" class="w-14 h-14 object-cover rounded-xl shadow-sm border border-theme-beige">`
+                                : `<span class="text-4xl drop-shadow-sm">${p.icon || categoryIcons[p.category]}</span>`;
+                            
+                            return `
+                                <div class="glass border ${!available && p.active ? 'border-red-400 bg-red-50' : 'border-white bg-white/60'} rounded-2xl p-4 shadow-sm ${!p.active ? 'opacity-50 grayscale' : ''}">
+                                    <div class="flex items-start justify-between mb-3">
+                                        <div class="flex items-center gap-3">
+                                            ${imageHTML}
+                                            <div>
+                                                <h4 class="font-bold text-theme-text leading-tight ${!available && p.active ? 'text-red-800' : ''}">${p.name}</h4>
+                                                <p class="${!available && p.active ? 'text-red-600' : 'text-theme-greenDark'} font-extrabold text-lg mt-1">$${p.price}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center justify-between pt-3 border-t border-theme-beige">
+                                        <div class="flex flex-wrap gap-2">
+                                            <span class="text-[10px] font-bold inline-block px-2 py-1 rounded-md ${p.active ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-700'}">${p.active ? 'Activo' : 'Oculto'}</span>
+                                            ${!available && p.active ? '<span class="text-[10px] font-bold inline-block px-2 py-1 rounded-md bg-red-500 text-white shadow-md animate-pulse-custom">Faltan insumos</span>' : ''}
+                                        </div>
+                                        <div class="flex gap-1 bg-theme-bg p-1 rounded-xl border border-theme-beige">
+                                            <button onclick="editProduct(${p.id})" class="p-2 hover:bg-white rounded-lg transition text-sm">✏️</button>
+                                            <button onclick="toggleProductActive(${p.id})" class="p-2 hover:bg-white rounded-lg transition text-sm">
+                                                ${p.active ? '🟢' : '🔴'}
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="w-20 md:w-24">
-                                    <input type="number" id="recipeIngredientQty" step="0.01" placeholder="Cant." class="w-full px-2 py-2 bg-white border border-theme-beige rounded-lg focus:outline-none focus:border-theme-green text-sm text-center font-bold">
-                                </div>
-                                <button onclick="addIngredientToRecipe()" class="bg-theme-green hover:bg-theme-greenDark text-white px-3 py-2 rounded-lg font-bold transition shadow-sm">➕</button>
-                            </div>
-
-                            <div id="recipeItemsContainer" class="space-y-2 max-h-40 overflow-y-auto scrollbar-thin pr-1">
-                                </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-3 pt-4 border-t border-theme-beige mt-4">
-                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text shadow-sm">Cancelar</button>
-                            <button onclick="updateProduct(${productId})" class="btn-primary py-3 rounded-xl font-bold shadow-md">Guardar Cambios</button>
-                        </div>
+                            `;
+                        }).join('') || '<p class="text-theme-textMuted font-medium col-span-full py-4 bg-white/40 text-center rounded-xl border border-dashed border-theme-beige">Sin productos en esta categoría</p>'}
                     </div>
                 </div>
-            `;
-            modal.classList.remove('hidden');
-            
-            // Dibujamos la lista de la receta actual
-            renderRecipeItems();
-        }
+            `).join('')}
+        </div>
+    `;
+}
 
-        // --- Funciones para manipular la receta temporal ---
-       // --- Funciones para manipular la receta temporal ---
-       function renderRecipeItems() {
-            const container = document.getElementById('recipeItemsContainer');
-            if (!container) return;
+function toggleProductActive(productId) {
+    const product = state.products.find(p => p.id === productId);
+    if (product) {
+        product.active = !product.active;
+        saveToStorage();
+        showToast(`Producto ${product.active ? 'activado' : 'desactivado'}`, 'success');
+        renderProducts(document.getElementById('contentArea'));
+    }
+}
 
-            if (currentEditIngredients.length === 0) {
-                container.innerHTML = '<p class="text-sm text-theme-textMuted text-center py-4 italic">No hay insumos asignados. Este producto no descontará nada del inventario.</p>';
-                return;
-            }
+function showAddProductModal() {
+    const modal = document.getElementById('modalContainer');
+    modal.innerHTML = `
+        <div class="glass bg-white/90 rounded-3xl p-6 w-[95%] max-w-md animate-slideIn shadow-2xl border-2 border-white max-h-[90vh] overflow-y-auto scrollbar-thin">
+            <h3 class="text-xl font-bold mb-4 text-theme-greenDark">➕ Nuevo Producto</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold mb-1 text-theme-text">Nombre del producto</label>
+                    <input type="text" id="prodName" class="w-full px-4 py-2 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium">
+                </div>
+                
+                <div class="bg-theme-bg p-3 rounded-xl border border-theme-beige">
+                    <label class="block text-sm font-bold mb-2 text-theme-text">Imagen (URL o subir foto)</label>
+                    <input type="text" id="prodImageUrl" placeholder="Pegar enlace de internet..." class="w-full px-3 py-2 mb-2 bg-white border border-theme-beige rounded-lg text-sm focus:outline-none focus:border-theme-green">
+                    <input type="file" accept="image/*" class="text-xs w-full text-theme-textMuted file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-theme-green file:text-white hover:file:bg-theme-greenDark cursor-pointer" onchange="convertImageToBase64(this)">
+                    <input type="hidden" id="hiddenImageBase64">
+                </div>
 
-            container.innerHTML = currentEditIngredients.map((ing, index) => {
-                const invItem = state.inventory.find(i => i.id === ing.id);
-                const name = invItem ? invItem.name : '<span class="text-red-500">Insumo eliminado</span>';
-                const unit = invItem ? invItem.unit : '';
-                return `
-                    <div class="flex items-center justify-between p-2 rounded-lg bg-white border border-theme-beige shadow-sm">
-                        <span class="text-sm font-medium text-theme-text truncate flex-1">${name}</span>
-                        <div class="flex items-center gap-3 ml-2 shrink-0">
-                            <span class="text-sm font-extrabold text-theme-greenDark bg-green-50 px-2 py-0.5 rounded border border-green-100">${ing.qty} ${unit}</span>
-                            <button onclick="removeIngredientFromRecipe(${index})" class="text-red-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded transition" title="Quitar">🗑️</button>
-                        </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold mb-1 text-theme-text">Categoría</label>
+                        <select id="prodCategory" class="w-full px-4 py-2 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium">
+                            <option value="pizza">🍕 Pizza</option>
+                            <option value="drink">🥤 Bebida</option>
+                            <option value="extra">🍟 Extra</option>
+                            <option value="promo">🎉 Promoción</option>
+                        </select>
                     </div>
-                `;
-            }).join('');
-        }
+                    <div>
+                        <label class="block text-sm font-bold mb-1 text-theme-text">Precio</label>
+                        <input type="number" id="prodPrice" class="w-full px-4 py-2 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium" placeholder="0">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3 pt-2 border-t border-theme-beige mt-2">
+                    <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text">Cancelar</button>
+                    <button onclick="saveNewProduct()" class="btn-primary py-3 rounded-xl font-bold shadow-md">Guardar</button>
+                </div>
+            </div>
+        </div>
+    `;
+    modal.classList.remove('hidden');
+}
 
-        function addIngredientToRecipe() {
-            const select = document.getElementById('recipeIngredientSelect');
-            const qtyInput = document.getElementById('recipeIngredientQty');
+function saveNewProduct() {
+    const name = document.getElementById('prodName').value.trim();
+    const category = document.getElementById('prodCategory').value;
+    const price = parseFloat(document.getElementById('prodPrice').value) || 0;
+    
+    const imageBase64 = document.getElementById('hiddenImageBase64').value;
+    const imageUrl = document.getElementById('prodImageUrl').value.trim();
+    const finalImage = imageBase64 || imageUrl || null;
+
+    if (!name || price <= 0) {
+        showToast('Completa el nombre y el precio', 'warning'); return;
+    }
+
+    state.products.push({
+        id: Date.now(),
+        name, category, price,
+        image: finalImage,
+        icon: null,
+        ingredients: [],
+        active: true
+    });
+    saveToStorage(); showToast('Producto guardado', 'success'); closeModal(); renderProducts(document.getElementById('contentArea'));
+}
+
+function editProduct(productId) {
+    const product = state.products.find(p => p.id === productId);
+    currentEditIngredients = JSON.parse(JSON.stringify(product.ingredients || []));
+    
+    const modal = document.getElementById('modalContainer');
+    modal.innerHTML = `
+        <div class="glass bg-white/90 rounded-3xl p-5 md:p-6 w-[95%] max-w-lg animate-slideIn shadow-2xl border-2 border-white max-h-[90vh] overflow-y-auto scrollbar-thin">
+            <div class="flex items-center justify-between mb-4 pb-2 border-b border-theme-beige">
+                <h3 class="text-xl font-bold text-theme-greenDark">✏️ Editar Producto y Receta</h3>
+                <button onclick="closeModal()" class="p-2 bg-white rounded-lg transition text-theme-textMuted hover:bg-theme-beige border border-theme-beige">✕</button>
+            </div>
             
-            const invId = parseInt(select.value);
-            const qty = parseFloat(qtyInput.value);
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold mb-1 text-theme-text">Nombre</label>
+                    <input type="text" id="editProdName" value="${product.name}" class="w-full px-4 py-2 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium">
+                </div>
 
-            if (!invId || isNaN(qty) || qty <= 0) {
-                showToast('Selecciona un insumo y una cantidad mayor a 0', 'warning');
-                return;
-            }
+                <div class="bg-theme-bg p-3 rounded-xl border border-theme-beige">
+                    <label class="block text-sm font-bold mb-2 text-theme-text">Actualizar Imagen (Opcional)</label>
+                    <input type="text" id="editProdImageUrl" placeholder="Pegar nuevo enlace..." class="w-full px-3 py-2 mb-2 bg-white border border-theme-beige rounded-lg text-sm focus:outline-none focus:border-theme-green">
+                    <input type="file" accept="image/*" class="text-xs w-full text-theme-textMuted file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-theme-green file:text-white hover:file:bg-theme-greenDark cursor-pointer" onchange="convertImageToBase64(this)">
+                    <input type="hidden" id="hiddenImageBase64">
+                </div>
 
-            // Si el insumo ya está en la receta, solo le sumamos la cantidad
-            const existing = currentEditIngredients.find(i => i.id === invId);
-            if (existing) {
-                existing.qty += qty;
-            } else {
-                currentEditIngredients.push({ id: invId, qty: qty });
-            }
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold mb-1 text-theme-text">Categoría</label>
+                        <select id="editProdCategory" class="w-full px-4 py-2 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium">
+                            <option value="pizza" ${product.category === 'pizza' ? 'selected' : ''}>🍕 Pizza</option>
+                            <option value="drink" ${product.category === 'drink' ? 'selected' : ''}>🥤 Bebida</option>
+                            <option value="extra" ${product.category === 'extra' ? 'selected' : ''}>🍟 Extra</option>
+                            <option value="promo" ${product.category === 'promo' ? 'selected' : ''}>🎉 Promoción</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-1 text-theme-text">Precio</label>
+                        <input type="number" id="editProdPrice" value="${product.price}" class="w-full px-4 py-2 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium">
+                    </div>
+                </div>
+                
+                <div class="mt-4 border-t border-theme-beige pt-4">
+                    <h4 class="font-bold text-theme-text mb-3 flex items-center gap-2">📝 Receta / Insumos a descontar</h4>
+                    <div class="flex gap-2 mb-3 bg-theme-bg p-2 rounded-xl border border-theme-beige">
+                        <div class="flex-1">
+                            <select id="recipeIngredientSelect" class="w-full px-2 py-2 bg-white border border-theme-beige rounded-lg focus:outline-none focus:border-theme-green text-sm font-medium truncate">
+                                <option value="">Seleccionar insumo...</option>
+                                ${state.inventory.map(i => `<option value="${i.id}">${i.name} (${i.unit})</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="w-20 md:w-24">
+                            <input type="number" id="recipeIngredientQty" step="0.01" placeholder="Cant." class="w-full px-2 py-2 bg-white border border-theme-beige rounded-lg focus:outline-none focus:border-theme-green text-sm text-center font-bold">
+                        </div>
+                        <button onclick="addIngredientToRecipe()" class="bg-theme-green hover:bg-theme-greenDark text-white px-3 py-2 rounded-lg font-bold transition shadow-sm">➕</button>
+                    </div>
+                    <div id="recipeItemsContainer" class="space-y-2 max-h-32 overflow-y-auto scrollbar-thin pr-1"></div>
+                </div>
 
-            // Limpiamos los inputs
-            select.value = '';
-            qtyInput.value = '';
-            
-            // Actualizamos la vista
-            renderRecipeItems();
-        }
+                <div class="grid grid-cols-2 gap-3 pt-4 border-t border-theme-beige mt-2">
+                    <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text shadow-sm">Cancelar</button>
+                    
+                    <button onclick="updateProduct('${productId}')" class="btn-primary py-3 rounded-xl font-bold shadow-md">Guardar Cambios</button>
+                </div>
+            </div>
+        </div>
+    `;
+    modal.classList.remove('hidden');
+    renderRecipeItems();
+}
 
-        function removeIngredientFromRecipe(index) {
-            currentEditIngredients.splice(index, 1);
-            renderRecipeItems();
-        }
+function renderRecipeItems() {
+    const container = document.getElementById('recipeItemsContainer');
+    if (!container) return;
+    if (currentEditIngredients.length === 0) {
+        container.innerHTML = '<p class="text-sm text-theme-textMuted text-center py-4 italic">No hay insumos asignados.</p>';
+        return;
+    }
+    container.innerHTML = currentEditIngredients.map((ing, index) => {
+        const invItem = state.inventory.find(i => i.id === ing.id);
+        const name = invItem ? invItem.name : '<span class="text-red-500">Insumo eliminado</span>';
+        const unit = invItem ? invItem.unit : '';
+        return `
+            <div class="flex items-center justify-between p-2 rounded-lg bg-white border border-theme-beige shadow-sm">
+                <span class="text-sm font-medium text-theme-text truncate flex-1">${name}</span>
+                <div class="flex items-center gap-3 ml-2 shrink-0">
+                    <span class="text-sm font-extrabold text-theme-greenDark bg-green-50 px-2 py-0.5 rounded border border-green-100">${ing.qty} ${unit}</span>
+                    <button onclick="removeIngredientFromRecipe(${index})" class="text-red-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded transition">🗑️</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
 
-        // --- Al guardar, aplicamos la receta al producto real ---
-        function updateProduct(productId) {
-            // 1. Aseguramos que el ID se lea como número
+function addIngredientToRecipe() {
+    const select = document.getElementById('recipeIngredientSelect');
+    const qtyInput = document.getElementById('recipeIngredientQty');
+    const invId = parseInt(select.value);
+    const qty = parseFloat(qtyInput.value);
+
+    if (!invId || isNaN(qty) || qty <= 0) {
+        showToast('Selecciona insumo y cantidad', 'warning'); return;
+    }
+
+    const existing = currentEditIngredients.find(i => i.id === invId);
+    if (existing) existing.qty += qty;
+    else currentEditIngredients.push({ id: invId, qty });
+
+    select.value = ''; qtyInput.value = '';
+    renderRecipeItems();
+}
+
+function removeIngredientFromRecipe(index) {
+    currentEditIngredients.splice(index, 1);
+    renderRecipeItems();
+}
+
+function updateProduct(productId) {
             const id = parseInt(productId);
             const product = state.products.find(p => p.id === id);
-            
-            if (!product) {
-                showToast('Error al encontrar el producto', 'error');
-                return;
-            }
+            if (!product) return;
 
-            // 2. Actualizamos los datos básicos
             product.name = document.getElementById('editProdName').value.trim();
-            product.icon = document.getElementById('editProdIcon').value.trim() || null;
             product.category = document.getElementById('editProdCategory').value;
             product.price = parseFloat(document.getElementById('editProdPrice').value) || product.price;
             
-            // 3. Forzamos el guardado de la nueva receta (desvinculando el arreglo temporal)
+            const imageBase64 = document.getElementById('hiddenImageBase64').value;
+            const imageUrl = document.getElementById('editProdImageUrl').value.trim();
+            if (imageBase64 || imageUrl) {
+                product.image = imageBase64 || imageUrl;
+            }
+            
             product.ingredients = JSON.parse(JSON.stringify(currentEditIngredients));
 
-            // 4. Registramos y guardamos en Firebase
-            logActivity('PRODUCT_UPDATE', `Producto y receta actualizados: ${product.name}`);
-            saveToStorage();
-            
-            // 5. Limpiamos la variable temporal por seguridad
-            currentEditIngredients = [];
-            
-            showToast('Producto y receta guardados exitosamente', 'success');
-            closeModal();
+            saveToStorage(); 
+            currentEditIngredients = []; 
+            showToast('Producto guardado exitosamente', 'success'); 
+            closeModal(); 
             renderProducts(document.getElementById('contentArea'));
         }
 
@@ -2391,20 +2446,61 @@ function clearAllNotifications() {
 
         // --- Al guardar, aplicamos la receta al producto real ---
         function updateProduct(productId) {
-            const product = state.products.find(p => p.id === productId);
-            product.name = document.getElementById('editProdName').value.trim();
-            product.icon = document.getElementById('editProdIcon').value.trim() || null;
-            product.category = document.getElementById('editProdCategory').value;
-            product.price = parseFloat(document.getElementById('editProdPrice').value) || product.price;
-            
-            // Guardamos la receta modificada en el producto
-            product.ingredients = [...currentEditIngredients];
+            try {
+                // 1. Búsqueda segura: Compara el ID como texto para evitar fallos con Firebase
+                const product = state.products.find(p => String(p.id) === String(productId));
+                
+                if (!product) {
+                    showToast('❌ Error: No se encontró el producto en la memoria.', 'error');
+                    return;
+                }
 
-            logActivity('PRODUCT_UPDATE', `Producto y receta actualizados: ${product.name}`);
-            saveToStorage();
-            showToast('Producto y receta guardados exitosamente', 'success');
-            closeModal();
-            renderProducts(document.getElementById('contentArea'));
+                // 2. Lectura segura de los campos HTML
+                const nameInput = document.getElementById('editProdName');
+                const catInput = document.getElementById('editProdCategory');
+                const priceInput = document.getElementById('editProdPrice');
+                const hiddenImgInput = document.getElementById('hiddenImageBase64');
+                const urlInput = document.getElementById('editProdImageUrl');
+
+                // Si por alguna razón la ventana no cargó bien, te avisará en lugar de trabarse
+                if (!nameInput || !priceInput) {
+                    showToast('❌ Error: Falta un campo en el formulario.', 'error');
+                    return;
+                }
+
+                // 3. Actualizar datos básicos
+                product.name = nameInput.value.trim();
+                product.category = catInput.value;
+                product.price = parseFloat(priceInput.value) || product.price;
+                
+                // 4. Actualizar Imagen solo si se subió o pegó una nueva
+                const imageBase64 = hiddenImgInput ? hiddenImgInput.value : '';
+                const imageUrl = urlInput ? urlInput.value.trim() : '';
+                
+                if (imageBase64) {
+                    product.image = imageBase64;
+                } else if (imageUrl) {
+                    product.image = imageUrl;
+                }
+                
+                // 5. Guardar la receta
+                product.ingredients = JSON.parse(JSON.stringify(currentEditIngredients));
+
+                // 6. Guardar en Base de Datos y cerrar
+                saveToStorage(); 
+                
+                currentEditIngredients = []; 
+                if (hiddenImgInput) hiddenImgInput.value = ''; // Limpiar memoria de foto
+
+                showToast('✅ Producto guardado exitosamente', 'success'); 
+                closeModal(); 
+                renderProducts(document.getElementById('contentArea'));
+
+            } catch (error) {
+                // Si algo explota, te mostrará un mensaje rojo con el problema exacto
+                console.error("Error al guardar el producto:", error);
+                showToast('❌ Error al guardar: ' + error.message, 'error');
+            }
         }
 
         // ==================== USERS MODULE ====================
