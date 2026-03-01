@@ -1,0 +1,2453 @@
+<!doctype html>
+<html lang="es" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PizzaManager Pro - Sistema de Gestión</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics-compat.js"></script>
+
+  <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        poppins: ['Poppins', 'sans-serif']
+                    },
+                    colors: {
+                        pizza: {
+                            red: '#D32F2F',
+                            orange: '#FF5722',
+                            yellow: '#FFC107',
+                            cream: '#FFF8E1',
+                            dark: '#1A1A2E',
+                            darker: '#16213E'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+  <style>
+        * { font-family: 'Poppins', sans-serif; }
+        .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 10px; }
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.5); }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        .animate-slideIn { animation: slideIn 0.3s ease-out; }
+        .animate-pulse-custom { animation: pulse 2s infinite; }
+        .animate-shake { animation: shake 0.5s ease-in-out; }
+        .glass { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); }
+        .btn-primary { background: linear-gradient(135deg, #D32F2F 0%, #FF5722 100%); transition: all 0.3s; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(211,47,47,0.3); }
+        .card-hover { transition: all 0.3s; }
+        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        .status-pending { background: linear-gradient(135deg, #FFC107 0%, #FF9800 100%); }
+        .status-preparing { background: linear-gradient(135deg, #2196F3 0%, #03A9F4 100%); }
+        .status-ready { background: linear-gradient(135deg, #4CAF50 0%, #8BC34A 100%); }
+        .status-delivered { background: linear-gradient(135deg, #9C27B0 0%, #673AB7 100%); }
+        .toast { position: fixed; bottom: 20px; right: 20px; z-index: 9999; animation: slideIn 0.3s ease-out; }
+    </style>
+  <style>body { box-sizing: border-box; }</style>
+ </head>
+ <body class="h-full bg-pizza-dark text-white overflow-auto">
+  <div id="app" class="h-full flex flex-col">
+   <div id="loadingScreen" class="h-full flex flex-col items-center justify-center p-4 bg-pizza-darker z-50 absolute inset-0">
+     <div class="text-6xl mb-4 animate-pulse-custom">🍕</div>
+     <h2 class="text-xl font-bold text-pizza-yellow">Conectando a la nube...</h2>
+   </div>
+
+   <div id="loginScreen" class="hidden h-full flex items-center justify-center p-4">
+    <div class="glass rounded-3xl p-8 w-full max-w-md animate-slideIn">
+     <div class="text-center mb-8">
+      <div class="text-6xl mb-4">🍕</div>
+      <h1 class="text-3xl font-bold bg-gradient-to-r from-pizza-yellow to-pizza-orange bg-clip-text text-transparent">RUFAZA</h1>
+      <p class="text-gray-400 mt-2">Sistema de Gestión Integral</p>
+     </div>
+     <div class="space-y-4">
+      <div><label class="block text-sm font-medium text-gray-300 mb-2">Usuario</label> <input type="text" id="loginUser" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl focus:outline-none focus:border-pizza-orange transition" placeholder="Ingrese su usuario">
+      </div>
+      <div><label class="block text-sm font-medium text-gray-300 mb-2">Contraseña</label> <input type="password" id="loginPass" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl focus:outline-none focus:border-pizza-orange transition" placeholder="Ingrese su contraseña">
+      </div>
+      <div id="loginError" class="hidden text-red-400 text-sm text-center p-2 bg-red-500/20 rounded-lg"></div><button onclick="handleLogin()" class="w-full btn-primary text-white font-semibold py-3 rounded-xl mt-4"> Iniciar Sesión </button>
+     </div>
+     <div class="mt-6 text-center text-xs text-gray-500">
+      <p>Usuarios demo: admin/admin, cajero/cajero, cocina/cocina, mesero/mesero</p>
+     </div>
+    </div>
+   </div><div id="mainApp" class="hidden h-full flex flex-col"><header class="glass border-b border-white/10 px-4 py-3 flex items-center justify-between shrink-0">
+     <div class="flex items-center gap-3"><span class="text-3xl">🍕</span>
+      <div>
+       <h1 class="text-xl font-bold text-pizza-yellow">PizzaManager Pro</h1>
+       <p id="currentDateTime" class="text-xs text-gray-400"></p>
+      </div>
+     </div>
+     <div class="flex items-center gap-4">
+      <div id="notificationBell" class="relative cursor-pointer" onclick="toggleNotifications()"><span class="text-2xl">🔔</span> <span id="notifCount" class="absolute -top-1 -right-1 bg-pizza-red text-white text-xs w-5 h-5 rounded-full flex items-center justify-center hidden">0</span>
+      </div>
+      <div class="flex items-center gap-2 glass px-3 py-2 rounded-xl"><span class="text-xl" id="userIcon">👤</span>
+       <div>
+        <p id="userName" class="text-sm font-medium"></p>
+        <p id="userRole" class="text-xs text-gray-400"></p>
+       </div>
+      </div><button onclick="handleLogout()" class="p-2 hover:bg-white/10 rounded-lg transition" title="Cerrar Sesión"> 🚪 </button>
+     </div>
+    </header><nav id="mainNav" class="glass border-b border-white/10 px-4 py-2 shrink-0">
+     <div class="flex gap-2 overflow-x-auto scrollbar-thin pb-1"></div>
+    </nav><main id="contentArea" class="flex-1 overflow-auto p-4 scrollbar-thin"></main>
+   </div><div id="notifPanel" class="hidden fixed right-4 top-20 w-80 glass rounded-2xl p-4 z-50 animate-slideIn max-h-96 overflow-auto scrollbar-thin">
+    <h3 class="font-bold mb-3 flex items-center gap-2">🔔 Notificaciones</h3>
+    <div id="notifList" class="space-y-2"></div>
+   </div><div id="toastContainer"></div><div id="modalContainer" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"></div>
+  </div>
+  <script>
+        // ==================== FIREBASE SETUP ====================
+        const firebaseConfig = {
+            apiKey: "AIzaSyDC_IfHVv4WAfebvpjRoajGtqZoj_Zlynk",
+            authDomain: "rufaza-45827.firebaseapp.com",
+            projectId: "rufaza-45827",
+            storageBucket: "rufaza-45827.firebasestorage.app",
+            messagingSenderId: "260043292177",
+            appId: "1:260043292177:web:a0d9d3e4ccce25ef837bb0",
+            measurementId: "G-CSW209W78B"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const analytics = firebase.analytics();
+        const db = firebase.firestore();
+
+        // ==================== DATA MODELS ====================
+        const DEFAULT_DATA = {
+            users: [
+                { id: 1, username: 'admin', password: 'admin', name: 'Administrador', role: 'admin', active: true },
+                { id: 2, username: 'cajero', password: 'cajero', name: 'Juan Pérez', role: 'cashier', active: true },
+                { id: 3, username: 'cocina', password: 'cocina', name: 'María García', role: 'kitchen', active: true },
+                { id: 4, username: 'mesero', password: 'mesero', name: 'Carlos López', role: 'waiter', active: true }
+            ],
+            products: [
+                { id: 1, name: 'Pizza Margarita', category: 'pizza', price: 120, ingredients: [{id: 1, qty: 0.2}, {id: 2, qty: 0.15}, {id: 3, qty: 0.1}], active: true },
+                { id: 2, name: 'Pizza Pepperoni', category: 'pizza', price: 150, ingredients: [{id: 1, qty: 0.2}, {id: 2, qty: 0.15}, {id: 4, qty: 0.1}], active: true },
+                { id: 3, name: 'Pizza Hawaiana', category: 'pizza', price: 140, ingredients: [{id: 1, qty: 0.2}, {id: 2, qty: 0.15}, {id: 5, qty: 0.08}, {id: 6, qty: 0.05}], active: true },
+                { id: 4, name: 'Pizza 4 Quesos', category: 'pizza', price: 160, ingredients: [{id: 1, qty: 0.2}, {id: 2, qty: 0.25}], active: true },
+                { id: 5, name: 'Pizza Suprema', category: 'pizza', price: 180, ingredients: [{id: 1, qty: 0.2}, {id: 2, qty: 0.2}, {id: 4, qty: 0.08}, {id: 7, qty: 0.05}, {id: 8, qty: 0.05}], active: true },
+                { id: 6, name: 'Coca Cola 600ml', category: 'drink', price: 25, ingredients: [{id: 9, qty: 1}], active: true },
+                { id: 7, name: 'Sprite 600ml', category: 'drink', price: 25, ingredients: [{id: 10, qty: 1}], active: true },
+                { id: 8, name: 'Agua Natural 600ml', category: 'drink', price: 18, ingredients: [{id: 11, qty: 1}], active: true },
+                { id: 9, name: 'Cerveza', category: 'drink', price: 35, ingredients: [{id: 12, qty: 1}], active: true },
+                { id: 10, name: 'Palitos de Ajo', category: 'extra', price: 45, ingredients: [{id: 1, qty: 0.1}, {id: 13, qty: 0.02}], active: true },
+                { id: 11, name: 'Alitas BBQ (6 pzas)', category: 'extra', price: 85, ingredients: [{id: 14, qty: 0.3}], active: true },
+                { id: 12, name: 'Ensalada César', category: 'extra', price: 65, ingredients: [{id: 15, qty: 0.15}], active: true },
+                { id: 13, name: '2x1 Margarita', category: 'promo', price: 199, ingredients: [{id: 1, qty: 0.4}, {id: 2, qty: 0.3}, {id: 3, qty: 0.2}], active: true },
+                { id: 14, name: 'Combo Familiar', category: 'promo', price: 350, ingredients: [{id: 1, qty: 0.4}, {id: 2, qty: 0.3}, {id: 4, qty: 0.15}, {id: 9, qty: 2}], active: true }
+            ],
+            inventory: [
+                { id: 1, name: 'Masa para pizza', unit: 'kg', stock: 25, minStock: 5, cost: 30, supplier: 'Harinas del Norte' },
+                { id: 2, name: 'Queso Mozzarella', unit: 'kg', stock: 15, minStock: 3, cost: 120, supplier: 'Lácteos Premium' },
+                { id: 3, name: 'Salsa de Tomate', unit: 'lt', stock: 10, minStock: 2, cost: 45, supplier: 'Salsas Italianas' },
+                { id: 4, name: 'Pepperoni', unit: 'kg', stock: 8, minStock: 2, cost: 180, supplier: 'Embutidos Express' },
+                { id: 5, name: 'Jamón', unit: 'kg', stock: 6, minStock: 1.5, cost: 95, supplier: 'Embutidos Express' },
+                { id: 6, name: 'Piña', unit: 'kg', stock: 4, minStock: 1, cost: 35, supplier: 'Frutas Frescas' },
+                { id: 7, name: 'Champiñones', unit: 'kg', stock: 3, minStock: 1, cost: 85, supplier: 'Verduras del Campo' },
+                { id: 8, name: 'Pimiento', unit: 'kg', stock: 2.5, minStock: 0.5, cost: 40, supplier: 'Verduras del Campo' },
+                { id: 9, name: 'Coca Cola 600ml', unit: 'pza', stock: 48, minStock: 12, cost: 12, supplier: 'Distribuidora Refrescos' },
+                { id: 10, name: 'Sprite 600ml', unit: 'pza', stock: 36, minStock: 12, cost: 12, supplier: 'Distribuidora Refrescos' },
+                { id: 11, name: 'Agua Natural 600ml', unit: 'pza', stock: 60, minStock: 24, cost: 8, supplier: 'Distribuidora Refrescos' },
+                { id: 12, name: 'Cerveza', unit: 'pza', stock: 24, minStock: 12, cost: 18, supplier: 'Distribuidora Bebidas' },
+                { id: 13, name: 'Ajo', unit: 'kg', stock: 1, minStock: 0.3, cost: 60, supplier: 'Verduras del Campo' },
+                { id: 14, name: 'Alitas de Pollo', unit: 'kg', stock: 5, minStock: 2, cost: 75, supplier: 'Carnes Selectas' },
+                { id: 15, name: 'Lechuga Romana', unit: 'kg', stock: 3, minStock: 1, cost: 25, supplier: 'Verduras del Campo' }
+            ],
+            suppliers: [
+                { id: 1, name: 'Harinas del Norte', contact: '555-0101', email: 'harinas@norte.com' },
+                { id: 2, name: 'Lácteos Premium', contact: '555-0102', email: 'ventas@lacteospremium.com' },
+                { id: 3, name: 'Salsas Italianas', contact: '555-0103', email: 'pedidos@salsasitalianas.com' },
+                { id: 4, name: 'Embutidos Express', contact: '555-0104', email: 'ventas@embutidosexpress.com' },
+                { id: 5, name: 'Verduras del Campo', contact: '555-0105', email: 'contacto@verdurasdelcampo.com' },
+                { id: 6, name: 'Distribuidora Refrescos', contact: '555-0106', email: 'pedidos@distrefrescos.com' },
+                { id: 7, name: 'Distribuidora Bebidas', contact: '555-0107', email: 'ventas@distbebidas.com' },
+                { id: 8, name: 'Frutas Frescas', contact: '555-0108', email: 'ventas@frutasfrescas.com' },
+                { id: 9, name: 'Carnes Selectas', contact: '555-0109', email: 'pedidos@carnesselectas.com' }
+            ],
+            tables: [
+                { id: 1, name: 'Mesa 1', capacity: 4, status: 'free' },
+                { id: 2, name: 'Mesa 2', capacity: 4, status: 'free' },
+                { id: 3, name: 'Mesa 3', capacity: 6, status: 'free' },
+                { id: 4, name: 'Mesa 4', capacity: 6, status: 'free' },
+                { id: 5, name: 'Mesa 5', capacity: 2, status: 'free' },
+                { id: 6, name: 'Mesa 6', capacity: 2, status: 'free' },
+                { id: 7, name: 'Mesa 7', capacity: 8, status: 'free' },
+                { id: 8, name: 'Mesa 8', capacity: 4, status: 'free' }
+            ],
+            orders: [],
+            sales: [],
+            cashRegister: { isOpen: false, openedBy: null, openedAt: null, initialAmount: 0, movements: [] },
+            inventoryMovements: [],
+            activityLog: [],
+            notifications: []
+        };
+
+        // ==================== STATE MANAGEMENT ====================
+        let state = {};
+        let currentUser = null;
+        let currentView = 'pos';
+        let currentCart = [];
+        let selectedTable = null;
+
+        // Firebase Sync Functions
+        async function saveToStorage() {
+            try {
+                // Guardamos todo el estado en un documento de Firestore
+                await db.collection('pizzaManager').doc('state').set(state);
+            } catch (error) {
+                console.error("Error al guardar en Firebase:", error);
+                showToast('Error al guardar datos', 'error');
+            }
+        }
+
+        function loadFromStorage() {
+            return new Promise((resolve) => {
+                // onSnapshot permite escuchar los cambios de la BD en tiempo real
+                db.collection('pizzaManager').doc('state').onSnapshot((doc) => {
+                    if (doc.exists) {
+                        state = { ...DEFAULT_DATA, ...doc.data() };
+                        
+                        // Si un usuario ya inició sesión, re-renderizar vistas colaborativas
+                        if (currentUser) {
+                            if (currentView === 'kitchen' || currentView === 'orders' || currentView === 'waiter') {
+                                renderView(currentView);
+                            }
+                            updateNotificationBadge();
+                        }
+                    } else {
+                        // Inicialización primera vez
+                        state = JSON.parse(JSON.stringify(DEFAULT_DATA));
+                        saveToStorage();
+                    }
+                    resolve();
+                }, (error) => {
+                    console.error("Error de Firebase:", error);
+                    if (Object.keys(state).length === 0) {
+                        state = JSON.parse(JSON.stringify(DEFAULT_DATA));
+                    }
+                    resolve();
+                });
+            });
+        }
+
+        function logActivity(action, details) {
+            state.activityLog.push({
+                id: Date.now(),
+                userId: currentUser?.id,
+                userName: currentUser?.name,
+                action,
+                details,
+                timestamp: new Date().toISOString()
+            });
+            saveToStorage();
+        }
+
+        function addNotification(type, message, forRoles = []) {
+            const notif = {
+                id: Date.now(),
+                type,
+                message,
+                forRoles,
+                timestamp: new Date().toISOString(),
+                read: false
+            };
+            state.notifications.unshift(notif);
+            if (state.notifications.length > 50) state.notifications.pop();
+            saveToStorage();
+            updateNotificationBadge();
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            const colors = {
+                success: 'bg-green-500',
+                error: 'bg-red-500',
+                warning: 'bg-yellow-500',
+                info: 'bg-blue-500'
+            };
+            toast.className = `toast ${colors[type]} text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-2`;
+            const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+            toast.innerHTML = `<span>${icons[type]}</span><span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        // ==================== AUTHENTICATION ====================
+        function handleLogin() {
+            const username = document.getElementById('loginUser').value;
+            const password = document.getElementById('loginPass').value;
+            const errorDiv = document.getElementById('loginError');
+
+            const user = state.users.find(u => u.username === username && u.password === password && u.active);
+            
+            if (user) {
+                currentUser = user;
+                localStorage.setItem('currentUser', JSON.stringify(user)); // Se queda en local por conveniencia de sesión
+                logActivity('LOGIN', `Usuario ${user.name} inició sesión`);
+                errorDiv.classList.add('hidden');
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                initMainApp();
+            } else {
+                errorDiv.textContent = 'Usuario o contraseña incorrectos';
+                errorDiv.classList.remove('hidden');
+                document.getElementById('loginUser').parentElement.classList.add('animate-shake');
+                setTimeout(() => document.getElementById('loginUser').parentElement.classList.remove('animate-shake'), 500);
+            }
+        }
+
+        function handleLogout() {
+            logActivity('LOGOUT', `Usuario ${currentUser.name} cerró sesión`);
+            currentUser = null;
+            localStorage.removeItem('currentUser');
+            document.getElementById('mainApp').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('loginUser').value = '';
+            document.getElementById('loginPass').value = '';
+        }
+
+        function checkSession() {
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                initMainApp();
+            } else {
+                document.getElementById('loginScreen').classList.remove('hidden');
+            }
+        }
+
+        // ==================== MAIN APP INITIALIZATION ====================
+        function initMainApp() {
+            document.getElementById('userName').textContent = currentUser.name;
+            const roleNames = { admin: 'Administrador', cashier: 'Cajero', kitchen: 'Cocina', waiter: 'Mesero' };
+            const roleIcons = { admin: '👨‍💼', cashier: '💰', kitchen: '👨‍🍳', waiter: '🍽️' };
+            document.getElementById('userRole').textContent = roleNames[currentUser.role];
+            document.getElementById('userIcon').textContent = roleIcons[currentUser.role];
+            
+            renderNavigation();
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+            updateNotificationBadge();
+
+            const defaultViews = { admin: 'dashboard', cashier: 'pos', kitchen: 'kitchen', waiter: 'waiter' };
+            currentView = defaultViews[currentUser.role];
+            renderView(currentView);
+        }
+
+        function updateDateTime() {
+            const now = new Date();
+            document.getElementById('currentDateTime').textContent = now.toLocaleString('es-MX', {
+                weekday: 'long', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+        }
+
+        function updateNotificationBadge() {
+            const relevant = state.notifications.filter(n => 
+                !n.read && (n.forRoles.length === 0 || n.forRoles.includes(currentUser.role))
+            );
+            const badge = document.getElementById('notifCount');
+            if (relevant.length > 0) {
+                badge.textContent = relevant.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function toggleNotifications() {
+            const panel = document.getElementById('notifPanel');
+            panel.classList.toggle('hidden');
+            if (!panel.classList.contains('hidden')) {
+                renderNotifications();
+            }
+        }
+
+        function renderNotifications() {
+            const list = document.getElementById('notifList');
+            const relevant = state.notifications.filter(n => 
+                n.forRoles.length === 0 || n.forRoles.includes(currentUser.role)
+            ).slice(0, 20);
+
+            if (relevant.length === 0) {
+                list.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">Sin notificaciones</p>';
+                return;
+            }
+
+            list.innerHTML = relevant.map(n => `
+                <div class="p-3 rounded-lg ${n.read ? 'bg-white/5' : 'bg-white/15'} text-sm cursor-pointer hover:bg-white/20 transition" onclick="markNotifRead(${n.id})">
+                    <p class="${n.read ? 'text-gray-400' : 'text-white'}">${n.message}</p>
+                    <p class="text-xs text-gray-500 mt-1">${new Date(n.timestamp).toLocaleString('es-MX')}</p>
+                </div>
+            `).join('');
+        }
+
+        function markNotifRead(id) {
+            const notif = state.notifications.find(n => n.id === id);
+            if (notif) {
+                notif.read = true;
+                saveToStorage();
+                updateNotificationBadge();
+                renderNotifications();
+            }
+        }
+
+        // ==================== NAVIGATION ====================
+        function renderNavigation() {
+            const nav = document.getElementById('mainNav');
+            const navItems = {
+                admin: [
+                    { id: 'dashboard', icon: '📊', label: 'Dashboard' },
+                    { id: 'pos', icon: '🛒', label: 'Punto de Venta' },
+                    { id: 'kitchen', icon: '👨‍🍳', label: 'Cocina' },
+                    { id: 'waiter', icon: '🍽️', label: 'Meseros' },
+                    { id: 'inventory', icon: '📦', label: 'Inventario' },
+                    { id: 'products', icon: '🍕', label: 'Productos' },
+                    { id: 'users', icon: '👥', label: 'Usuarios' },
+                    { id: 'reports', icon: '📈', label: 'Reportes' },
+                    { id: 'settings', icon: '⚙️', label: 'Configuración' }
+                ],
+                cashier: [
+                    { id: 'pos', icon: '🛒', label: 'Punto de Venta' },
+                    { id: 'orders', icon: '📋', label: 'Pedidos' },
+                    { id: 'cashregister', icon: '💵', label: 'Caja' }
+                ],
+                kitchen: [
+                    { id: 'kitchen', icon: '👨‍🍳', label: 'Cocina' }
+                ],
+                waiter: [
+                    { id: 'waiter', icon: '🍽️', label: 'Mesas' },
+                    { id: 'myorders', icon: '📋', label: 'Mis Pedidos' }
+                ]
+            };
+
+            const items = navItems[currentUser.role] || [];
+            nav.querySelector('div').innerHTML = items.map(item => `
+                <button onclick="renderView('${item.id}')" id="nav-${item.id}" 
+                    class="flex items-center gap-2 px-4 py-2 rounded-xl transition whitespace-nowrap
+                    ${currentView === item.id ? 'bg-pizza-red text-white' : 'hover:bg-white/10 text-gray-300'}">
+                    <span>${item.icon}</span>
+                    <span class="text-sm font-medium">${item.label}</span>
+                </button>
+            `).join('');
+        }
+
+        function renderView(viewId) {
+            currentView = viewId;
+            if(document.getElementById('mainNav')) renderNavigation();
+            const content = document.getElementById('contentArea');
+            if(!content) return;
+            
+            const views = {
+                dashboard: renderDashboard,
+                pos: renderPOS,
+                kitchen: renderKitchen,
+                waiter: renderWaiter,
+                inventory: renderInventory,
+                products: renderProducts,
+                users: renderUsers,
+                reports: renderReports,
+                settings: renderSettings,
+                orders: renderOrders,
+                cashregister: renderCashRegister,
+                myorders: renderMyOrders
+            };
+
+            if (views[viewId]) {
+                views[viewId](content);
+            }
+        }
+
+        // ==================== DASHBOARD ====================
+        function renderDashboard(container) {
+            const today = new Date().toDateString();
+            const todaySales = state.sales.filter(s => new Date(s.timestamp).toDateString() === today);
+            const totalToday = todaySales.reduce((sum, s) => sum + s.total, 0);
+            const ordersToday = state.orders.filter(o => new Date(o.createdAt).toDateString() === today).length;
+            const pendingOrders = state.orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled').length;
+            const lowStockItems = state.inventory.filter(i => i.stock <= i.minStock).length;
+
+            container.innerHTML = `
+                <div class="animate-slideIn">
+                    <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">📊 Dashboard <span class="text-sm font-normal text-gray-400">Resumen del día</span></h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <div class="glass rounded-2xl p-5 card-hover">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-gray-400 text-sm">Ventas Hoy</p>
+                                    <p class="text-3xl font-bold text-green-400">$${totalToday.toLocaleString()}</p>
+                                </div>
+                                <span class="text-4xl">💰</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">${todaySales.length} transacciones</p>
+                        </div>
+                        <div class="glass rounded-2xl p-5 card-hover">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-gray-400 text-sm">Pedidos Hoy</p>
+                                    <p class="text-3xl font-bold text-blue-400">${ordersToday}</p>
+                                </div>
+                                <span class="text-4xl">📋</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">${pendingOrders} pendientes</p>
+                        </div>
+                        <div class="glass rounded-2xl p-5 card-hover">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-gray-400 text-sm">Productos</p>
+                                    <p class="text-3xl font-bold text-purple-400">${state.products.filter(p => p.active).length}</p>
+                                </div>
+                                <span class="text-4xl">🍕</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">activos en menú</p>
+                        </div>
+                        <div class="glass rounded-2xl p-5 card-hover ${lowStockItems > 0 ? 'border-2 border-red-500' : ''}">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-gray-400 text-sm">Stock Bajo</p>
+                                    <p class="text-3xl font-bold ${lowStockItems > 0 ? 'text-red-400' : 'text-green-400'}">${lowStockItems}</p>
+                                </div>
+                                <span class="text-4xl">${lowStockItems > 0 ? '⚠️' : '✅'}</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">insumos por reabastecer</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="glass rounded-2xl p-5">
+                            <h3 class="font-bold mb-4 flex items-center gap-2">🔥 Pedidos Activos</h3>
+                            <div class="space-y-3 max-h-80 overflow-auto scrollbar-thin">
+                                ${state.orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled').slice(0, 10).map(o => `
+                                    <div class="flex items-center justify-between p-3 rounded-xl bg-white/5">
+                                        <div>
+                                            <p class="font-medium">#${o.id} - ${o.type === 'table' ? `Mesa ${o.tableId}` : 'Mostrador'}</p>
+                                            <p class="text-xs text-gray-400">${o.items.length} productos • $${o.total}</p>
+                                        </div>
+                                        <span class="px-3 py-1 rounded-full text-xs font-medium ${getStatusClass(o.status)}">${getStatusLabel(o.status)}</span>
+                                    </div>
+                                `).join('') || '<p class="text-gray-400 text-center py-4">Sin pedidos activos</p>'}
+                            </div>
+                        </div>
+
+                        <div class="glass rounded-2xl p-5">
+                            <h3 class="font-bold mb-4 flex items-center gap-2">📦 Alertas de Inventario</h3>
+                            <div class="space-y-3 max-h-80 overflow-auto scrollbar-thin">
+                                ${state.inventory.filter(i => i.stock <= i.minStock).map(i => `
+                                    <div class="flex items-center justify-between p-3 rounded-xl bg-red-500/20 border border-red-500/30">
+                                        <div>
+                                            <p class="font-medium">${i.name}</p>
+                                            <p class="text-xs text-gray-400">Proveedor: ${i.supplier}</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="text-red-400 font-bold">${i.stock} ${i.unit}</p>
+                                            <p class="text-xs text-gray-400">Mín: ${i.minStock}</p>
+                                        </div>
+                                    </div>
+                                `).join('') || '<p class="text-green-400 text-center py-4">✅ Todo el inventario está OK</p>'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getStatusClass(status) {
+            const classes = {
+                pending: 'status-pending text-black',
+                preparing: 'status-preparing text-white',
+                ready: 'status-ready text-white',
+                delivered: 'status-delivered text-white',
+                cancelled: 'bg-gray-500 text-white'
+            };
+            return classes[status] || 'bg-gray-500';
+        }
+
+        function getStatusLabel(status) {
+            const labels = { pending: 'Pendiente', preparing: 'Preparando', ready: 'Listo', delivered: 'Entregado', cancelled: 'Cancelado' };
+            return labels[status] || status;
+        }
+
+        // ==================== POS (Point of Sale) ====================
+        function renderPOS(container) {
+            const categories = [
+                { id: 'all', name: 'Todo', icon: '🍽️' },
+                { id: 'pizza', name: 'Pizzas', icon: '🍕' },
+                { id: 'drink', name: 'Bebidas', icon: '🥤' },
+                { id: 'extra', name: 'Extras', icon: '🍟' },
+                { id: 'promo', name: 'Promociones', icon: '🎉' }
+            ];
+
+            container.innerHTML = `
+                <div class="animate-slideIn h-full flex flex-col lg:flex-row gap-4">
+                    <div class="flex-1 flex flex-col min-h-0">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-xl font-bold flex items-center gap-2">🛒 Punto de Venta</h2>
+                            <div class="flex gap-2">
+                                ${categories.map(c => `
+                                    <button onclick="filterPOSProducts('${c.id}')" id="cat-${c.id}" 
+                                        class="px-3 py-2 rounded-xl text-sm transition ${c.id === 'all' ? 'bg-pizza-red' : 'bg-white/10 hover:bg-white/20'}">
+                                        ${c.icon} ${c.name}
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div id="posProducts" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 overflow-auto flex-1 scrollbar-thin pb-4">
+                            ${renderPOSProducts('all')}
+                        </div>
+                    </div>
+
+                    <div class="w-full lg:w-96 glass rounded-2xl p-4 flex flex-col">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold flex items-center gap-2">🧾 Cuenta</h3>
+                            <button onclick="clearCart()" class="text-xs text-red-400 hover:text-red-300">Limpiar</button>
+                        </div>
+                        <div id="cartItems" class="flex-1 overflow-auto scrollbar-thin space-y-2 mb-4">
+                            ${renderCartItems()}
+                        </div>
+                        <div class="border-t border-white/20 pt-4 space-y-3">
+                            <div class="flex justify-between text-lg">
+                                <span>Subtotal:</span>
+                                <span id="cartSubtotal">$${calculateCartTotal().toLocaleString()}</span>
+                            </div>
+                            <div class="flex justify-between text-2xl font-bold text-pizza-yellow">
+                                <span>Total:</span>
+                                <span id="cartTotal">$${calculateCartTotal().toLocaleString()}</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="processPayment('cash')" class="btn-primary py-3 rounded-xl font-medium flex items-center justify-center gap-2" ${currentCart.length === 0 ? 'disabled' : ''}>
+                                    💵 Efectivo
+                                </button>
+                                <button onclick="processPayment('transfer')" class="bg-blue-600 hover:bg-blue-700 py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition" ${currentCart.length === 0 ? 'disabled' : ''}>
+                                    📱 Transferencia
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderPOSProducts(category) {
+            const filtered = category === 'all' 
+                ? state.products.filter(p => p.active)
+                : state.products.filter(p => p.active && p.category === category);
+
+            return filtered.map(p => {
+                const categoryIcons = { pizza: '🍕', drink: '🥤', extra: '🍟', promo: '🎉' };
+                // Usamos el icono personalizado del producto, o el de la categoría por defecto
+                const displayIcon = p.icon || categoryIcons[p.category] || '🍽️';
+                
+                return `
+                    <div onclick="addToCart(${p.id})" 
+                        class="glass rounded-xl p-4 cursor-pointer card-hover hover:border-pizza-orange border border-transparent">
+                        <div class="text-3xl mb-2">${displayIcon}</div>
+                        <h4 class="font-medium text-sm mb-1 line-clamp-2">${p.name}</h4>
+                        <p class="text-pizza-yellow font-bold">$${p.price}</p>
+                    </div>
+                `;
+            }).join('') || '<p class="col-span-full text-center text-gray-400 py-8">No hay productos en esta categoría</p>';
+        }
+
+        function filterPOSProducts(category) {
+            document.querySelectorAll('[id^="cat-"]').forEach(btn => {
+                btn.classList.remove('bg-pizza-red');
+                btn.classList.add('bg-white/10');
+            });
+            document.getElementById(`cat-${category}`).classList.remove('bg-white/10');
+            document.getElementById(`cat-${category}`).classList.add('bg-pizza-red');
+            document.getElementById('posProducts').innerHTML = renderPOSProducts(category);
+        }
+
+        function addToCart(productId) {
+            const product = state.products.find(p => p.id === productId);
+            if (!product) return;
+
+            const existing = currentCart.find(item => item.productId === productId);
+            if (existing) {
+                existing.quantity++;
+            } else {
+                currentCart.push({ productId, name: product.name, price: product.price, quantity: 1 });
+            }
+            updateCartDisplay();
+            showToast(`${product.name} agregado`, 'success');
+        }
+
+        function removeFromCart(productId) {
+            currentCart = currentCart.filter(item => item.productId !== productId);
+            updateCartDisplay();
+        }
+
+        function updateCartItemQty(productId, delta) {
+            const item = currentCart.find(i => i.productId === productId);
+            if (item) {
+                item.quantity += delta;
+                if (item.quantity <= 0) {
+                    removeFromCart(productId);
+                } else {
+                    updateCartDisplay();
+                }
+            }
+        }
+
+        function clearCart() {
+            currentCart = [];
+            updateCartDisplay();
+        }
+
+        function renderCartItems() {
+            if (currentCart.length === 0) {
+                return '<p class="text-gray-400 text-center py-8">Carrito vacío</p>';
+            }
+            return currentCart.map(item => `
+                <div class="flex items-center justify-between p-3 rounded-xl bg-white/5">
+                    <div class="flex-1">
+                        <p class="font-medium text-sm">${item.name}</p>
+                        <p class="text-pizza-yellow text-sm">$${item.price} c/u</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="updateCartItemQty(${item.productId}, -1)" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 transition">-</button>
+                        <span class="w-8 text-center">${item.quantity}</span>
+                        <button onclick="updateCartItemQty(${item.productId}, 1)" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 transition">+</button>
+                        <button onclick="removeFromCart(${item.productId})" class="text-red-400 hover:text-red-300 ml-2">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function calculateCartTotal() {
+            return currentCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        }
+
+        function updateCartDisplay() {
+            const cartItemsEl = document.getElementById('cartItems');
+            const subtotalEl = document.getElementById('cartSubtotal');
+            const totalEl = document.getElementById('cartTotal');
+            
+            if (cartItemsEl) cartItemsEl.innerHTML = renderCartItems();
+            const total = calculateCartTotal();
+            if (subtotalEl) subtotalEl.textContent = `$${total.toLocaleString()}`;
+            if (totalEl) totalEl.textContent = `$${total.toLocaleString()}`;
+        }
+
+        function processPayment(method) {
+            if (currentCart.length === 0) {
+                showToast('El carrito está vacío', 'warning');
+                return;
+            }
+
+            if (!state.cashRegister.isOpen && currentUser.role !== 'admin') {
+                showToast('La caja no está abierta', 'error');
+                return;
+            }
+
+            const total = calculateCartTotal();
+            
+            if (method === 'cash') {
+                showCashPaymentModal(total);
+            } else {
+                completeSale(method, total, 0);
+            }
+        }
+
+        function showCashPaymentModal(total) {
+            const modal = document.getElementById('modalContainer');
+            modal.innerHTML = `
+                <div class="glass rounded-2xl p-6 w-full max-w-md animate-slideIn">
+                    <h3 class="text-xl font-bold mb-4 flex items-center gap-2">💵 Pago en Efectivo</h3>
+                    <div class="space-y-4">
+                        <div class="text-center p-4 rounded-xl bg-pizza-yellow/20">
+                            <p class="text-sm text-gray-300">Total a pagar</p>
+                            <p class="text-4xl font-bold text-pizza-yellow">$${total.toLocaleString()}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-2">Cantidad recibida</label>
+                            <input type="number" id="cashReceived" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-2xl text-center" 
+                                placeholder="0" oninput="calculateChange(${total})">
+                        </div>
+                        <div id="changeDisplay" class="text-center p-4 rounded-xl bg-green-500/20 hidden">
+                            <p class="text-sm text-gray-300">Cambio</p>
+                            <p class="text-3xl font-bold text-green-400">$<span id="changeAmount">0</span></p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white/10 hover:bg-white/20 transition">Cancelar</button>
+                            <button onclick="completeCashPayment(${total})" id="confirmPaymentBtn" class="btn-primary py-3 rounded-xl" disabled>Confirmar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        function calculateChange(total) {
+            const received = parseFloat(document.getElementById('cashReceived').value) || 0;
+            const change = received - total;
+            const changeDisplay = document.getElementById('changeDisplay');
+            const changeAmount = document.getElementById('changeAmount');
+            const confirmBtn = document.getElementById('confirmPaymentBtn');
+
+            if (received >= total) {
+                changeDisplay.classList.remove('hidden');
+                changeAmount.textContent = change.toLocaleString();
+                confirmBtn.disabled = false;
+            } else {
+                changeDisplay.classList.add('hidden');
+                confirmBtn.disabled = true;
+            }
+        }
+
+        function completeCashPayment(total) {
+            const received = parseFloat(document.getElementById('cashReceived').value) || 0;
+            const change = received - total;
+            completeSale('cash', total, change);
+            closeModal();
+        }
+
+        function completeSale(paymentMethod, total, change) {
+            const orderId = Date.now();
+            const order = {
+                id: orderId,
+                type: 'counter',
+                items: [...currentCart],
+                total,
+                status: 'pending',
+                paymentMethod,
+                paymentStatus: 'paid',
+                createdAt: new Date().toISOString(),
+                createdBy: currentUser.id,
+                tableId: null
+            };
+
+            state.orders.push(order);
+
+            const sale = {
+                id: Date.now(),
+                orderId,
+                items: [...currentCart],
+                subtotal: total,
+                total,
+                paymentMethod,
+                cashReceived: paymentMethod === 'cash' ? total + change : null,
+                change: paymentMethod === 'cash' ? change : null,
+                timestamp: new Date().toISOString(),
+                cashierId: currentUser.id,
+                cashierName: currentUser.name
+            };
+
+            state.sales.push(sale);
+
+            // Deduct inventory
+            currentCart.forEach(cartItem => {
+                const product = state.products.find(p => p.id === cartItem.productId);
+                if (product && product.ingredients) {
+                    product.ingredients.forEach(ing => {
+                        const invItem = state.inventory.find(i => i.id === ing.id);
+                        if (invItem) {
+                            invItem.stock -= ing.qty * cartItem.quantity;
+                            if (invItem.stock <= invItem.minStock) {
+                                addNotification('warning', `⚠️ Stock bajo: ${invItem.name}`, ['admin', 'cashier']);
+                            }
+                        }
+                    });
+                }
+            });
+
+            if (state.cashRegister.isOpen) {
+                state.cashRegister.movements.push({
+                    type: 'sale',
+                    amount: total,
+                    paymentMethod,
+                    orderId,
+                    timestamp: new Date().toISOString()
+                });
+            }
+
+            logActivity('SALE', `Venta #${orderId} por $${total} - ${paymentMethod}`);
+            addNotification('info', `🍕 Nuevo pedido #${orderId}`, ['kitchen']);
+            
+            saveToStorage();
+            showToast(`Venta completada - Ticket #${orderId}`, 'success');
+            showReceipt(sale);
+            
+            currentCart = [];
+            updateCartDisplay();
+        }
+
+        function showReceipt(sale) {
+            const modal = document.getElementById('modalContainer');
+            modal.innerHTML = `
+                <div class="bg-white text-black rounded-2xl p-6 w-full max-w-sm animate-slideIn">
+                    <div class="text-center border-b border-gray-300 pb-4 mb-4">
+                        <p class="text-4xl mb-2">🍕</p>
+                        <h3 class="text-xl font-bold">PIZZERÍA</h3>
+                        <p class="text-sm text-gray-500">Ticket de Venta</p>
+                        <p class="text-xs text-gray-400">${new Date(sale.timestamp).toLocaleString('es-MX')}</p>
+                    </div>
+                    <div class="space-y-2 mb-4 text-sm">
+                        ${sale.items.map(item => `
+                            <div class="flex justify-between">
+                                <span>${item.quantity}x ${item.name}</span>
+                                <span>$${(item.price * item.quantity).toLocaleString()}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="border-t border-gray-300 pt-4 space-y-2">
+                        <div class="flex justify-between font-bold text-lg">
+                            <span>TOTAL:</span>
+                            <span>$${sale.total.toLocaleString()}</span>
+                        </div>
+                        ${sale.paymentMethod === 'cash' ? `
+                            <div class="flex justify-between text-sm">
+                                <span>Efectivo:</span>
+                                <span>$${sale.cashReceived?.toLocaleString()}</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span>Cambio:</span>
+                                <span>$${sale.change?.toLocaleString()}</span>
+                            </div>
+                        ` : `
+                            <div class="flex justify-between text-sm">
+                                <span>Método:</span>
+                                <span>Transferencia</span>
+                            </div>
+                        `}
+                    </div>
+                    <div class="text-center mt-4 pt-4 border-t border-gray-300">
+                        <p class="text-xs text-gray-500">¡Gracias por su compra!</p>
+                        <p class="text-xs text-gray-400">Ticket #${sale.orderId}</p>
+                    </div>
+                    <button onclick="closeModal()" class="w-full mt-4 py-3 bg-gray-800 text-white rounded-xl hover:bg-gray-700 transition">
+                        Cerrar
+                    </button>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modalContainer').classList.add('hidden');
+        }
+
+        // ==================== KITCHEN MODULE ====================
+        // ==================== KITCHEN MODULE ====================
+        let currentKitchenTab = 'active'; // Variable para controlar la pestaña actual
+
+        function renderKitchen(container, tab = currentKitchenTab) {
+            currentKitchenTab = tab;
+            const today = new Date().toDateString();
+            
+            // Filtrar pedidos del día de hoy
+            const allTodayOrders = state.orders.filter(o => new Date(o.createdAt).toDateString() === today);
+            
+            // Separar entre pendientes y terminados
+            const pendingOrders = allTodayOrders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled')
+                .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+                
+            const historyOrders = allTodayOrders.filter(o => o.status === 'delivered' || o.status === 'ready' || o.status === 'cancelled')
+                .sort((a, b) => new Date(b.statusUpdatedAt || b.createdAt) - new Date(a.statusUpdatedAt || a.createdAt));
+
+            const displayOrders = tab === 'active' ? pendingOrders : historyOrders;
+
+            container.innerHTML = `
+                <div class="animate-slideIn h-full flex flex-col">
+                    <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4 shrink-0">
+                        <div class="flex flex-col md:flex-row items-start md:items-center gap-4">
+                            <h2 class="text-2xl font-bold flex items-center gap-3">👨‍🍳 Cocina</h2>
+                            
+                            <div class="flex bg-white/5 p-1 rounded-xl border border-white/10">
+                                <button onclick="renderKitchen(document.getElementById('contentArea'), 'active')" 
+                                    class="${tab === 'active' ? 'bg-pizza-red text-white shadow-lg' : 'text-gray-400 hover:text-white'} px-4 py-2 rounded-lg text-sm transition font-medium">
+                                    🔥 Activos (${pendingOrders.length})
+                                </button>
+                                <button onclick="renderKitchen(document.getElementById('contentArea'), 'history')" 
+                                    class="${tab === 'history' ? 'bg-pizza-red text-white shadow-lg' : 'text-gray-400 hover:text-white'} px-4 py-2 rounded-lg text-sm transition font-medium">
+                                    📜 Historial (${historyOrders.length})
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <button onclick="showKitchenReportModal()" class="btn-primary px-5 py-2.5 rounded-xl flex items-center gap-2 text-sm font-bold shadow-lg">
+                            📝 Reporte del Día
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 overflow-auto pb-4 scrollbar-thin">
+                        ${displayOrders.map(order => {
+                            const isHistory = tab === 'history';
+                            // Calcular tiempo de espera. Si está en historial, usa el tiempo en que se terminó.
+                            const endTime = order.statusUpdatedAt ? new Date(order.statusUpdatedAt) : new Date();
+                            const waitTime = Math.floor((endTime - new Date(order.createdAt)) / 60000);
+                                
+                            return `
+                                <div class="glass rounded-2xl p-4 flex flex-col ${isHistory ? 'opacity-75 border-l-4 border-l-green-500' : 'card-hover'} ${!isHistory && waitTime > 15 ? 'border-2 border-red-500' : ''} ${!isHistory && waitTime > 10 && waitTime <= 15 ? 'border-2 border-yellow-500' : ''}">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <div>
+                                            <span class="text-xl font-bold">#${order.id.toString().slice(-4)}</span>
+                                            <span class="ml-2 px-2 py-1 rounded-full text-xs ${order.type === 'table' ? 'bg-purple-500' : 'bg-blue-500'}">
+                                                ${order.type === 'table' ? `Mesa ${order.tableId}` : 'Mostrador'}
+                                            </span>
+                                        </div>
+                                        <span class="text-xs ${!isHistory && waitTime > 15 ? 'text-red-400 animate-pulse-custom font-bold' : !isHistory && waitTime > 10 ? 'text-yellow-400' : 'text-gray-400'}">
+                                            ⏱️ ${waitTime} min
+                                        </span>
+                                    </div>
+                                    <div class="space-y-2 mb-4 flex-1">
+                                        ${order.items.map(item => `
+                                            <div class="flex justify-between text-sm p-2 rounded-lg bg-white/5 border border-white/5">
+                                                <span>${item.quantity}x ${item.name}</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                    <div class="flex items-center justify-between mt-auto border-t border-white/10 pt-3">
+                                        <span class="px-3 py-1 rounded-full text-xs font-medium ${getStatusClass(order.status)}">
+                                            ${getStatusLabel(order.status)}
+                                        </span>
+                                        
+                                        ${!isHistory ? `
+                                            <div class="flex gap-2">
+                                                ${order.status === 'pending' ? `
+                                                    <button onclick="updateOrderStatus(${order.id}, 'preparing')" class="px-3 py-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-sm font-medium transition shadow-lg">
+                                                        🍳 Preparar
+                                                    </button>
+                                                ` : order.status === 'preparing' ? `
+                                                    <button onclick="updateOrderStatus(${order.id}, 'ready')" class="px-3 py-1.5 rounded-lg bg-green-500 hover:bg-green-600 text-sm font-medium transition shadow-lg">
+                                                        ✅ Listo
+                                                    </button>
+                                                ` : order.status === 'ready' ? `
+                                                    <button onclick="updateOrderStatus(${order.id}, 'delivered')" class="px-3 py-1.5 rounded-lg bg-purple-500 hover:bg-purple-600 text-sm font-medium transition shadow-lg">
+                                                        🚀 Entregar
+                                                    </button>
+                                                ` : ''}
+                                            </div>
+                                        ` : `
+                                            <span class="text-xs text-gray-500">Terminado: ${new Date(order.statusUpdatedAt || order.createdAt).toLocaleTimeString('es-MX', {hour: '2-digit', minute:'2-digit'})}</span>
+                                        `}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('') || `<p class="col-span-full text-center text-gray-400 py-12 text-xl">${tab === 'active' ? '🎉 ¡La cocina está al día!' : 'No hay pedidos terminados hoy.'}</p>`}
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateOrderStatus(orderId, newStatus) {
+            const order = state.orders.find(o => o.id === orderId);
+            if (order) {
+                order.status = newStatus;
+                order.statusUpdatedAt = new Date().toISOString(); // Importante para saber cuándo se terminó
+                order.statusUpdatedBy = currentUser.id;
+
+                if (newStatus === 'ready') {
+                    addNotification('success', `✅ Pedido #${orderId.toString().slice(-4)} listo para entregar`, ['cashier', 'waiter']);
+                }
+
+                if (newStatus === 'delivered' && order.type === 'table') {
+                    const table = state.tables.find(t => t.id === order.tableId);
+                    if (table) table.status = 'free';
+                }
+
+                logActivity('ORDER_STATUS', `Pedido #${orderId.toString().slice(-4)} cambió a ${newStatus}`);
+                saveToStorage();
+                showToast(`Pedido actualizado a: ${getStatusLabel(newStatus)}`, 'success');
+            }
+        }
+
+        function showKitchenReportModal() {
+            const today = new Date().toDateString();
+            const todayOrders = state.orders.filter(o => new Date(o.createdAt).toDateString() === today && o.status !== 'cancelled');
+            
+            // Sumarizar productos preparados
+            const productCounts = {};
+            todayOrders.forEach(order => {
+                order.items.forEach(item => {
+                    if(!productCounts[item.name]) productCounts[item.name] = 0;
+                    productCounts[item.name] += item.quantity;
+                });
+            });
+
+            const productsSummary = Object.entries(productCounts).sort((a, b) => b[1] - a[1]);
+            const totalItems = productsSummary.reduce((sum, [_, qty]) => sum + qty, 0);
+
+            const modal = document.getElementById('modalContainer');
+            modal.innerHTML = `
+                <div class="glass rounded-2xl p-6 w-full max-w-lg animate-slideIn flex flex-col max-h-[90vh]">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold flex items-center gap-2">📊 Reporte de Cocina</h3>
+                        <button onclick="closeModal()" class="p-2 hover:bg-white/10 rounded-lg transition text-gray-400 hover:text-white">✕</button>
+                    </div>
+                    
+                    <div class="overflow-y-auto flex-1 scrollbar-thin pr-2 space-y-5 mb-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl text-center">
+                                <p class="text-gray-400 text-sm mb-1">Pedidos Atendidos</p>
+                                <p class="text-4xl font-bold text-blue-400">${todayOrders.length}</p>
+                            </div>
+                            <div class="bg-green-500/10 border border-green-500/20 p-4 rounded-xl text-center">
+                                <p class="text-gray-400 text-sm mb-1">Items Preparados</p>
+                                <p class="text-4xl font-bold text-green-400">${totalItems}</p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 class="font-medium text-pizza-yellow mb-3 flex items-center gap-2">
+                                🍕 Desglose de Producción
+                            </h4>
+                            <div class="space-y-2 max-h-48 overflow-y-auto scrollbar-thin pr-2 bg-black/20 p-3 rounded-xl border border-white/5">
+                                ${productsSummary.length > 0 ? productsSummary.map(([name, qty]) => `
+                                    <div class="flex justify-between items-center py-1.5 border-b border-white/5 last:border-0">
+                                        <span class="text-sm text-gray-200">${name}</span>
+                                        <span class="font-bold bg-white/10 px-3 py-0.5 rounded-lg text-sm">${qty}</span>
+                                    </div>
+                                `).join('') : '<p class="text-gray-500 text-center py-4 text-sm">No se han preparado productos hoy.</p>'}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Notas para Administración (Opcional)</label>
+                            <textarea id="kitchenNotes" rows="3" class="w-full px-4 py-3 bg-black/20 border border-white/10 rounded-xl focus:outline-none focus:border-pizza-orange transition resize-none text-sm" placeholder="Ej. Hubo escasez de queso, la masa tardó en leudar..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 pt-2 shrink-0">
+                        <button onclick="closeModal()" class="py-3.5 rounded-xl bg-white/5 hover:bg-white/10 transition font-medium">Cancelar</button>
+                        <button onclick="sendKitchenReport()" class="btn-primary py-3.5 rounded-xl font-bold flex items-center justify-center gap-2" ${todayOrders.length === 0 ? 'disabled' : ''}>
+                            📤 Enviar Cierre
+                        </button>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        function sendKitchenReport() {
+            const notes = document.getElementById('kitchenNotes').value.trim();
+            const today = new Date().toDateString();
+            const todayOrders = state.orders.filter(o => new Date(o.createdAt).toDateString() === today && o.status !== 'cancelled');
+            
+            // Asegurarnos de que exista el array de reportes en el state
+            if (!state.kitchenReports) state.kitchenReports = [];
+
+            const report = {
+                id: Date.now(),
+                date: new Date().toISOString(),
+                createdBy: currentUser.id,
+                createdByName: currentUser.name,
+                totalOrders: todayOrders.length,
+                notes: notes
+            };
+
+            state.kitchenReports.push(report);
+            
+            // 1. Notificamos directamente al Admin (aparecerá en la campanita)
+            addNotification('info', `👨‍🍳 Reporte de cocina enviado por ${currentUser.name}. Pedidos: ${todayOrders.length}. ${notes ? '⚠️ Tiene notas.' : ''}`, ['admin']);
+            
+            // 2. Queda guardado en la Actividad Global del sistema
+            logActivity('KITCHEN_REPORT', `Reporte de cierre de cocina enviado. ${todayOrders.length} pedidos. Notas: ${notes || 'Ninguna'}`);
+            
+            saveToStorage();
+            showToast('Reporte enviado correctamente a administración', 'success');
+            closeModal();
+        }
+
+        // ==================== WAITER MODULE ====================
+        function renderWaiter(container) {
+            container.innerHTML = `
+                <div class="animate-slideIn">
+                    <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">🍽️ Mesas</h2>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        ${state.tables.map(table => {
+                            const activeOrder = state.orders.find(o => o.tableId === table.id && o.status !== 'delivered' && o.status !== 'cancelled');
+                            return `
+                                <div onclick="selectTable(${table.id})" 
+                                    class="glass rounded-2xl p-6 cursor-pointer card-hover text-center
+                                    ${table.status === 'occupied' ? 'border-2 border-orange-500' : 'border border-green-500/50'}">
+                                    <div class="text-4xl mb-3">${table.status === 'occupied' ? '🍽️' : '🪑'}</div>
+                                    <h3 class="text-xl font-bold">${table.name}</h3>
+                                    <p class="text-sm text-gray-400">${table.capacity} personas</p>
+                                    <span class="inline-block mt-3 px-3 py-1 rounded-full text-xs ${table.status === 'occupied' ? 'bg-orange-500' : 'bg-green-500'}">
+                                        ${table.status === 'occupied' ? 'Ocupada' : 'Libre'}
+                                    </span>
+                                    ${activeOrder ? `
+                                        <p class="mt-2 text-xs text-gray-400">Pedido #${activeOrder.id.toString().slice(-4)}</p>
+                                        <p class="text-xs ${getStatusClass(activeOrder.status)} px-2 py-1 rounded-full inline-block mt-1">${getStatusLabel(activeOrder.status)}</p>
+                                    ` : ''}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function selectTable(tableId) {
+            selectedTable = tableId;
+            const table = state.tables.find(t => t.id === tableId);
+            const activeOrder = state.orders.find(o => o.tableId === tableId && o.status !== 'delivered' && o.status !== 'cancelled');
+
+            const modal = document.getElementById('modalContainer');
+            modal.innerHTML = `
+                <div class="glass rounded-2xl p-6 w-full max-w-4xl animate-slideIn max-h-[90%] overflow-auto">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-xl font-bold flex items-center gap-2">🍽️ ${table.name}</h3>
+                        <button onclick="closeModal()" class="p-2 hover:bg-white/10 rounded-lg transition">✕</button>
+                    </div>
+
+                    ${activeOrder ? `
+                        <div class="mb-6 p-4 rounded-xl bg-white/5">
+                            <h4 class="font-medium mb-3">Pedido Actual #${activeOrder.id.toString().slice(-4)}</h4>
+                            <div class="space-y-2 mb-3">
+                                ${activeOrder.items.map(item => `
+                                    <div class="flex justify-between text-sm">
+                                        <span>${item.quantity}x ${item.name}</span>
+                                        <span>$${(item.price * item.quantity).toLocaleString()}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div class="flex justify-between font-bold border-t border-white/20 pt-2">
+                                <span>Total:</span>
+                                <span>$${activeOrder.total.toLocaleString()}</span>
+                            </div>
+                            <div class="flex gap-2 mt-4">
+                                <span class="px-3 py-1 rounded-full text-xs ${getStatusClass(activeOrder.status)}">${getStatusLabel(activeOrder.status)}</span>
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <div class="flex gap-4 flex-col lg:flex-row">
+                        <div class="flex-1">
+                            <h4 class="font-medium mb-3">Agregar Productos</h4>
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-60 overflow-auto scrollbar-thin">
+                                ${state.products.filter(p => p.active).map(p => `
+                                    <div onclick="addToTableOrder(${p.id})" 
+                                        class="p-3 rounded-xl bg-white/5 hover:bg-white/10 cursor-pointer transition text-center">
+                                        <p class="text-sm font-medium">${p.name}</p>
+                                        <p class="text-pizza-yellow text-sm">$${p.price}</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="w-full lg:w-72 p-4 rounded-xl bg-white/5">
+                            <h4 class="font-medium mb-3">Nueva Orden</h4>
+                            <div id="tableCart" class="space-y-2 max-h-40 overflow-auto scrollbar-thin mb-4">
+                                ${currentCart.length === 0 ? '<p class="text-gray-400 text-sm text-center py-4">Sin productos</p>' : 
+                                    currentCart.map(item => `
+                                        <div class="flex justify-between text-sm">
+                                            <span>${item.quantity}x ${item.name}</span>
+                                            <span>$${(item.price * item.quantity).toLocaleString()}</span>
+                                        </div>
+                                    `).join('')
+                                }
+                            </div>
+                            <div class="border-t border-white/20 pt-2 mb-4">
+                                <div class="flex justify-between font-bold">
+                                    <span>Total:</span>
+                                    <span id="tableCartTotal">$${calculateCartTotal().toLocaleString()}</span>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <button onclick="sendTableOrder(${tableId})" class="w-full btn-primary py-2 rounded-xl text-sm" ${currentCart.length === 0 ? 'disabled' : ''}>
+                                    📤 Enviar a Cocina
+                                </button>
+                                <button onclick="clearCart(); selectTable(${tableId})" class="w-full py-2 rounded-xl bg-white/10 hover:bg-white/20 text-sm transition">
+                                    🗑️ Limpiar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        function addToTableOrder(productId) {
+            addToCart(productId);
+            selectTable(selectedTable);
+        }
+
+        function sendTableOrder(tableId) {
+            if (currentCart.length === 0) return;
+
+            const table = state.tables.find(t => t.id === tableId);
+            const orderId = Date.now();
+            const total = calculateCartTotal();
+
+            const order = {
+                id: orderId,
+                type: 'table',
+                tableId,
+                items: [...currentCart],
+                total,
+                status: 'pending',
+                paymentStatus: 'pending',
+                createdAt: new Date().toISOString(),
+                createdBy: currentUser.id,
+                waiterName: currentUser.name
+            };
+
+            state.orders.push(order);
+            table.status = 'occupied';
+
+            logActivity('ORDER_CREATE', `Pedido #${orderId} creado para ${table.name}`);
+            addNotification('info', `🍕 Nuevo pedido #${orderId.toString().slice(-4)} de ${table.name}`, ['kitchen']);
+            
+            saveToStorage();
+            showToast('Pedido enviado a cocina', 'success');
+            
+            currentCart = [];
+            closeModal();
+            renderWaiter(document.getElementById('contentArea'));
+        }
+
+        function renderMyOrders(container) {
+            const myOrders = state.orders.filter(o => o.createdBy === currentUser.id)
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+            container.innerHTML = `
+                <div class="animate-slideIn">
+                    <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">📋 Mis Pedidos</h2>
+                    
+                    <div class="space-y-4">
+                        ${myOrders.slice(0, 20).map(order => `
+                            <div class="glass rounded-xl p-4 flex items-center justify-between">
+                                <div>
+                                    <p class="font-bold">#${order.id.toString().slice(-4)} - ${order.type === 'table' ? `Mesa ${order.tableId}` : 'Mostrador'}</p>
+                                    <p class="text-sm text-gray-400">${order.items.map(i => `${i.quantity}x ${i.name}`).join(', ')}</p>
+                                    <p class="text-xs text-gray-500">${new Date(order.createdAt).toLocaleString('es-MX')}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-pizza-yellow">$${order.total.toLocaleString()}</p>
+                                    <span class="px-3 py-1 rounded-full text-xs ${getStatusClass(order.status)}">${getStatusLabel(order.status)}</span>
+                                </div>
+                            </div>
+                        `).join('') || '<p class="text-gray-400 text-center py-8">No has creado pedidos aún</p>'}
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==================== INVENTORY MODULE ====================
+        function renderInventory(container) {
+            container.innerHTML = `
+                <div class="animate-slideIn">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold flex items-center gap-3">📦 Inventario</h2>
+                        <button onclick="showAddInventoryModal()" class="btn-primary px-4 py-2 rounded-xl flex items-center gap-2">
+                            ➕ Agregar Entrada
+                        </button>
+                    </div>
+
+                    ${state.inventory.filter(i => i.stock <= i.minStock).length > 0 ? `
+                        <div class="mb-6 p-4 rounded-xl bg-red-500/20 border border-red-500/30">
+                            <h3 class="font-bold text-red-400 mb-2">⚠️ Alertas de Stock Bajo</h3>
+                            <div class="flex flex-wrap gap-2">
+                                ${state.inventory.filter(i => i.stock <= i.minStock).map(i => `
+                                    <span class="px-3 py-1 rounded-full bg-red-500/30 text-sm">${i.name}: ${i.stock} ${i.unit}</span>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <div class="glass rounded-2xl overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-white/10">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-sm font-medium">Insumo</th>
+                                        <th class="px-4 py-3 text-left text-sm font-medium">Stock</th>
+                                        <th class="px-4 py-3 text-left text-sm font-medium">Mínimo</th>
+                                        <th class="px-4 py-3 text-left text-sm font-medium">Costo</th>
+                                        <th class="px-4 py-3 text-left text-sm font-medium">Proveedor</th>
+                                        <th class="px-4 py-3 text-left text-sm font-medium">Estado</th>
+                                        <th class="px-4 py-3 text-left text-sm font-medium">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-white/10">
+                                    ${state.inventory.map(item => `
+                                        <tr class="hover:bg-white/5 transition">
+                                            <td class="px-4 py-3 font-medium">${item.name}</td>
+                                            <td class="px-4 py-3 ${item.stock <= item.minStock ? 'text-red-400 font-bold' : ''}">${item.stock.toFixed(2)} ${item.unit}</td>
+                                            <td class="px-4 py-3 text-gray-400">${item.minStock} ${item.unit}</td>
+                                            <td class="px-4 py-3">$${item.cost}</td>
+                                            <td class="px-4 py-3 text-gray-400">${item.supplier}</td>
+                                            <td class="px-4 py-3">
+                                                ${item.stock <= item.minStock ? 
+                                                    '<span class="px-2 py-1 rounded-full text-xs bg-red-500/30 text-red-400">Bajo</span>' :
+                                                    item.stock <= item.minStock * 2 ?
+                                                    '<span class="px-2 py-1 rounded-full text-xs bg-yellow-500/30 text-yellow-400">Medio</span>' :
+                                                    '<span class="px-2 py-1 rounded-full text-xs bg-green-500/30 text-green-400">OK</span>'
+                                                }
+                                            </td>
+                                            <td class="px-4 py-3">
+                                                <button onclick="showInventoryEntryModal(${item.id})" class="px-3 py-1 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 text-sm transition">
+                                                    ➕ Entrada
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showInventoryEntryModal(itemId) {
+            const item = state.inventory.find(i => i.id === itemId);
+            const modal = document.getElementById('modalContainer');
+            modal.innerHTML = `
+                <div class="glass rounded-2xl p-6 w-full max-w-md animate-slideIn">
+                    <h3 class="text-xl font-bold mb-4">➕ Entrada de Inventario</h3>
+                    <div class="space-y-4">
+                        <div class="p-4 rounded-xl bg-white/5">
+                            <p class="font-medium">${item.name}</p>
+                            <p class="text-sm text-gray-400">Stock actual: ${item.stock.toFixed(2)} ${item.unit}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-2">Cantidad a agregar (${item.unit})</label>
+                            <input type="number" id="entryQty" step="0.01" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl" placeholder="0">
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-2">Notas (opcional)</label>
+                            <input type="text" id="entryNotes" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl" placeholder="Ej: Compra a proveedor">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white/10 hover:bg-white/20 transition">Cancelar</button>
+                            <button onclick="addInventoryEntry(${itemId})" class="btn-primary py-3 rounded-xl">Agregar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        function addInventoryEntry(itemId) {
+            const qty = parseFloat(document.getElementById('entryQty').value);
+            const notes = document.getElementById('entryNotes').value;
+
+            if (!qty || qty <= 0) {
+                showToast('Ingresa una cantidad válida', 'warning');
+                return;
+            }
+
+            const item = state.inventory.find(i => i.id === itemId);
+            item.stock += qty;
+
+            state.inventoryMovements.push({
+                id: Date.now(),
+                itemId,
+                itemName: item.name,
+                type: 'entry',
+                quantity: qty,
+                notes,
+                timestamp: new Date().toISOString(),
+                userId: currentUser.id,
+                userName: currentUser.name
+            });
+
+            logActivity('INVENTORY_ENTRY', `Entrada de ${qty} ${item.unit} de ${item.name}`);
+            saveToStorage();
+            showToast(`Entrada registrada: ${qty} ${item.unit} de ${item.name}`, 'success');
+            closeModal();
+            renderInventory(document.getElementById('contentArea'));
+        }
+
+        function showAddInventoryModal() {
+            const modal = document.getElementById('modalContainer');
+            modal.innerHTML = `
+                <div class="glass rounded-2xl p-6 w-full max-w-md animate-slideIn">
+                    <h3 class="text-xl font-bold mb-4">➕ Nuevo Insumo</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm mb-2">Nombre del insumo</label>
+                            <input type="text" id="newItemName" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl" placeholder="Ej: Queso Parmesano">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm mb-2">Unidad</label>
+                                <select id="newItemUnit" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl">
+                                    <option value="kg">Kilogramos (kg)</option>
+                                    <option value="lt">Litros (lt)</option>
+                                    <option value="pza">Piezas (pza)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm mb-2">Stock inicial</label>
+                                <input type="number" id="newItemStock" step="0.01" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl" placeholder="0">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm mb-2">Stock mínimo</label>
+                                <input type="number" id="newItemMin" step="0.01" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl" placeholder="0">
+                            </div>
+                            <div>
+                                <label class="block text-sm mb-2">Costo unitario</label>
+                                <input type="number" id="newItemCost" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl" placeholder="0">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-2">Proveedor</label>
+                            <input type="text" id="newItemSupplier" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl" placeholder="Nombre del proveedor">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white/10 hover:bg-white/20 transition">Cancelar</button>
+                            <button onclick="saveNewInventoryItem()" class="btn-primary py-3 rounded-xl">Guardar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        function saveNewInventoryItem() {
+            const name = document.getElementById('newItemName').value.trim();
+            const unit = document.getElementById('newItemUnit').value;
+            const stock = parseFloat(document.getElementById('newItemStock').value) || 0;
+            const minStock = parseFloat(document.getElementById('newItemMin').value) || 0;
+            const cost = parseFloat(document.getElementById('newItemCost').value) || 0;
+            const supplier = document.getElementById('newItemSupplier').value.trim();
+
+            if (!name) {
+                showToast('Ingresa un nombre para el insumo', 'warning');
+                return;
+            }
+
+            const newItem = {
+                id: Date.now(),
+                name,
+                unit,
+                stock,
+                minStock,
+                cost,
+                supplier: supplier || 'Sin proveedor'
+            };
+
+            state.inventory.push(newItem);
+            logActivity('INVENTORY_ADD', `Nuevo insumo agregado: ${name}`);
+            saveToStorage();
+            showToast('Insumo agregado correctamente', 'success');
+            closeModal();
+            renderInventory(document.getElementById('contentArea'));
+        }
+
+        // ==================== PRODUCTS MODULE ====================
+      // ==================== PRODUCTS MODULE ====================
+      function renderProducts(container) {
+            const categories = ['pizza', 'drink', 'extra', 'promo'];
+            const categoryNames = { pizza: 'Pizzas', drink: 'Bebidas', extra: 'Extras', promo: 'Promociones' };
+            const categoryIcons = { pizza: '🍕', drink: '🥤', extra: '🍟', promo: '🎉' };
+
+            container.innerHTML = `
+                <div class="animate-slideIn">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold flex items-center gap-3">🍕 Productos</h2>
+                        <button onclick="showAddProductModal()" class="btn-primary px-4 py-2 rounded-xl flex items-center gap-2">
+                            ➕ Nuevo Producto
+                        </button>
+                    </div>
+
+                    ${categories.map(cat => `
+                        <div class="mb-6">
+                            <h3 class="text-lg font-bold mb-3 flex items-center gap-2">${categoryIcons[cat]} ${categoryNames[cat]}</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                ${state.products.filter(p => p.category === cat).map(p => {
+                                    const displayIcon = p.icon || categoryIcons[p.category] || '🍽️';
+                                    return `
+                                        <div class="glass rounded-xl p-4 ${!p.active ? 'opacity-50' : ''}">
+                                            <div class="flex items-start justify-between">
+                                                <div>
+                                                    <h4 class="font-medium flex items-center gap-2"><span class="text-xl">${displayIcon}</span> ${p.name}</h4>
+                                                    <p class="text-pizza-yellow font-bold mt-1">$${p.price}</p>
+                                                </div>
+                                                <div class="flex gap-1">
+                                                    <button onclick="editProduct(${p.id})" class="p-2 hover:bg-white/10 rounded-lg transition">✏️</button>
+                                                    <button onclick="toggleProductActive(${p.id})" class="p-2 hover:bg-white/10 rounded-lg transition">
+                                                        ${p.active ? '🟢' : '🔴'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <p class="text-xs text-gray-400 mt-2">${p.active ? 'Activo' : 'Inactivo'}</p>
+                                        </div>
+                                    `;
+                                }).join('') || '<p class="text-gray-400 col-span-full">Sin productos en esta categoría</p>'}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function showAddProductModal() {
+            const modal = document.getElementById('modalContainer');
+            modal.innerHTML = `
+                <div class="glass rounded-2xl p-6 w-full max-w-md animate-slideIn">
+                    <h3 class="text-xl font-bold mb-4">➕ Nuevo Producto</h3>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-4 gap-4">
+                            <div class="col-span-3">
+                                <label class="block text-sm mb-2">Nombre del producto</label>
+                                <input type="text" id="prodName" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl" placeholder="Ej: Pizza Especial">
+                            </div>
+                            <div class="col-span-1">
+                                <label class="block text-sm mb-2">Emoji</label>
+                                <input type="text" id="prodIcon" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-center" placeholder="🍕">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm mb-2">Categoría</label>
+                                <select id="prodCategory" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl">
+                                    <option value="pizza">🍕 Pizza</option>
+                                    <option value="drink">🥤 Bebida</option>
+                                    <option value="extra">🍟 Extra</option>
+                                    <option value="promo">🎉 Promoción</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm mb-2">Precio</label>
+                                <input type="number" id="prodPrice" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl" placeholder="0">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white/10 hover:bg-white/20 transition">Cancelar</button>
+                            <button onclick="saveNewProduct()" class="btn-primary py-3 rounded-xl">Guardar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        function saveNewProduct() {
+            const name = document.getElementById('prodName').value.trim();
+            const icon = document.getElementById('prodIcon').value.trim();
+            const category = document.getElementById('prodCategory').value;
+            const price = parseFloat(document.getElementById('prodPrice').value) || 0;
+
+            if (!name || price <= 0) {
+                showToast('Completa los campos principales', 'warning');
+                return;
+            }
+
+            const newProduct = {
+                id: Date.now(),
+                name,
+                category,
+                price,
+                icon: icon || null,
+                ingredients: [],
+                active: true
+            };
+
+            state.products.push(newProduct);
+            logActivity('PRODUCT_ADD', `Nuevo producto: ${name}`);
+            saveToStorage();
+            showToast('Producto agregado correctamente', 'success');
+            closeModal();
+            renderProducts(document.getElementById('contentArea'));
+        }
+
+        function editProduct(productId) {
+            const product = state.products.find(p => p.id === productId);
+            const modal = document.getElementById('modalContainer');
+            modal.innerHTML = `
+                <div class="glass rounded-2xl p-6 w-full max-w-md animate-slideIn">
+                    <h3 class="text-xl font-bold mb-4">✏️ Editar Producto</h3>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-4 gap-4">
+                            <div class="col-span-3">
+                                <label class="block text-sm mb-2">Nombre del producto</label>
+                                <input type="text" id="editProdName" value="${product.name}" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl">
+                            </div>
+                            <div class="col-span-1">
+                                <label class="block text-sm mb-2">Emoji</label>
+                                <input type="text" id="editProdIcon" value="${product.icon || ''}" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-center" placeholder="🍕">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm mb-2">Categoría</label>
+                                <select id="editProdCategory" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl">
+                                    <option value="pizza" ${product.category === 'pizza' ? 'selected' : ''}>🍕 Pizza</option>
+                                    <option value="drink" ${product.category === 'drink' ? 'selected' : ''}>🥤 Bebida</option>
+                                    <option value="extra" ${product.category === 'extra' ? 'selected' : ''}>🍟 Extra</option>
+                                    <option value="promo" ${product.category === 'promo' ? 'selected' : ''}>🎉 Promoción</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm mb-2">Precio</label>
+                                <input type="number" id="editProdPrice" value="${product.price}" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white/10 hover:bg-white/20 transition">Cancelar</button>
+                            <button onclick="updateProduct(${productId})" class="btn-primary py-3 rounded-xl">Guardar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        function updateProduct(productId) {
+            const product = state.products.find(p => p.id === productId);
+            product.name = document.getElementById('editProdName').value.trim();
+            product.icon = document.getElementById('editProdIcon').value.trim() || null;
+            product.category = document.getElementById('editProdCategory').value;
+            product.price = parseFloat(document.getElementById('editProdPrice').value) || product.price;
+
+            logActivity('PRODUCT_UPDATE', `Producto actualizado: ${product.name}`);
+            saveToStorage();
+            showToast('Producto actualizado', 'success');
+            closeModal();
+            renderProducts(document.getElementById('contentArea'));
+        }
+        // ==================== USERS MODULE ====================
+        function renderUsers(container) {
+            const roleNames = { admin: 'Administrador', cashier: 'Cajero', kitchen: 'Cocina', waiter: 'Mesero' };
+            const roleIcons = { admin: '👨‍💼', cashier: '💰', kitchen: '👨‍🍳', waiter: '🍽️' };
+
+            container.innerHTML = `
+                <div class="animate-slideIn">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold flex items-center gap-3">👥 Usuarios</h2>
+                        <button onclick="showAddUserModal()" class="btn-primary px-4 py-2 rounded-xl flex items-center gap-2">
+                            ➕ Nuevo Usuario
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        ${state.users.map(user => `
+                            <div class="glass rounded-xl p-4 ${!user.active ? 'opacity-50' : ''}">
+                                <div class="flex items-center gap-3 mb-3">
+                                    <span class="text-3xl">${roleIcons[user.role]}</span>
+                                    <div>
+                                        <h4 class="font-medium">${user.name}</h4>
+                                        <p class="text-sm text-gray-400">@${user.username}</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="px-3 py-1 rounded-full text-xs bg-white/10">${roleNames[user.role]}</span>
+                                    <div class="flex gap-1">
+                                        <button onclick="editUser(${user.id})" class="p-2 hover:bg-white/10 rounded-lg transition">✏️</button>
+                                        ${user.id !== currentUser.id ? `
+                                            <button onclick="toggleUserActive(${user.id})" class="p-2 hover:bg-white/10 rounded-lg transition">
+                                                ${user.active ? '🟢' : '🔴'}
+                                            </button>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function toggleUserActive(userId) {
+            const user = state.users.find(u => u.id === userId);
+            if (user && user.id !== currentUser.id) {
+                user.active = !user.active;
+                logActivity('USER_TOGGLE', `Usuario ${user.name} ${user.active ? 'activado' : 'desactivado'}`);
+                saveToStorage();
+                showToast(`Usuario ${user.active ? 'activado' : 'desactivado'}`, 'success');
+                renderUsers(document.getElementById('contentArea'));
+            }
+        }
+
+        function showAddUserModal() {
+            const modal = document.getElementById('modalContainer');
+            modal.innerHTML = `
+                <div class="glass rounded-2xl p-6 w-full max-w-md animate-slideIn">
+                    <h3 class="text-xl font-bold mb-4">➕ Nuevo Usuario</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm mb-2">Nombre completo</label>
+                            <input type="text" id="userName" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl" placeholder="Ej: Juan Pérez">
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-2">Usuario</label>
+                            <input type="text" id="userUsername" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl" placeholder="Ej: jperez">
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-2">Contraseña</label>
+                            <input type="password" id="userPassword" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl" placeholder="••••••">
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-2">Rol</label>
+                            <select id="userRole" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl">
+                                <option value="cashier">💰 Cajero</option>
+                                <option value="kitchen">👨‍🍳 Cocina</option>
+                                <option value="waiter">🍽️ Mesero</option>
+                                <option value="admin">👨‍💼 Administrador</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white/10 hover:bg-white/20 transition">Cancelar</button>
+                            <button onclick="saveNewUser()" class="btn-primary py-3 rounded-xl">Guardar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        function saveNewUser() {
+            const name = document.getElementById('userName').value.trim();
+            const username = document.getElementById('userUsername').value.trim().toLowerCase();
+            const password = document.getElementById('userPassword').value;
+            const role = document.getElementById('userRole').value;
+
+            if (!name || !username || !password) {
+                showToast('Completa todos los campos', 'warning');
+                return;
+            }
+
+            if (state.users.some(u => u.username === username)) {
+                showToast('El usuario ya existe', 'error');
+                return;
+            }
+
+            const newUser = {
+                id: Date.now(),
+                name,
+                username,
+                password,
+                role,
+                active: true
+            };
+
+            state.users.push(newUser);
+            logActivity('USER_ADD', `Nuevo usuario: ${name} (${role})`);
+            saveToStorage();
+            showToast('Usuario creado correctamente', 'success');
+            closeModal();
+            renderUsers(document.getElementById('contentArea'));
+        }
+
+        function editUser(userId) {
+            const user = state.users.find(u => u.id === userId);
+            const modal = document.getElementById('modalContainer');
+            modal.innerHTML = `
+                <div class="glass rounded-2xl p-6 w-full max-w-md animate-slideIn">
+                    <h3 class="text-xl font-bold mb-4">✏️ Editar Usuario</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm mb-2">Nombre completo</label>
+                            <input type="text" id="editUserName" value="${user.name}" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl">
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-2">Usuario (Login)</label>
+                            <input type="text" id="editUserUsername" value="${user.username}" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl">
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-2">Nueva contraseña (dejar vacío para no cambiar)</label>
+                            <input type="password" id="editUserPassword" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl" placeholder="••••••">
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-2">Rol</label>
+                            <select id="editUserRole" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl" ${user.id === currentUser.id ? 'disabled' : ''}>
+                                <option value="cashier" ${user.role === 'cashier' ? 'selected' : ''}>💰 Cajero</option>
+                                <option value="kitchen" ${user.role === 'kitchen' ? 'selected' : ''}>👨‍🍳 Cocina</option>
+                                <option value="waiter" ${user.role === 'waiter' ? 'selected' : ''}>🍽️ Mesero</option>
+                                <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>👨‍💼 Administrador</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white/10 hover:bg-white/20 transition">Cancelar</button>
+                            <button onclick="updateUser(${userId})" class="btn-primary py-3 rounded-xl">Guardar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        function updateUser(userId) {
+            const user = state.users.find(u => u.id === userId);
+            const newName = document.getElementById('editUserName').value.trim();
+            const newUsername = document.getElementById('editUserUsername').value.trim().toLowerCase();
+            const newPassword = document.getElementById('editUserPassword').value;
+
+            // Validaciones
+            if (!newName || !newUsername) {
+                showToast('El nombre y el usuario no pueden estar vacíos', 'warning');
+                return;
+            }
+
+            // Evitar que se duplique el nombre de usuario de login
+            if (state.users.some(u => u.username === newUsername && u.id !== userId)) {
+                showToast('El nombre de usuario ya está en uso', 'error');
+                return;
+            }
+
+            // Actualizar datos
+            user.name = newName;
+            user.username = newUsername;
+            
+            if (newPassword) {
+                user.password = newPassword;
+            }
+
+            if (user.id !== currentUser.id) {
+                user.role = document.getElementById('editUserRole').value;
+            }
+
+            // ⚠️ FIX CLAVE: Si modificas tu propio usuario, actualizamos la sesión local
+            if (user.id === currentUser.id) {
+                currentUser = { ...user };
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                document.getElementById('userName').textContent = currentUser.name; // Actualiza el header
+            }
+
+            logActivity('USER_UPDATE', `Usuario actualizado: ${user.name}`);
+            saveToStorage();
+            showToast('Usuario actualizado', 'success');
+            closeModal();
+            renderUsers(document.getElementById('contentArea'));
+        }
+        // ==================== CASH REGISTER MODULE ====================
+        function renderCashRegister(container) {
+            const cr = state.cashRegister;
+            const todayMovements = cr.movements.filter(m => 
+                new Date(m.timestamp).toDateString() === new Date().toDateString()
+            );
+            const cashSales = todayMovements.filter(m => m.type === 'sale' && m.paymentMethod === 'cash')
+                .reduce((sum, m) => sum + m.amount, 0);
+            const transferSales = todayMovements.filter(m => m.type === 'sale' && m.paymentMethod === 'transfer')
+                .reduce((sum, m) => sum + m.amount, 0);
+
+            container.innerHTML = `
+                <div class="animate-slideIn">
+                    <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">💵 Caja Registradora</h2>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="glass rounded-2xl p-6">
+                            <div class="flex items-center justify-between mb-6">
+                                <h3 class="font-bold text-lg">Estado de Caja</h3>
+                                <span class="px-4 py-2 rounded-full ${cr.isOpen ? 'bg-green-500' : 'bg-red-500'} font-medium">
+                                    ${cr.isOpen ? '🟢 Abierta' : '🔴 Cerrada'}
+                                </span>
+                            </div>
+                            
+                            ${cr.isOpen ? `
+                                <div class="space-y-4 mb-6">
+                                    <div class="flex justify-between p-3 rounded-xl bg-white/5">
+                                        <span>Abierta por:</span>
+                                        <span class="font-medium">${state.users.find(u => u.id === cr.openedBy)?.name || 'Sistema'}</span>
+                                    </div>
+                                    <div class="flex justify-between p-3 rounded-xl bg-white/5">
+                                        <span>Hora apertura:</span>
+                                        <span class="font-medium">${new Date(cr.openedAt).toLocaleTimeString('es-MX')}</span>
+                                    </div>
+                                    <div class="flex justify-between p-3 rounded-xl bg-white/5">
+                                        <span>Fondo inicial:</span>
+                                        <span class="font-medium">$${cr.initialAmount.toLocaleString()}</span>
+                                    </div>
+                                    <div class="flex justify-between p-3 rounded-xl bg-green-500/20">
+                                        <span>Ventas efectivo:</span>
+                                        <span class="font-bold text-green-400">$${cashSales.toLocaleString()}</span>
+                                    </div>
+                                    <div class="flex justify-between p-3 rounded-xl bg-blue-500/20">
+                                        <span>Ventas transferencia:</span>
+                                        <span class="font-bold text-blue-400">$${transferSales.toLocaleString()}</span>
+                                    </div>
+                                    <div class="flex justify-between p-4 rounded-xl bg-pizza-yellow/20 text-lg">
+                                        <span class="font-bold">En caja (efectivo):</span>
+                                        <span class="font-bold text-pizza-yellow">$${(cr.initialAmount + cashSales).toLocaleString()}</span>
+                                    </div>
+                                </div>
+                                <button onclick="showCloseCashModal()" class="w-full btn-primary py-3 rounded-xl">
+                                    🔒 Hacer Corte de Caja
+                                </button>
+                            ` : `
+                                <div class="text-center py-8">
+                                    <p class="text-gray-400 mb-4">La caja está cerrada</p>
+                                    <button onclick="showOpenCashModal()" class="btn-primary px-6 py-3 rounded-xl">
+                                        🔓 Abrir Caja
+                                    </button>
+                                </div>
+                            `}
+                        </div>
+
+                        <div class="glass rounded-2xl p-6">
+                            <h3 class="font-bold text-lg mb-4">Movimientos de Hoy</h3>
+                            <div class="space-y-2 max-h-96 overflow-auto scrollbar-thin">
+                                ${todayMovements.length > 0 ? todayMovements.slice().reverse().map(m => `
+                                    <div class="flex items-center justify-between p-3 rounded-xl bg-white/5">
+                                        <div>
+                                            <p class="font-medium">${m.type === 'sale' ? '💰 Venta' : m.type === 'open' ? '🔓 Apertura' : '🔒 Cierre'}</p>
+                                            <p class="text-xs text-gray-400">${new Date(m.timestamp).toLocaleTimeString('es-MX')}</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="font-bold ${m.amount >= 0 ? 'text-green-400' : 'text-red-400'}">
+                                                ${m.amount >= 0 ? '+' : ''}$${m.amount.toLocaleString()}
+                                            </p>
+                                            ${m.paymentMethod ? `<p class="text-xs text-gray-400">${m.paymentMethod === 'cash' ? 'Efectivo' : 'Transferencia'}</p>` : ''}
+                                        </div>
+                                    </div>
+                                `).join('') : '<p class="text-gray-400 text-center py-8">Sin movimientos hoy</p>'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showOpenCashModal() {
+            const modal = document.getElementById('modalContainer');
+            modal.innerHTML = `
+                <div class="glass rounded-2xl p-6 w-full max-w-md animate-slideIn">
+                    <h3 class="text-xl font-bold mb-4">🔓 Abrir Caja</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm mb-2">Fondo inicial (efectivo)</label>
+                            <input type="number" id="initialAmount" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-xl" placeholder="0">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white/10 hover:bg-white/20 transition">Cancelar</button>
+                            <button onclick="openCashRegister()" class="btn-primary py-3 rounded-xl">Abrir Caja</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        function openCashRegister() {
+            const initialAmount = parseFloat(document.getElementById('initialAmount').value) || 0;
+            
+            state.cashRegister = {
+                isOpen: true,
+                openedBy: currentUser.id,
+                openedAt: new Date().toISOString(),
+                initialAmount,
+                movements: [{
+                    type: 'open',
+                    amount: initialAmount,
+                    timestamp: new Date().toISOString()
+                }]
+            };
+
+            logActivity('CASH_OPEN', `Caja abierta con fondo de $${initialAmount}`);
+            saveToStorage();
+            showToast('Caja abierta correctamente', 'success');
+            closeModal();
+            renderCashRegister(document.getElementById('contentArea'));
+        }
+
+        function showCloseCashModal() {
+            const cr = state.cashRegister;
+            const cashSales = cr.movements.filter(m => m.type === 'sale' && m.paymentMethod === 'cash')
+                .reduce((sum, m) => sum + m.amount, 0);
+            const expectedCash = cr.initialAmount + cashSales;
+
+            const modal = document.getElementById('modalContainer');
+            modal.innerHTML = `
+                <div class="glass rounded-2xl p-6 w-full max-w-md animate-slideIn">
+                    <h3 class="text-xl font-bold mb-4">🔒 Corte de Caja</h3>
+                    <div class="space-y-4">
+                        <div class="p-4 rounded-xl bg-white/5">
+                            <p class="text-sm text-gray-400">Efectivo esperado en caja:</p>
+                            <p class="text-2xl font-bold text-pizza-yellow">$${expectedCash.toLocaleString()}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-2">Efectivo contado</label>
+                            <input type="number" id="countedCash" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-xl" 
+                                placeholder="0" oninput="calculateDifference(${expectedCash})">
+                        </div>
+                        <div id="differenceDisplay" class="p-4 rounded-xl bg-white/5 hidden">
+                            <p class="text-sm text-gray-400">Diferencia:</p>
+                            <p id="differenceAmount" class="text-xl font-bold"></p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white/10 hover:bg-white/20 transition">Cancelar</button>
+                            <button onclick="closeCashRegister(${expectedCash})" class="btn-primary py-3 rounded-xl">Cerrar Caja</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        function calculateDifference(expected) {
+            const counted = parseFloat(document.getElementById('countedCash').value) || 0;
+            const diff = counted - expected;
+            const display = document.getElementById('differenceDisplay');
+            const amount = document.getElementById('differenceAmount');
+
+            display.classList.remove('hidden');
+            amount.textContent = `$${diff >= 0 ? '+' : ''}${diff.toLocaleString()}`;
+            amount.className = `text-xl font-bold ${diff >= 0 ? 'text-green-400' : 'text-red-400'}`;
+        }
+
+        function closeCashRegister(expected) {
+            const counted = parseFloat(document.getElementById('countedCash').value) || 0;
+            const difference = counted - expected;
+
+            state.cashRegister.movements.push({
+                type: 'close',
+                amount: counted,
+                expected,
+                difference,
+                timestamp: new Date().toISOString()
+            });
+
+            logActivity('CASH_CLOSE', `Caja cerrada. Esperado: $${expected}, Contado: $${counted}, Diferencia: $${difference}`);
+            
+            // Reset cash register
+            state.cashRegister.isOpen = false;
+            
+            saveToStorage();
+            showToast(`Caja cerrada. Diferencia: $${difference}`, difference === 0 ? 'success' : 'warning');
+            closeModal();
+            renderCashRegister(document.getElementById('contentArea'));
+        }
+
+        // ==================== ORDERS MODULE ====================
+        function renderOrders(container) {
+            const activeOrders = state.orders.filter(o => o.status !== 'cancelled')
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+            container.innerHTML = `
+                <div class="animate-slideIn">
+                    <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">📋 Pedidos</h2>
+                    
+                    <div class="space-y-4">
+                        ${activeOrders.slice(0, 30).map(order => `
+                            <div class="glass rounded-xl p-4">
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-xl font-bold">#${order.id.toString().slice(-4)}</span>
+                                        <span class="px-2 py-1 rounded-full text-xs ${order.type === 'table' ? 'bg-purple-500' : 'bg-blue-500'}">
+                                            ${order.type === 'table' ? `Mesa ${order.tableId}` : 'Mostrador'}
+                                        </span>
+                                        <span class="px-2 py-1 rounded-full text-xs ${getStatusClass(order.status)}">${getStatusLabel(order.status)}</span>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-bold text-pizza-yellow">$${order.total.toLocaleString()}</p>
+                                        <p class="text-xs text-gray-400">${new Date(order.createdAt).toLocaleString('es-MX')}</p>
+                                    </div>
+                                </div>
+                                <div class="flex flex-wrap gap-2 text-sm text-gray-400">
+                                    ${order.items.map(i => `<span class="px-2 py-1 rounded bg-white/5">${i.quantity}x ${i.name}</span>`).join('')}
+                                </div>
+                            </div>
+                        `).join('') || '<p class="text-gray-400 text-center py-8">Sin pedidos registrados</p>'}
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==================== REPORTS MODULE ====================
+        function renderReports(container) {
+            const today = new Date().toDateString();
+            const thisMonth = new Date().getMonth();
+            const thisYear = new Date().getFullYear();
+
+            const todaySales = state.sales.filter(s => new Date(s.timestamp).toDateString() === today);
+            const monthSales = state.sales.filter(s => {
+                const d = new Date(s.timestamp);
+                return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+            });
+
+            const todayTotal = todaySales.reduce((sum, s) => sum + s.total, 0);
+            const monthTotal = monthSales.reduce((sum, s) => sum + s.total, 0);
+            const todayOrders = todaySales.length;
+            const monthOrders = monthSales.length;
+            const avgTicket = todayOrders > 0 ? todayTotal / todayOrders : 0;
+
+            // Top products
+            const productSales = {};
+            state.sales.forEach(sale => {
+                sale.items.forEach(item => {
+                    if (!productSales[item.name]) productSales[item.name] = { qty: 0, total: 0 };
+                    productSales[item.name].qty += item.quantity;
+                    productSales[item.name].total += item.price * item.quantity;
+                });
+            });
+            const topProducts = Object.entries(productSales)
+                .sort((a, b) => b[1].qty - a[1].qty)
+                .slice(0, 5);
+
+            container.innerHTML = `
+                <div class="animate-slideIn">
+                    <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">📈 Reportes</h2>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <div class="glass rounded-2xl p-5">
+                            <p class="text-gray-400 text-sm mb-1">Ventas Hoy</p>
+                            <p class="text-3xl font-bold text-green-400">$${todayTotal.toLocaleString()}</p>
+                            <p class="text-xs text-gray-500">${todayOrders} transacciones</p>
+                        </div>
+                        <div class="glass rounded-2xl p-5">
+                            <p class="text-gray-400 text-sm mb-1">Ventas del Mes</p>
+                            <p class="text-3xl font-bold text-blue-400">$${monthTotal.toLocaleString()}</p>
+                            <p class="text-xs text-gray-500">${monthOrders} transacciones</p>
+                        </div>
+                        <div class="glass rounded-2xl p-5">
+                            <p class="text-gray-400 text-sm mb-1">Ticket Promedio (hoy)</p>
+                            <p class="text-3xl font-bold text-purple-400">$${avgTicket.toFixed(0)}</p>
+                        </div>
+                        <div class="glass rounded-2xl p-5">
+                            <p class="text-gray-400 text-sm mb-1">Productos Vendidos (hoy)</p>
+                            <p class="text-3xl font-bold text-pizza-yellow">${todaySales.reduce((sum, s) => sum + s.items.reduce((is, i) => is + i.quantity, 0), 0)}</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="glass rounded-2xl p-5">
+                            <h3 class="font-bold mb-4">🏆 Productos Más Vendidos</h3>
+                            <div class="space-y-3">
+                                ${topProducts.map(([name, data], i) => `
+                                    <div class="flex items-center justify-between p-3 rounded-xl bg-white/5">
+                                        <div class="flex items-center gap-3">
+                                            <span class="text-2xl">${['🥇', '🥈', '🥉', '4️⃣', '5️⃣'][i]}</span>
+                                            <span class="font-medium">${name}</span>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="font-bold">${data.qty} vendidos</p>
+                                            <p class="text-sm text-gray-400">$${data.total.toLocaleString()}</p>
+                                        </div>
+                                    </div>
+                                `).join('') || '<p class="text-gray-400 text-center py-4">Sin datos</p>'}
+                            </div>
+                        </div>
+
+                        <div class="glass rounded-2xl p-5">
+                            <h3 class="font-bold mb-4">📜 Actividad Reciente</h3>
+                            <div class="space-y-2 max-h-80 overflow-auto scrollbar-thin">
+                                ${state.activityLog.slice(-20).reverse().map(log => `
+                                    <div class="p-3 rounded-xl bg-white/5 text-sm">
+                                        <div class="flex justify-between">
+                                            <span class="font-medium">${log.action}</span>
+                                            <span class="text-gray-400">${new Date(log.timestamp).toLocaleTimeString('es-MX')}</span>
+                                        </div>
+                                        <p class="text-gray-400 text-xs">${log.details}</p>
+                                        <p class="text-gray-500 text-xs">Por: ${log.userName}</p>
+                                    </div>
+                                `).join('') || '<p class="text-gray-400 text-center py-4">Sin actividad</p>'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==================== SETTINGS MODULE ====================
+        function renderSettings(container) {
+            container.innerHTML = `
+                <div class="animate-slideIn">
+                    <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">⚙️ Configuración</h2>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="glass rounded-2xl p-6">
+                            <h3 class="font-bold mb-4">💾 Gestión de Datos</h3>
+                            <div class="space-y-3">
+                                <button onclick="exportData()" class="w-full py-3 rounded-xl bg-blue-500 hover:bg-blue-600 transition flex items-center justify-center gap-2">
+                                    📥 Exportar Datos (JSON)
+                                </button>
+                                <button onclick="showImportModal()" class="w-full py-3 rounded-xl bg-green-500 hover:bg-green-600 transition flex items-center justify-center gap-2">
+                                    📤 Importar Datos a Firebase
+                                </button>
+                                <button onclick="confirmResetData()" class="w-full py-3 rounded-xl bg-red-500 hover:bg-red-600 transition flex items-center justify-center gap-2">
+                                    🗑️ Restaurar Datos Predeterminados
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="glass rounded-2xl p-6">
+                            <h3 class="font-bold mb-4">ℹ️ Información del Sistema</h3>
+                            <div class="space-y-3 text-sm">
+                                <div class="flex justify-between p-3 rounded-xl bg-white/5">
+                                    <span>Base de Datos:</span>
+                                    <span class="font-medium text-pizza-yellow">Cloud Firestore (En Vivo)</span>
+                                </div>
+                                <div class="flex justify-between p-3 rounded-xl bg-white/5">
+                                    <span>Usuarios registrados:</span>
+                                    <span class="font-medium">${state.users.length}</span>
+                                </div>
+                                <div class="flex justify-between p-3 rounded-xl bg-white/5">
+                                    <span>Productos:</span>
+                                    <span class="font-medium">${state.products.length}</span>
+                                </div>
+                                <div class="flex justify-between p-3 rounded-xl bg-white/5">
+                                    <span>Insumos en inventario:</span>
+                                    <span class="font-medium">${state.inventory.length}</span>
+                                </div>
+                                <div class="flex justify-between p-3 rounded-xl bg-white/5">
+                                    <span>Total de ventas:</span>
+                                    <span class="font-medium">${state.sales.length}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="glass rounded-2xl p-6">
+                            <h3 class="font-bold mb-4">🪑 Gestión de Mesas</h3>
+                            <div class="space-y-3">
+                                ${state.tables.map(t => `
+                                    <div class="flex items-center justify-between p-3 rounded-xl bg-white/5">
+                                        <span>${t.name} (${t.capacity} personas)</span>
+                                        <span class="px-2 py-1 rounded-full text-xs ${t.status === 'occupied' ? 'bg-orange-500' : 'bg-green-500'}">${t.status === 'occupied' ? 'Ocupada' : 'Libre'}</span>
+                                    </div>
+                                `).join('')}
+                                <button onclick="addTable()" class="w-full py-2 rounded-xl bg-white/10 hover:bg-white/20 transition text-sm">
+                                    ➕ Agregar Mesa
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="glass rounded-2xl p-6">
+                            <h3 class="font-bold mb-4">📞 Proveedores</h3>
+                            <div class="space-y-3 max-h-60 overflow-auto scrollbar-thin">
+                                ${state.suppliers.map(s => `
+                                    <div class="p-3 rounded-xl bg-white/5">
+                                        <p class="font-medium">${s.name}</p>
+                                        <p class="text-xs text-gray-400">📞 ${s.contact}</p>
+                                        <p class="text-xs text-gray-400">✉️ ${s.email}</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function exportData() {
+            const dataStr = JSON.stringify(state, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `pizzamanager_backup_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Datos exportados correctamente', 'success');
+        }
+
+        function showImportModal() {
+            const modal = document.getElementById('modalContainer');
+            modal.innerHTML = `
+                <div class="glass rounded-2xl p-6 w-full max-w-md animate-slideIn">
+                    <h3 class="text-xl font-bold mb-4">📤 Importar Datos</h3>
+                    <div class="space-y-4">
+                        <p class="text-sm text-gray-400">Selecciona un archivo JSON exportado anteriormente. Esto reemplazará todos los datos en la base de datos de Firebase.</p>
+                        <input type="file" id="importFile" accept=".json" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl">
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white/10 hover:bg-white/20 transition">Cancelar</button>
+                            <button onclick="importData()" class="btn-primary py-3 rounded-xl">Importar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        function importData() {
+            const file = document.getElementById('importFile').files[0];
+            if (!file) {
+                showToast('Selecciona un archivo', 'warning');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    state = { ...DEFAULT_DATA, ...imported };
+                    saveToStorage();
+                    showToast('Datos importados a Firebase', 'success');
+                    closeModal();
+                    renderView(currentView);
+                } catch (err) {
+                    showToast('Error al importar: archivo inválido', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function confirmResetData() {
+            const modal = document.getElementById('modalContainer');
+            modal.innerHTML = `
+                <div class="glass rounded-2xl p-6 w-full max-w-md animate-slideIn">
+                    <h3 class="text-xl font-bold mb-4 text-red-400">⚠️ Restaurar Datos</h3>
+                    <p class="text-gray-300 mb-4">¿Estás seguro de que quieres restaurar todos los datos a los valores predeterminados? Esta acción eliminará los datos en Firebase.</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="closeModal()" class="py-3 rounded-xl bg-white/10 hover:bg-white/20 transition">Cancelar</button>
+                        <button onclick="resetData()" class="py-3 rounded-xl bg-red-500 hover:bg-red-600 transition">Restaurar</button>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        function resetData() {
+            state = JSON.parse(JSON.stringify(DEFAULT_DATA));
+            saveToStorage();
+            showToast('Datos restaurados correctamente', 'success');
+            closeModal();
+            renderView(currentView);
+        }
+
+        function addTable() {
+            const nextNum = state.tables.length + 1;
+            state.tables.push({
+                id: Date.now(),
+                name: `Mesa ${nextNum}`,
+                capacity: 4,
+                status: 'free'
+            });
+            saveToStorage();
+            showToast('Mesa agregada', 'success');
+            renderSettings(document.getElementById('contentArea'));
+        }
+
+        // ==================== INITIALIZATION ====================
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Quitamos el intervalo estático de recarga de cocina ya que usamos Real-time Database listeners
+            
+            // Cargar de Firebase en vez de localStorage
+            await loadFromStorage();
+            
+            // Remover pantalla de carga y mostrar login/app
+            document.getElementById('loadingScreen').classList.add('hidden');
+            checkSession();
+
+            // Handle Enter key on login
+            document.getElementById('loginPass')?.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') handleLogin();
+            });
+            document.getElementById('loginUser')?.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') document.getElementById('loginPass').focus();
+            });
+
+            // Close notifications panel when clicking outside
+            document.addEventListener('click', function(e) {
+                const notifPanel = document.getElementById('notifPanel');
+                const notifBell = document.getElementById('notificationBell');
+                if (notifPanel && notifBell && !notifPanel.contains(e.target) && !notifBell.contains(e.target)) {
+                    notifPanel.classList.add('hidden');
+                }
+            });
+        });
+    </script>
+ </body>
+</html>
