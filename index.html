@@ -238,10 +238,17 @@
         </div>
 
         <div id="notifPanel"
-            class="hidden fixed right-4 top-20 w-80 glass rounded-2xl p-4 z-50 animate-slideIn max-h-96 overflow-auto scrollbar-thin shadow-xl border border-white">
-            <h3 class="font-bold mb-3 flex items-center gap-2 text-theme-greenDark">🔔 Notificaciones</h3>
-            <div id="notifList" class="space-y-2"></div>
+            class="hidden fixed right-4 top-20 w-80 glass rounded-2xl p-4 z-50 animate-slideIn max-h-96 flex flex-col shadow-xl border border-white">
+            <div class="flex items-center justify-between mb-3 border-b border-theme-beige pb-2 shrink-0">
+                <h3 class="font-bold flex items-center gap-2 text-theme-greenDark">🔔 Notificaciones</h3>
+                <button onclick="clearAllNotifications()" class="text-xs font-bold text-theme-textMuted hover:text-red-500 bg-white/60 hover:bg-white px-2 py-1 rounded-md transition shadow-sm border border-transparent hover:border-red-200">
+                    Limpiar
+                </button>
+            </div>
+            <div id="notifList" class="space-y-2 overflow-y-auto scrollbar-thin pr-1 flex-1"></div>
         </div>
+
+        
 
         <div id="toastContainer"></div>
 
@@ -251,6 +258,23 @@
     </div>
 
     <script>
+
+function clearAllNotifications() {
+            // Filtramos y eliminamos solo las notificaciones que le corresponden a este usuario
+            state.notifications = state.notifications.filter(n => 
+                !(n.forRoles.length === 0 || n.forRoles.includes(currentUser.role))
+            );
+            
+            saveToStorage();
+            updateNotificationBadge();
+            renderNotifications();
+            
+            // Si el panel quedó vacío, mostramos el mensaje
+            const list = document.getElementById('notifList');
+            list.innerHTML = '<p class="text-theme-textMuted text-sm text-center py-4">Sin notificaciones</p>';
+            
+            showToast('Notificaciones limpiadas', 'info');
+        }
         // ==================== FIREBASE SETUP ====================
         const firebaseConfig = {
             apiKey: "AIzaSyDC_IfHVv4WAfebvpjRoajGtqZoj_Zlynk",
@@ -1737,6 +1761,7 @@
 
 
         // ==================== INVENTORY MODULE ====================
+        // ==================== INVENTORY MODULE ====================
         function renderInventory(container) {
             container.innerHTML = `
                 <div class="animate-slideIn">
@@ -1789,9 +1814,14 @@
                 }
                                             </td>
                                             <td class="px-5 py-4">
-                                                <button onclick="showInventoryEntryModal(${item.id})" class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 text-sm transition font-bold shadow-sm">
-                                                    ➕ Entrada
-                                                </button>
+                                                <div class="flex gap-2">
+                                                    <button onclick="showInventoryEntryModal(${item.id})" class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 text-sm transition font-bold shadow-sm" title="Agregar Stock">
+                                                        ➕ Entrada
+                                                    </button>
+                                                    <button onclick="showEditInventoryItemModal(${item.id})" class="px-3 py-1.5 rounded-lg bg-white border border-theme-beige hover:bg-theme-beige text-theme-textMuted text-sm transition font-bold shadow-sm" title="Editar Detalles">
+                                                        ✏️ Editar
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     `).join('')}
@@ -1856,9 +1886,30 @@
                 userName: currentUser.name
             });
 
+            // ---> NUEVO: Reactivar productos automáticamente <---
+            // Si el insumo que acabamos de agregar pertenece a la receta de algún 
+            // producto que estaba apagado (🔴), revisamos si ya tiene stock para prenderlo (🟢)
+            let reactivatedProducts = [];
+            state.products.forEach(p => {
+                // Solo revisamos productos apagados que usan este insumo específico
+                if (!p.active && p.ingredients && p.ingredients.some(ing => ing.id === itemId)) {
+                    if (hasEnoughStock(p)) {
+                        p.active = true; // Lo prendemos
+                        reactivatedProducts.push(p.name);
+                    }
+                }
+            });
+
             logActivity('INVENTORY_ENTRY', `Entrada de ${qty} ${item.unit} de ${item.name}`);
             saveToStorage();
+            
             showToast(`Entrada registrada: ${qty} ${item.unit} de ${item.name}`, 'success');
+            
+            // Si el sistema revivió productos, te avisa con otra notificación
+            if (reactivatedProducts.length > 0) {
+                setTimeout(() => showToast(`Se reactivaron automáticamente: ${reactivatedProducts.join(', ')}`, 'info'), 1500);
+            }
+
             closeModal();
             renderInventory(document.getElementById('contentArea'));
         }
@@ -1938,6 +1989,71 @@
             logActivity('INVENTORY_ADD', `Nuevo insumo agregado: ${name}`);
             saveToStorage();
             showToast('Insumo agregado correctamente', 'success');
+            closeModal();
+            renderInventory(document.getElementById('contentArea'));
+        }
+
+        // --- Funciones para Editar Insumos del Inventario ---
+        function showEditInventoryItemModal(itemId) {
+            const item = state.inventory.find(i => i.id === itemId);
+            if (!item) return;
+
+            const modal = document.getElementById('modalContainer');
+            modal.innerHTML = `
+                <div class="glass bg-white/90 rounded-3xl p-6 w-[95%] max-w-md animate-slideIn shadow-2xl border-2 border-white">
+                    <h3 class="text-xl font-bold mb-4 text-theme-greenDark">✏️ Editar Insumo</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-bold mb-2 text-theme-text">Nombre del insumo</label>
+                            <input type="text" id="editInvName" value="${item.name}" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-bold mb-2 text-theme-text">Stock Mínimo</label>
+                                <input type="number" id="editInvMin" step="0.01" value="${item.minStock}" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold mb-2 text-theme-text">Costo Unitario ($)</label>
+                                <input type="number" id="editInvCost" step="0.01" value="${item.cost}" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold mb-2 text-theme-text">Proveedor</label>
+                            <input type="text" id="editInvSupplier" value="${item.supplier}" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 pt-2 border-t border-theme-beige mt-2">
+                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text">Cancelar</button>
+                            <button onclick="updateInventoryItem(${itemId})" class="btn-primary py-3 rounded-xl font-bold shadow-md">Guardar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        function updateInventoryItem(itemId) {
+            const item = state.inventory.find(i => i.id === itemId);
+            if (!item) return;
+
+            const name = document.getElementById('editInvName').value.trim();
+            const minStock = parseFloat(document.getElementById('editInvMin').value) || 0;
+            const cost = parseFloat(document.getElementById('editInvCost').value) || 0;
+            const supplier = document.getElementById('editInvSupplier').value.trim();
+
+            if (!name) {
+                showToast('El nombre no puede estar vacío', 'warning');
+                return;
+            }
+
+            item.name = name;
+            item.minStock = minStock;
+            item.cost = cost;
+            item.supplier = supplier || 'Sin proveedor';
+
+            logActivity('INVENTORY_UPDATE', `Insumo actualizado: ${name} (Costo: $${cost})`);
+            saveToStorage();
+            
+            showToast('Insumo actualizado correctamente', 'success');
             closeModal();
             renderInventory(document.getElementById('contentArea'));
         }
