@@ -19,13 +19,13 @@
                         poppins: ['Poppins', 'sans-serif']
                     },
                     colors: {
-                        pizza: {
-                            red: '#D32F2F',
-                            orange: '#FF5722',
-                            yellow: '#FFC107',
-                            cream: '#FFF8E1',
-                            dark: '#1A1A2E',
-                            darker: '#16213E'
+                        theme: {
+                            bg: '#F5F2E9',        // Beige claro principal
+                            beige: '#EAE5D9',     // Beige para bordes/fondos secundarios
+                            green: '#A7C4AA',     // Verde pastel principal
+                            greenDark: '#7A9E7E', // Verde pastel oscuro (para textos y resaltados)
+                            text: '#4A504A',      // Gris oscuro con toque verde para texto
+                            textMuted: '#849085'  // Gris claro apagado
                         }
                     }
                 }
@@ -34,79 +34,127 @@
     </script>
   <style>
         * { font-family: 'Poppins', sans-serif; }
-        .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
-        .scrollbar-thin::-webkit-scrollbar-track { background: rgba(255,255,255,0.1); border-radius: 10px; }
-        .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 10px; }
-        .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.5); }
+        
+        /* Ajuste de scrollbar para tema claro */
+        .scrollbar-thin::-webkit-scrollbar { width: 8px; height: 8px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: rgba(0,0,0,0.03); border-radius: 10px; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 10px; border: 2px solid #F5F2E9; }
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
+        
         @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        
         .animate-slideIn { animation: slideIn 0.3s ease-out; }
         .animate-pulse-custom { animation: pulse 2s infinite; }
         .animate-shake { animation: shake 0.5s ease-in-out; }
-        .glass { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); }
-        .btn-primary { background: linear-gradient(135deg, #D32F2F 0%, #FF5722 100%); transition: all 0.3s; }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(211,47,47,0.3); }
+        
+        /* Efecto Glassmorphism ajustado para tema claro */
+        .glass { 
+            background: rgba(255, 255, 255, 0.65); 
+            backdrop-filter: blur(16px); 
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.8); 
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+        }
+        
+        /* Botón primario en verde pastel */
+        .btn-primary { 
+            background: linear-gradient(135deg, #A7C4AA 0%, #8FB593 100%); 
+            color: white; 
+            transition: all 0.3s; 
+        }
+        .btn-primary:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 8px 20px rgba(167, 196, 170, 0.4); 
+        }
+        
         .card-hover { transition: all 0.3s; }
-        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
-        .status-pending { background: linear-gradient(135deg, #FFC107 0%, #FF9800 100%); }
-        .status-preparing { background: linear-gradient(135deg, #2196F3 0%, #03A9F4 100%); }
-        .status-ready { background: linear-gradient(135deg, #4CAF50 0%, #8BC34A 100%); }
-        .status-delivered { background: linear-gradient(135deg, #9C27B0 0%, #673AB7 100%); }
+        .card-hover:hover { 
+            transform: translateY(-4px); 
+            box-shadow: 0 12px 25px rgba(0,0,0,0.06); 
+        }
+        
         .toast { position: fixed; bottom: 20px; right: 20px; z-index: 9999; animation: slideIn 0.3s ease-out; }
     </style>
   <style>body { box-sizing: border-box; }</style>
  </head>
- <body class="h-full bg-pizza-dark text-white overflow-auto">
+ <body class="h-full bg-theme-bg text-theme-text overflow-auto">
   <div id="app" class="h-full flex flex-col">
-   <div id="loadingScreen" class="h-full flex flex-col items-center justify-center p-4 bg-pizza-darker z-50 absolute inset-0">
+   
+   <div id="loadingScreen" class="h-full flex flex-col items-center justify-center p-4 bg-theme-bg z-50 absolute inset-0">
      <div class="text-6xl mb-4 animate-pulse-custom">🍕</div>
-     <h2 class="text-xl font-bold text-pizza-yellow">Conectando a la nube...</h2>
+     <h2 class="text-xl font-bold text-theme-greenDark">Conectando con Firebase...</h2>
    </div>
 
    <div id="loginScreen" class="hidden h-full flex items-center justify-center p-4">
     <div class="glass rounded-3xl p-8 w-full max-w-md animate-slideIn">
      <div class="text-center mb-8">
       <div class="text-6xl mb-4">🍕</div>
-      <h1 class="text-3xl font-bold bg-gradient-to-r from-pizza-yellow to-pizza-orange bg-clip-text text-transparent">RUFAZA</h1>
-      <p class="text-gray-400 mt-2">Sistema de Gestión Integral</p>
+      <h1 class="text-3xl font-bold text-theme-greenDark">PizzaManager Pro</h1>
+      <p class="text-theme-textMuted mt-2">Sistema de Gestión Integral</p>
      </div>
      <div class="space-y-4">
-      <div><label class="block text-sm font-medium text-gray-300 mb-2">Usuario</label> <input type="text" id="loginUser" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl focus:outline-none focus:border-pizza-orange transition" placeholder="Ingrese su usuario">
+      <div>
+          <label class="block text-sm font-medium mb-2">Usuario</label> 
+          <input type="text" id="loginUser" class="w-full px-4 py-3 bg-white/80 border border-white rounded-xl focus:outline-none focus:border-theme-green transition text-theme-text" placeholder="Ingrese su usuario">
       </div>
-      <div><label class="block text-sm font-medium text-gray-300 mb-2">Contraseña</label> <input type="password" id="loginPass" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl focus:outline-none focus:border-pizza-orange transition" placeholder="Ingrese su contraseña">
+      <div>
+          <label class="block text-sm font-medium mb-2">Contraseña</label> 
+          <input type="password" id="loginPass" class="w-full px-4 py-3 bg-white/80 border border-white rounded-xl focus:outline-none focus:border-theme-green transition text-theme-text" placeholder="Ingrese su contraseña">
       </div>
-      <div id="loginError" class="hidden text-red-400 text-sm text-center p-2 bg-red-500/20 rounded-lg"></div><button onclick="handleLogin()" class="w-full btn-primary text-white font-semibold py-3 rounded-xl mt-4"> Iniciar Sesión </button>
+      <div id="loginError" class="hidden text-red-600 text-sm text-center p-2 bg-red-100 rounded-lg"></div>
+      <button onclick="handleLogin()" class="w-full btn-primary font-semibold py-3 rounded-xl mt-4"> Iniciar Sesión </button>
      </div>
-     <div class="mt-6 text-center text-xs text-gray-500">
+     <div class="mt-6 text-center text-xs text-theme-textMuted">
       <p>Usuarios demo: admin/admin, cajero/cajero, cocina/cocina, mesero/mesero</p>
      </div>
     </div>
-   </div><div id="mainApp" class="hidden h-full flex flex-col"><header class="glass border-b border-white/10 px-4 py-3 flex items-center justify-between shrink-0">
+   </div>
+   
+   <div id="mainApp" class="hidden h-full flex flex-col">
+    <header class="glass border-b border-white px-4 py-3 flex items-center justify-between shrink-0">
      <div class="flex items-center gap-3"><span class="text-3xl">🍕</span>
       <div>
-       <h1 class="text-xl font-bold text-pizza-yellow">PizzaManager Pro</h1>
-       <p id="currentDateTime" class="text-xs text-gray-400"></p>
+       <h1 class="text-xl font-bold text-theme-greenDark">PizzaManager Pro</h1>
+       <p id="currentDateTime" class="text-xs text-theme-textMuted"></p>
       </div>
      </div>
      <div class="flex items-center gap-4">
-      <div id="notificationBell" class="relative cursor-pointer" onclick="toggleNotifications()"><span class="text-2xl">🔔</span> <span id="notifCount" class="absolute -top-1 -right-1 bg-pizza-red text-white text-xs w-5 h-5 rounded-full flex items-center justify-center hidden">0</span>
+      <div id="notificationBell" class="relative cursor-pointer" onclick="toggleNotifications()">
+          <span class="text-2xl">🔔</span> 
+          <span id="notifCount" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center hidden shadow-md">0</span>
       </div>
-      <div class="flex items-center gap-2 glass px-3 py-2 rounded-xl"><span class="text-xl" id="userIcon">👤</span>
+      <div class="flex items-center gap-2 glass px-3 py-2 rounded-xl border border-white">
+       <span class="text-xl" id="userIcon">👤</span>
        <div>
-        <p id="userName" class="text-sm font-medium"></p>
-        <p id="userRole" class="text-xs text-gray-400"></p>
+        <p id="userName" class="text-sm font-bold text-theme-greenDark"></p>
+        <p id="userRole" class="text-xs text-theme-textMuted font-medium"></p>
        </div>
-      </div><button onclick="handleLogout()" class="p-2 hover:bg-white/10 rounded-lg transition" title="Cerrar Sesión"> 🚪 </button>
+      </div>
+      <button onclick="handleLogout()" class="p-2 hover:bg-white/60 rounded-lg transition" title="Cerrar Sesión"> 🚪 </button>
      </div>
-    </header><nav id="mainNav" class="glass border-b border-white/10 px-4 py-2 shrink-0">
-     <div class="flex gap-2 overflow-x-auto scrollbar-thin pb-1"></div>
-    </nav><main id="contentArea" class="flex-1 overflow-auto p-4 scrollbar-thin"></main>
-   </div><div id="notifPanel" class="hidden fixed right-4 top-20 w-80 glass rounded-2xl p-4 z-50 animate-slideIn max-h-96 overflow-auto scrollbar-thin">
-    <h3 class="font-bold mb-3 flex items-center gap-2">🔔 Notificaciones</h3>
+    </header>
+    
+    <nav id="mainNav" class="glass border-b border-white px-4 py-2 shrink-0">
+     <div class="flex gap-2 overflow-x-auto scrollbar-thin pb-1">
+      </div>
+    </nav>
+    
+    <main id="contentArea" class="flex-1 overflow-auto p-4 scrollbar-thin">
+     </main>
+   </div>
+   
+   <div id="notifPanel" class="hidden fixed right-4 top-20 w-80 glass rounded-2xl p-4 z-50 animate-slideIn max-h-96 overflow-auto scrollbar-thin shadow-xl border border-white">
+    <h3 class="font-bold mb-3 flex items-center gap-2 text-theme-greenDark">🔔 Notificaciones</h3>
     <div id="notifList" class="space-y-2"></div>
-   </div><div id="toastContainer"></div><div id="modalContainer" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"></div>
+   </div>
+   
+   <div id="toastContainer"></div>
+   
+   <div id="modalContainer" class="hidden fixed inset-0 bg-theme-text/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all"></div>
   </div>
+
   <script>
         // ==================== FIREBASE SETUP ====================
         const firebaseConfig = {
@@ -132,20 +180,20 @@
                 { id: 4, username: 'mesero', password: 'mesero', name: 'Carlos López', role: 'waiter', active: true }
             ],
             products: [
-                { id: 1, name: 'Pizza Margarita', category: 'pizza', price: 120, ingredients: [{id: 1, qty: 0.2}, {id: 2, qty: 0.15}, {id: 3, qty: 0.1}], active: true },
-                { id: 2, name: 'Pizza Pepperoni', category: 'pizza', price: 150, ingredients: [{id: 1, qty: 0.2}, {id: 2, qty: 0.15}, {id: 4, qty: 0.1}], active: true },
-                { id: 3, name: 'Pizza Hawaiana', category: 'pizza', price: 140, ingredients: [{id: 1, qty: 0.2}, {id: 2, qty: 0.15}, {id: 5, qty: 0.08}, {id: 6, qty: 0.05}], active: true },
-                { id: 4, name: 'Pizza 4 Quesos', category: 'pizza', price: 160, ingredients: [{id: 1, qty: 0.2}, {id: 2, qty: 0.25}], active: true },
-                { id: 5, name: 'Pizza Suprema', category: 'pizza', price: 180, ingredients: [{id: 1, qty: 0.2}, {id: 2, qty: 0.2}, {id: 4, qty: 0.08}, {id: 7, qty: 0.05}, {id: 8, qty: 0.05}], active: true },
-                { id: 6, name: 'Coca Cola 600ml', category: 'drink', price: 25, ingredients: [{id: 9, qty: 1}], active: true },
-                { id: 7, name: 'Sprite 600ml', category: 'drink', price: 25, ingredients: [{id: 10, qty: 1}], active: true },
-                { id: 8, name: 'Agua Natural 600ml', category: 'drink', price: 18, ingredients: [{id: 11, qty: 1}], active: true },
-                { id: 9, name: 'Cerveza', category: 'drink', price: 35, ingredients: [{id: 12, qty: 1}], active: true },
-                { id: 10, name: 'Palitos de Ajo', category: 'extra', price: 45, ingredients: [{id: 1, qty: 0.1}, {id: 13, qty: 0.02}], active: true },
-                { id: 11, name: 'Alitas BBQ (6 pzas)', category: 'extra', price: 85, ingredients: [{id: 14, qty: 0.3}], active: true },
-                { id: 12, name: 'Ensalada César', category: 'extra', price: 65, ingredients: [{id: 15, qty: 0.15}], active: true },
-                { id: 13, name: '2x1 Margarita', category: 'promo', price: 199, ingredients: [{id: 1, qty: 0.4}, {id: 2, qty: 0.3}, {id: 3, qty: 0.2}], active: true },
-                { id: 14, name: 'Combo Familiar', category: 'promo', price: 350, ingredients: [{id: 1, qty: 0.4}, {id: 2, qty: 0.3}, {id: 4, qty: 0.15}, {id: 9, qty: 2}], active: true }
+                { id: 1, name: 'Pizza Margarita', category: 'pizza', price: 120, ingredients: [{id: 1, qty: 0.2}, {id: 2, qty: 0.15}, {id: 3, qty: 0.1}], active: true, icon: '🍕' },
+                { id: 2, name: 'Pizza Pepperoni', category: 'pizza', price: 150, ingredients: [{id: 1, qty: 0.2}, {id: 2, qty: 0.15}, {id: 4, qty: 0.1}], active: true, icon: '🍕' },
+                { id: 3, name: 'Pizza Hawaiana', category: 'pizza', price: 140, ingredients: [{id: 1, qty: 0.2}, {id: 2, qty: 0.15}, {id: 5, qty: 0.08}, {id: 6, qty: 0.05}], active: true, icon: '🍍' },
+                { id: 4, name: 'Pizza 4 Quesos', category: 'pizza', price: 160, ingredients: [{id: 1, qty: 0.2}, {id: 2, qty: 0.25}], active: true, icon: '🧀' },
+                { id: 5, name: 'Pizza Suprema', category: 'pizza', price: 180, ingredients: [{id: 1, qty: 0.2}, {id: 2, qty: 0.2}, {id: 4, qty: 0.08}, {id: 7, qty: 0.05}, {id: 8, qty: 0.05}], active: true, icon: '🍄' },
+                { id: 6, name: 'Coca Cola 600ml', category: 'drink', price: 25, ingredients: [{id: 9, qty: 1}], active: true, icon: '🥤' },
+                { id: 7, name: 'Sprite 600ml', category: 'drink', price: 25, ingredients: [{id: 10, qty: 1}], active: true, icon: '🥤' },
+                { id: 8, name: 'Agua Natural 600ml', category: 'drink', price: 18, ingredients: [{id: 11, qty: 1}], active: true, icon: '💧' },
+                { id: 9, name: 'Cerveza', category: 'drink', price: 35, ingredients: [{id: 12, qty: 1}], active: true, icon: '🍺' },
+                { id: 10, name: 'Palitos de Ajo', category: 'extra', price: 45, ingredients: [{id: 1, qty: 0.1}, {id: 13, qty: 0.02}], active: true, icon: '🥖' },
+                { id: 11, name: 'Alitas BBQ (6 pzas)', category: 'extra', price: 85, ingredients: [{id: 14, qty: 0.3}], active: true, icon: '🍗' },
+                { id: 12, name: 'Ensalada César', category: 'extra', price: 65, ingredients: [{id: 15, qty: 0.15}], active: true, icon: '🥗' },
+                { id: 13, name: '2x1 Margarita', category: 'promo', price: 199, ingredients: [{id: 1, qty: 0.4}, {id: 2, qty: 0.3}, {id: 3, qty: 0.2}], active: true, icon: '🎉' },
+                { id: 14, name: 'Combo Familiar', category: 'promo', price: 350, ingredients: [{id: 1, qty: 0.4}, {id: 2, qty: 0.3}, {id: 4, qty: 0.15}, {id: 9, qty: 2}], active: true, icon: '👨‍👩‍👧‍👦' }
             ],
             inventory: [
                 { id: 1, name: 'Masa para pizza', unit: 'kg', stock: 25, minStock: 5, cost: 30, supplier: 'Harinas del Norte' },
@@ -190,7 +238,8 @@
             cashRegister: { isOpen: false, openedBy: null, openedAt: null, initialAmount: 0, movements: [] },
             inventoryMovements: [],
             activityLog: [],
-            notifications: []
+            notifications: [],
+            kitchenReports: []
         };
 
         // ==================== STATE MANAGEMENT ====================
@@ -200,10 +249,8 @@
         let currentCart = [];
         let selectedTable = null;
 
-        // Firebase Sync Functions
         async function saveToStorage() {
             try {
-                // Guardamos todo el estado en un documento de Firestore
                 await db.collection('pizzaManager').doc('state').set(state);
             } catch (error) {
                 console.error("Error al guardar en Firebase:", error);
@@ -213,12 +260,10 @@
 
         function loadFromStorage() {
             return new Promise((resolve) => {
-                // onSnapshot permite escuchar los cambios de la BD en tiempo real
                 db.collection('pizzaManager').doc('state').onSnapshot((doc) => {
                     if (doc.exists) {
                         state = { ...DEFAULT_DATA, ...doc.data() };
                         
-                        // Si un usuario ya inició sesión, re-renderizar vistas colaborativas
                         if (currentUser) {
                             if (currentView === 'kitchen' || currentView === 'orders' || currentView === 'waiter') {
                                 renderView(currentView);
@@ -226,7 +271,6 @@
                             updateNotificationBadge();
                         }
                     } else {
-                        // Inicialización primera vez
                         state = JSON.parse(JSON.stringify(DEFAULT_DATA));
                         saveToStorage();
                     }
@@ -277,7 +321,7 @@
                 warning: 'bg-yellow-500',
                 info: 'bg-blue-500'
             };
-            toast.className = `toast ${colors[type]} text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-2`;
+            toast.className = `toast ${colors[type]} text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-2 font-medium`;
             const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
             toast.innerHTML = `<span>${icons[type]}</span><span>${message}</span>`;
             container.appendChild(toast);
@@ -286,7 +330,7 @@
 
         // ==================== AUTHENTICATION ====================
         function handleLogin() {
-            const username = document.getElementById('loginUser').value;
+            const username = document.getElementById('loginUser').value.toLowerCase();
             const password = document.getElementById('loginPass').value;
             const errorDiv = document.getElementById('loginError');
 
@@ -294,7 +338,7 @@
             
             if (user) {
                 currentUser = user;
-                localStorage.setItem('currentUser', JSON.stringify(user)); // Se queda en local por conveniencia de sesión
+                localStorage.setItem('currentUser', JSON.stringify(user));
                 logActivity('LOGIN', `Usuario ${user.name} inició sesión`);
                 errorDiv.classList.add('hidden');
                 document.getElementById('loginScreen').classList.add('hidden');
@@ -383,14 +427,14 @@
             ).slice(0, 20);
 
             if (relevant.length === 0) {
-                list.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">Sin notificaciones</p>';
+                list.innerHTML = '<p class="text-theme-textMuted text-sm text-center py-4">Sin notificaciones</p>';
                 return;
             }
 
             list.innerHTML = relevant.map(n => `
-                <div class="p-3 rounded-lg ${n.read ? 'bg-white/5' : 'bg-white/15'} text-sm cursor-pointer hover:bg-white/20 transition" onclick="markNotifRead(${n.id})">
-                    <p class="${n.read ? 'text-gray-400' : 'text-white'}">${n.message}</p>
-                    <p class="text-xs text-gray-500 mt-1">${new Date(n.timestamp).toLocaleString('es-MX')}</p>
+                <div class="p-3 rounded-lg ${n.read ? 'bg-white/40' : 'bg-white/80 border border-white'} text-sm cursor-pointer hover:bg-white transition" onclick="markNotifRead(${n.id})">
+                    <p class="${n.read ? 'text-theme-textMuted' : 'text-theme-text font-medium'}">${n.message}</p>
+                    <p class="text-xs text-theme-textMuted mt-1">${new Date(n.timestamp).toLocaleString('es-MX')}</p>
                 </div>
             `).join('');
         }
@@ -438,9 +482,9 @@
             nav.querySelector('div').innerHTML = items.map(item => `
                 <button onclick="renderView('${item.id}')" id="nav-${item.id}" 
                     class="flex items-center gap-2 px-4 py-2 rounded-xl transition whitespace-nowrap
-                    ${currentView === item.id ? 'bg-pizza-red text-white' : 'hover:bg-white/10 text-gray-300'}">
+                    ${currentView === item.id ? 'bg-theme-green text-white shadow-md font-medium' : 'hover:bg-white/60 text-theme-textMuted'}">
                     <span>${item.icon}</span>
-                    <span class="text-sm font-medium">${item.label}</span>
+                    <span class="text-sm">${item.label}</span>
                 </button>
             `).join('');
         }
@@ -482,82 +526,82 @@
 
             container.innerHTML = `
                 <div class="animate-slideIn">
-                    <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">📊 Dashboard <span class="text-sm font-normal text-gray-400">Resumen del día</span></h2>
+                    <h2 class="text-2xl font-bold mb-6 flex items-center gap-3 text-theme-greenDark">📊 Dashboard <span class="text-sm font-normal text-theme-textMuted">Resumen del día</span></h2>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                        <div class="glass rounded-2xl p-5 card-hover">
+                        <div class="glass rounded-2xl p-5 card-hover bg-white/60">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-gray-400 text-sm">Ventas Hoy</p>
-                                    <p class="text-3xl font-bold text-green-400">$${totalToday.toLocaleString()}</p>
+                                    <p class="text-theme-textMuted text-sm font-medium">Ventas Hoy</p>
+                                    <p class="text-3xl font-bold text-green-600">$${totalToday.toLocaleString()}</p>
                                 </div>
                                 <span class="text-4xl">💰</span>
                             </div>
-                            <p class="text-xs text-gray-500 mt-2">${todaySales.length} transacciones</p>
+                            <p class="text-xs text-theme-textMuted mt-2">${todaySales.length} transacciones</p>
                         </div>
-                        <div class="glass rounded-2xl p-5 card-hover">
+                        <div class="glass rounded-2xl p-5 card-hover bg-white/60">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-gray-400 text-sm">Pedidos Hoy</p>
-                                    <p class="text-3xl font-bold text-blue-400">${ordersToday}</p>
+                                    <p class="text-theme-textMuted text-sm font-medium">Pedidos Hoy</p>
+                                    <p class="text-3xl font-bold text-blue-600">${ordersToday}</p>
                                 </div>
                                 <span class="text-4xl">📋</span>
                             </div>
-                            <p class="text-xs text-gray-500 mt-2">${pendingOrders} pendientes</p>
+                            <p class="text-xs text-theme-textMuted mt-2">${pendingOrders} pendientes</p>
                         </div>
-                        <div class="glass rounded-2xl p-5 card-hover">
+                        <div class="glass rounded-2xl p-5 card-hover bg-white/60">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-gray-400 text-sm">Productos</p>
-                                    <p class="text-3xl font-bold text-purple-400">${state.products.filter(p => p.active).length}</p>
+                                    <p class="text-theme-textMuted text-sm font-medium">Productos</p>
+                                    <p class="text-3xl font-bold text-purple-600">${state.products.filter(p => p.active).length}</p>
                                 </div>
                                 <span class="text-4xl">🍕</span>
                             </div>
-                            <p class="text-xs text-gray-500 mt-2">activos en menú</p>
+                            <p class="text-xs text-theme-textMuted mt-2">activos en menú</p>
                         </div>
-                        <div class="glass rounded-2xl p-5 card-hover ${lowStockItems > 0 ? 'border-2 border-red-500' : ''}">
+                        <div class="glass rounded-2xl p-5 card-hover bg-white/60 ${lowStockItems > 0 ? 'border-2 border-red-400' : ''}">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-gray-400 text-sm">Stock Bajo</p>
-                                    <p class="text-3xl font-bold ${lowStockItems > 0 ? 'text-red-400' : 'text-green-400'}">${lowStockItems}</p>
+                                    <p class="text-theme-textMuted text-sm font-medium">Stock Bajo</p>
+                                    <p class="text-3xl font-bold ${lowStockItems > 0 ? 'text-red-600' : 'text-green-600'}">${lowStockItems}</p>
                                 </div>
                                 <span class="text-4xl">${lowStockItems > 0 ? '⚠️' : '✅'}</span>
                             </div>
-                            <p class="text-xs text-gray-500 mt-2">insumos por reabastecer</p>
+                            <p class="text-xs text-theme-textMuted mt-2">insumos por reabastecer</p>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div class="glass rounded-2xl p-5">
-                            <h3 class="font-bold mb-4 flex items-center gap-2">🔥 Pedidos Activos</h3>
-                            <div class="space-y-3 max-h-80 overflow-auto scrollbar-thin">
+                        <div class="glass rounded-2xl p-5 bg-white/60">
+                            <h3 class="font-bold mb-4 flex items-center gap-2 text-theme-greenDark">🔥 Pedidos Activos</h3>
+                            <div class="space-y-3 max-h-80 overflow-auto scrollbar-thin pr-2">
                                 ${state.orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled').slice(0, 10).map(o => `
-                                    <div class="flex items-center justify-between p-3 rounded-xl bg-white/5">
+                                    <div class="flex items-center justify-between p-3 rounded-xl bg-white border border-white/50 shadow-sm">
                                         <div>
-                                            <p class="font-medium">#${o.id} - ${o.type === 'table' ? `Mesa ${o.tableId}` : 'Mostrador'}</p>
-                                            <p class="text-xs text-gray-400">${o.items.length} productos • $${o.total}</p>
+                                            <p class="font-bold text-theme-text">#${o.id.toString().slice(-4)} - ${o.type === 'table' ? `Mesa ${o.tableId}` : 'Mostrador'}</p>
+                                            <p class="text-xs text-theme-textMuted font-medium">${o.items.length} productos • <span class="text-theme-greenDark font-bold">$${o.total}</span></p>
                                         </div>
-                                        <span class="px-3 py-1 rounded-full text-xs font-medium ${getStatusClass(o.status)}">${getStatusLabel(o.status)}</span>
+                                        <span class="px-3 py-1 rounded-full text-xs font-bold shadow-sm ${getStatusClass(o.status)}">${getStatusLabel(o.status)}</span>
                                     </div>
-                                `).join('') || '<p class="text-gray-400 text-center py-4">Sin pedidos activos</p>'}
+                                `).join('') || '<p class="text-theme-textMuted text-center py-4">Sin pedidos activos</p>'}
                             </div>
                         </div>
 
-                        <div class="glass rounded-2xl p-5">
-                            <h3 class="font-bold mb-4 flex items-center gap-2">📦 Alertas de Inventario</h3>
-                            <div class="space-y-3 max-h-80 overflow-auto scrollbar-thin">
+                        <div class="glass rounded-2xl p-5 bg-white/60">
+                            <h3 class="font-bold mb-4 flex items-center gap-2 text-theme-greenDark">📦 Alertas de Inventario</h3>
+                            <div class="space-y-3 max-h-80 overflow-auto scrollbar-thin pr-2">
                                 ${state.inventory.filter(i => i.stock <= i.minStock).map(i => `
-                                    <div class="flex items-center justify-between p-3 rounded-xl bg-red-500/20 border border-red-500/30">
+                                    <div class="flex items-center justify-between p-3 rounded-xl bg-red-50 border border-red-200">
                                         <div>
-                                            <p class="font-medium">${i.name}</p>
-                                            <p class="text-xs text-gray-400">Proveedor: ${i.supplier}</p>
+                                            <p class="font-bold text-theme-text">${i.name}</p>
+                                            <p class="text-xs text-theme-textMuted">Proveedor: ${i.supplier}</p>
                                         </div>
                                         <div class="text-right">
-                                            <p class="text-red-400 font-bold">${i.stock} ${i.unit}</p>
-                                            <p class="text-xs text-gray-400">Mín: ${i.minStock}</p>
+                                            <p class="text-red-600 font-bold">${i.stock} ${i.unit}</p>
+                                            <p class="text-xs text-red-400">Mín: ${i.minStock}</p>
                                         </div>
                                     </div>
-                                `).join('') || '<p class="text-green-400 text-center py-4">✅ Todo el inventario está OK</p>'}
+                                `).join('') || '<p class="text-green-600 font-medium text-center py-4">✅ Todo el inventario está OK</p>'}
                             </div>
                         </div>
                     </div>
@@ -565,15 +609,16 @@
             `;
         }
 
+        // Colores pastel para los estados
         function getStatusClass(status) {
             const classes = {
-                pending: 'status-pending text-black',
-                preparing: 'status-preparing text-white',
-                ready: 'status-ready text-white',
-                delivered: 'status-delivered text-white',
-                cancelled: 'bg-gray-500 text-white'
+                pending: 'bg-yellow-200 text-yellow-800',
+                preparing: 'bg-blue-200 text-blue-800',
+                ready: 'bg-green-200 text-green-800',
+                delivered: 'bg-purple-200 text-purple-800',
+                cancelled: 'bg-gray-300 text-gray-800'
             };
-            return classes[status] || 'bg-gray-500';
+            return classes[status] || 'bg-gray-300';
         }
 
         function getStatusLabel(status) {
@@ -595,43 +640,43 @@
                 <div class="animate-slideIn h-full flex flex-col lg:flex-row gap-4">
                     <div class="flex-1 flex flex-col min-h-0">
                         <div class="flex items-center justify-between mb-4">
-                            <h2 class="text-xl font-bold flex items-center gap-2">🛒 Punto de Venta</h2>
+                            <h2 class="text-xl font-bold flex items-center gap-2 text-theme-greenDark">🛒 Punto de Venta</h2>
                             <div class="flex gap-2">
                                 ${categories.map(c => `
                                     <button onclick="filterPOSProducts('${c.id}')" id="cat-${c.id}" 
-                                        class="px-3 py-2 rounded-xl text-sm transition ${c.id === 'all' ? 'bg-pizza-red' : 'bg-white/10 hover:bg-white/20'}">
+                                        class="px-3 py-2 rounded-xl text-sm transition font-medium border border-white ${c.id === 'all' ? 'bg-theme-green text-white shadow-md' : 'bg-white/60 hover:bg-white/90 text-theme-textMuted'}">
                                         ${c.icon} ${c.name}
                                     </button>
                                 `).join('')}
                             </div>
                         </div>
-                        <div id="posProducts" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 overflow-auto flex-1 scrollbar-thin pb-4">
+                        <div id="posProducts" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 overflow-auto flex-1 scrollbar-thin pb-4 pr-2">
                             ${renderPOSProducts('all')}
                         </div>
                     </div>
 
-                    <div class="w-full lg:w-96 glass rounded-2xl p-4 flex flex-col">
+                    <div class="w-full lg:w-96 glass bg-white/50 rounded-2xl p-4 flex flex-col">
                         <div class="flex items-center justify-between mb-4">
-                            <h3 class="font-bold flex items-center gap-2">🧾 Cuenta</h3>
-                            <button onclick="clearCart()" class="text-xs text-red-400 hover:text-red-300">Limpiar</button>
+                            <h3 class="font-bold flex items-center gap-2 text-theme-greenDark">🧾 Cuenta</h3>
+                            <button onclick="clearCart()" class="text-xs font-bold text-red-500 hover:text-red-600 bg-white/60 px-2 py-1 rounded-lg transition">Limpiar</button>
                         </div>
-                        <div id="cartItems" class="flex-1 overflow-auto scrollbar-thin space-y-2 mb-4">
+                        <div id="cartItems" class="flex-1 overflow-auto scrollbar-thin space-y-2 mb-4 pr-1">
                             ${renderCartItems()}
                         </div>
-                        <div class="border-t border-white/20 pt-4 space-y-3">
-                            <div class="flex justify-between text-lg">
+                        <div class="border-t border-theme-beige pt-4 space-y-3">
+                            <div class="flex justify-between text-lg font-medium">
                                 <span>Subtotal:</span>
                                 <span id="cartSubtotal">$${calculateCartTotal().toLocaleString()}</span>
                             </div>
-                            <div class="flex justify-between text-2xl font-bold text-pizza-yellow">
+                            <div class="flex justify-between text-2xl font-bold text-theme-greenDark">
                                 <span>Total:</span>
                                 <span id="cartTotal">$${calculateCartTotal().toLocaleString()}</span>
                             </div>
                             <div class="grid grid-cols-2 gap-2">
-                                <button onclick="processPayment('cash')" class="btn-primary py-3 rounded-xl font-medium flex items-center justify-center gap-2" ${currentCart.length === 0 ? 'disabled' : ''}>
+                                <button onclick="processPayment('cash')" class="btn-primary py-3 rounded-xl font-medium flex items-center justify-center gap-2 shadow-md" ${currentCart.length === 0 ? 'disabled' : ''}>
                                     💵 Efectivo
                                 </button>
-                                <button onclick="processPayment('transfer')" class="bg-blue-600 hover:bg-blue-700 py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition" ${currentCart.length === 0 ? 'disabled' : ''}>
+                                <button onclick="processPayment('transfer')" class="bg-blue-400 hover:bg-blue-500 text-white py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition shadow-md" ${currentCart.length === 0 ? 'disabled' : ''}>
                                     📱 Transferencia
                                 </button>
                             </div>
@@ -648,27 +693,27 @@
 
             return filtered.map(p => {
                 const categoryIcons = { pizza: '🍕', drink: '🥤', extra: '🍟', promo: '🎉' };
-                // Usamos el icono personalizado del producto, o el de la categoría por defecto
                 const displayIcon = p.icon || categoryIcons[p.category] || '🍽️';
                 
                 return `
                     <div onclick="addToCart(${p.id})" 
-                        class="glass rounded-xl p-4 cursor-pointer card-hover hover:border-pizza-orange border border-transparent">
-                        <div class="text-3xl mb-2">${displayIcon}</div>
-                        <h4 class="font-medium text-sm mb-1 line-clamp-2">${p.name}</h4>
-                        <p class="text-pizza-yellow font-bold">$${p.price}</p>
+                        class="bg-white/80 rounded-xl p-4 cursor-pointer card-hover hover:border-theme-green border-2 border-transparent shadow-sm flex flex-col items-center text-center">
+                        <div class="text-4xl mb-2 drop-shadow-sm">${displayIcon}</div>
+                        <h4 class="font-bold text-sm mb-1 line-clamp-2 text-theme-text">${p.name}</h4>
+                        <p class="text-theme-greenDark font-extrabold text-lg">$${p.price}</p>
                     </div>
                 `;
-            }).join('') || '<p class="col-span-full text-center text-gray-400 py-8">No hay productos en esta categoría</p>';
+            }).join('') || '<p class="col-span-full text-center text-theme-textMuted py-8">No hay productos en esta categoría</p>';
         }
 
         function filterPOSProducts(category) {
             document.querySelectorAll('[id^="cat-"]').forEach(btn => {
-                btn.classList.remove('bg-pizza-red');
-                btn.classList.add('bg-white/10');
+                btn.classList.remove('bg-theme-green', 'text-white', 'shadow-md');
+                btn.classList.add('bg-white/60', 'text-theme-textMuted');
             });
-            document.getElementById(`cat-${category}`).classList.remove('bg-white/10');
-            document.getElementById(`cat-${category}`).classList.add('bg-pizza-red');
+            const activeBtn = document.getElementById(`cat-${category}`);
+            activeBtn.classList.remove('bg-white/60', 'text-theme-textMuted');
+            activeBtn.classList.add('bg-theme-green', 'text-white', 'shadow-md');
             document.getElementById('posProducts').innerHTML = renderPOSProducts(category);
         }
 
@@ -683,7 +728,6 @@
                 currentCart.push({ productId, name: product.name, price: product.price, quantity: 1 });
             }
             updateCartDisplay();
-            showToast(`${product.name} agregado`, 'success');
         }
 
         function removeFromCart(productId) {
@@ -710,19 +754,18 @@
 
         function renderCartItems() {
             if (currentCart.length === 0) {
-                return '<p class="text-gray-400 text-center py-8">Carrito vacío</p>';
+                return '<p class="text-theme-textMuted text-center py-8">El carrito está vacío</p>';
             }
             return currentCart.map(item => `
-                <div class="flex items-center justify-between p-3 rounded-xl bg-white/5">
-                    <div class="flex-1">
-                        <p class="font-medium text-sm">${item.name}</p>
-                        <p class="text-pizza-yellow text-sm">$${item.price} c/u</p>
+                <div class="flex items-center justify-between p-3 rounded-xl bg-white shadow-sm border border-theme-beige">
+                    <div class="flex-1 pr-2">
+                        <p class="font-bold text-sm text-theme-text line-clamp-1">${item.name}</p>
+                        <p class="text-theme-greenDark font-bold text-sm">$${item.price} c/u</p>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <button onclick="updateCartItemQty(${item.productId}, -1)" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 transition">-</button>
-                        <span class="w-8 text-center">${item.quantity}</span>
-                        <button onclick="updateCartItemQty(${item.productId}, 1)" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 transition">+</button>
-                        <button onclick="removeFromCart(${item.productId})" class="text-red-400 hover:text-red-300 ml-2">🗑️</button>
+                    <div class="flex items-center gap-2 bg-theme-bg p-1 rounded-lg border border-theme-beige">
+                        <button onclick="updateCartItemQty(${item.productId}, -1)" class="w-7 h-7 rounded-md bg-white hover:bg-theme-beige transition text-theme-text font-bold">-</button>
+                        <span class="w-6 text-center font-bold">${item.quantity}</span>
+                        <button onclick="updateCartItemQty(${item.productId}, 1)" class="w-7 h-7 rounded-md bg-white hover:bg-theme-beige transition text-theme-text font-bold">+</button>
                     </div>
                 </div>
             `).join('');
@@ -766,30 +809,32 @@
         function showCashPaymentModal(total) {
             const modal = document.getElementById('modalContainer');
             modal.innerHTML = `
-                <div class="glass rounded-2xl p-6 w-full max-w-md animate-slideIn">
-                    <h3 class="text-xl font-bold mb-4 flex items-center gap-2">💵 Pago en Efectivo</h3>
+                <div class="glass bg-white/90 rounded-3xl p-6 w-full max-w-md animate-slideIn border-2 border-white shadow-2xl">
+                    <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-theme-greenDark">💵 Pago en Efectivo</h3>
                     <div class="space-y-4">
-                        <div class="text-center p-4 rounded-xl bg-pizza-yellow/20">
-                            <p class="text-sm text-gray-300">Total a pagar</p>
-                            <p class="text-4xl font-bold text-pizza-yellow">$${total.toLocaleString()}</p>
+                        <div class="text-center p-4 rounded-xl bg-theme-bg border border-theme-beige">
+                            <p class="text-sm text-theme-textMuted font-medium">Total a pagar</p>
+                            <p class="text-4xl font-extrabold text-theme-greenDark mt-1">$${total.toLocaleString()}</p>
                         </div>
                         <div>
-                            <label class="block text-sm mb-2">Cantidad recibida</label>
-                            <input type="number" id="cashReceived" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-2xl text-center" 
+                            <label class="block text-sm font-medium mb-2 text-theme-text">Cantidad recibida</label>
+                            <input type="number" id="cashReceived" class="w-full px-4 py-3 bg-white border-2 border-theme-beige rounded-xl text-2xl text-center focus:outline-none focus:border-theme-green font-bold text-theme-text" 
                                 placeholder="0" oninput="calculateChange(${total})">
                         </div>
-                        <div id="changeDisplay" class="text-center p-4 rounded-xl bg-green-500/20 hidden">
-                            <p class="text-sm text-gray-300">Cambio</p>
-                            <p class="text-3xl font-bold text-green-400">$<span id="changeAmount">0</span></p>
+                        <div id="changeDisplay" class="text-center p-4 rounded-xl bg-green-50 border border-green-200 hidden">
+                            <p class="text-sm text-green-700 font-medium">Su Cambio</p>
+                            <p class="text-3xl font-extrabold text-green-600 mt-1">$<span id="changeAmount">0</span></p>
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white/10 hover:bg-white/20 transition">Cancelar</button>
-                            <button onclick="completeCashPayment(${total})" id="confirmPaymentBtn" class="btn-primary py-3 rounded-xl" disabled>Confirmar</button>
+                        <div class="grid grid-cols-2 gap-3 pt-2">
+                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-medium">Cancelar</button>
+                            <button onclick="completeCashPayment(${total})" id="confirmPaymentBtn" class="btn-primary py-3 rounded-xl font-bold shadow-md" disabled>Confirmar Pago</button>
                         </div>
                     </div>
                 </div>
             `;
             modal.classList.remove('hidden');
+            // Auto focus for faster typing
+            setTimeout(() => document.getElementById('cashReceived').focus(), 100);
         }
 
         function calculateChange(total) {
@@ -875,11 +920,11 @@
                 });
             }
 
-            logActivity('SALE', `Venta #${orderId} por $${total} - ${paymentMethod}`);
-            addNotification('info', `🍕 Nuevo pedido #${orderId}`, ['kitchen']);
+            logActivity('SALE', `Venta #${orderId.toString().slice(-4)} por $${total} - ${paymentMethod}`);
+            addNotification('info', `🍕 Nuevo pedido #${orderId.toString().slice(-4)}`, ['kitchen']);
             
             saveToStorage();
-            showToast(`Venta completada - Ticket #${orderId}`, 'success');
+            showToast(`Venta completada - Ticket #${orderId.toString().slice(-4)}`, 'success');
             showReceipt(sale);
             
             currentCart = [];
@@ -889,48 +934,48 @@
         function showReceipt(sale) {
             const modal = document.getElementById('modalContainer');
             modal.innerHTML = `
-                <div class="bg-white text-black rounded-2xl p-6 w-full max-w-sm animate-slideIn">
-                    <div class="text-center border-b border-gray-300 pb-4 mb-4">
-                        <p class="text-4xl mb-2">🍕</p>
-                        <h3 class="text-xl font-bold">PIZZERÍA</h3>
-                        <p class="text-sm text-gray-500">Ticket de Venta</p>
-                        <p class="text-xs text-gray-400">${new Date(sale.timestamp).toLocaleString('es-MX')}</p>
+                <div class="bg-white text-theme-text rounded-3xl p-8 w-full max-w-sm animate-slideIn shadow-2xl">
+                    <div class="text-center border-b-2 border-dashed border-theme-beige pb-6 mb-6">
+                        <p class="text-5xl mb-3">🍕</p>
+                        <h3 class="text-2xl font-extrabold text-theme-greenDark">PIZZERÍA</h3>
+                        <p class="text-sm text-theme-textMuted font-medium">Ticket de Venta</p>
+                        <p class="text-xs text-theme-textMuted mt-1">${new Date(sale.timestamp).toLocaleString('es-MX')}</p>
                     </div>
-                    <div class="space-y-2 mb-4 text-sm">
+                    <div class="space-y-3 mb-6 text-sm font-medium">
                         ${sale.items.map(item => `
                             <div class="flex justify-between">
                                 <span>${item.quantity}x ${item.name}</span>
-                                <span>$${(item.price * item.quantity).toLocaleString()}</span>
+                                <span class="font-bold">$${(item.price * item.quantity).toLocaleString()}</span>
                             </div>
                         `).join('')}
                     </div>
-                    <div class="border-t border-gray-300 pt-4 space-y-2">
-                        <div class="flex justify-between font-bold text-lg">
+                    <div class="border-t-2 border-dashed border-theme-beige pt-6 space-y-3">
+                        <div class="flex justify-between font-extrabold text-xl text-theme-greenDark">
                             <span>TOTAL:</span>
                             <span>$${sale.total.toLocaleString()}</span>
                         </div>
                         ${sale.paymentMethod === 'cash' ? `
-                            <div class="flex justify-between text-sm">
+                            <div class="flex justify-between text-sm text-theme-textMuted">
                                 <span>Efectivo:</span>
                                 <span>$${sale.cashReceived?.toLocaleString()}</span>
                             </div>
-                            <div class="flex justify-between text-sm">
+                            <div class="flex justify-between text-sm text-theme-textMuted">
                                 <span>Cambio:</span>
                                 <span>$${sale.change?.toLocaleString()}</span>
                             </div>
                         ` : `
-                            <div class="flex justify-between text-sm">
+                            <div class="flex justify-between text-sm text-theme-textMuted">
                                 <span>Método:</span>
-                                <span>Transferencia</span>
+                                <span class="font-bold">Transferencia</span>
                             </div>
                         `}
                     </div>
-                    <div class="text-center mt-4 pt-4 border-t border-gray-300">
-                        <p class="text-xs text-gray-500">¡Gracias por su compra!</p>
-                        <p class="text-xs text-gray-400">Ticket #${sale.orderId}</p>
+                    <div class="text-center mt-8 pt-6 border-t border-theme-beige">
+                        <p class="text-sm font-bold text-theme-greenDark">¡Gracias por su compra!</p>
+                        <p class="text-xs text-theme-textMuted mt-1">Ticket #${sale.orderId.toString().slice(-4)}</p>
                     </div>
-                    <button onclick="closeModal()" class="w-full mt-4 py-3 bg-gray-800 text-white rounded-xl hover:bg-gray-700 transition">
-                        Cerrar
+                    <button onclick="closeModal()" class="w-full mt-6 py-4 bg-theme-bg text-theme-text font-bold rounded-xl border border-theme-beige hover:bg-theme-beige transition">
+                        Cerrar Ticket
                     </button>
                 </div>
             `;
@@ -942,103 +987,153 @@
         }
 
         // ==================== KITCHEN MODULE ====================
-        // ==================== KITCHEN MODULE ====================
-        let currentKitchenTab = 'active'; // Variable para controlar la pestaña actual
+        let currentKitchenTab = 'active'; 
 
         function renderKitchen(container, tab = currentKitchenTab) {
             currentKitchenTab = tab;
-            const today = new Date().toDateString();
             
-            // Filtrar pedidos del día de hoy
-            const allTodayOrders = state.orders.filter(o => new Date(o.createdAt).toDateString() === today);
-            
-            // Separar entre pendientes y terminados
-            const pendingOrders = allTodayOrders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled')
+            const pendingOrders = state.orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled')
                 .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
                 
-            const historyOrders = allTodayOrders.filter(o => o.status === 'delivered' || o.status === 'ready' || o.status === 'cancelled')
-                .sort((a, b) => new Date(b.statusUpdatedAt || b.createdAt) - new Date(a.statusUpdatedAt || a.createdAt));
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            sevenDaysAgo.setHours(0,0,0,0);
 
-            const displayOrders = tab === 'active' ? pendingOrders : historyOrders;
+            const historyOrders = state.orders.filter(o => {
+                const isHistoryStatus = ['delivered', 'ready', 'cancelled'].includes(o.status);
+                const isRecent = new Date(o.createdAt) >= sevenDaysAgo;
+                return isHistoryStatus && isRecent;
+            }).sort((a, b) => new Date(b.statusUpdatedAt || b.createdAt) - new Date(a.statusUpdatedAt || a.createdAt));
+
+            const groupedHistory = {};
+            historyOrders.forEach(o => {
+                const dateObj = new Date(o.statusUpdatedAt || o.createdAt);
+                const dateLabel = dateObj.toLocaleDateString('es-MX', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' });
+                const sortKey = dateObj.toLocaleDateString('en-CA'); 
+                
+                if (!groupedHistory[sortKey]) {
+                    groupedHistory[sortKey] = {
+                        label: dateLabel,
+                        orders: []
+                    };
+                }
+                groupedHistory[sortKey].orders.push(o);
+            });
+
+            const sortedDateKeys = Object.keys(groupedHistory).sort((a, b) => new Date(b) - new Date(a));
 
             container.innerHTML = `
                 <div class="animate-slideIn h-full flex flex-col">
                     <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4 shrink-0">
                         <div class="flex flex-col md:flex-row items-start md:items-center gap-4">
-                            <h2 class="text-2xl font-bold flex items-center gap-3">👨‍🍳 Cocina</h2>
+                            <h2 class="text-2xl font-bold flex items-center gap-3 text-theme-greenDark">👨‍🍳 Cocina</h2>
                             
-                            <div class="flex bg-white/5 p-1 rounded-xl border border-white/10">
+                            <div class="flex bg-white/60 p-1 rounded-xl border border-white">
                                 <button onclick="renderKitchen(document.getElementById('contentArea'), 'active')" 
-                                    class="${tab === 'active' ? 'bg-pizza-red text-white shadow-lg' : 'text-gray-400 hover:text-white'} px-4 py-2 rounded-lg text-sm transition font-medium">
+                                    class="${tab === 'active' ? 'bg-theme-green text-white shadow-md' : 'text-theme-textMuted hover:bg-white/50'} px-4 py-2 rounded-lg text-sm transition font-bold">
                                     🔥 Activos (${pendingOrders.length})
                                 </button>
                                 <button onclick="renderKitchen(document.getElementById('contentArea'), 'history')" 
-                                    class="${tab === 'history' ? 'bg-pizza-red text-white shadow-lg' : 'text-gray-400 hover:text-white'} px-4 py-2 rounded-lg text-sm transition font-medium">
-                                    📜 Historial (${historyOrders.length})
+                                    class="${tab === 'history' ? 'bg-theme-green text-white shadow-md' : 'text-theme-textMuted hover:bg-white/50'} px-4 py-2 rounded-lg text-sm transition font-bold">
+                                    📅 Historial Semanal
                                 </button>
                             </div>
                         </div>
                         
-                        <button onclick="showKitchenReportModal()" class="btn-primary px-5 py-2.5 rounded-xl flex items-center gap-2 text-sm font-bold shadow-lg">
+                        <button onclick="showKitchenReportModal()" class="btn-primary px-5 py-2.5 rounded-xl flex items-center gap-2 text-sm font-bold shadow-md">
                             📝 Reporte del Día
                         </button>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 overflow-auto pb-4 scrollbar-thin">
-                        ${displayOrders.map(order => {
-                            const isHistory = tab === 'history';
-                            // Calcular tiempo de espera. Si está en historial, usa el tiempo en que se terminó.
-                            const endTime = order.statusUpdatedAt ? new Date(order.statusUpdatedAt) : new Date();
-                            const waitTime = Math.floor((endTime - new Date(order.createdAt)) / 60000);
-                                
-                            return `
-                                <div class="glass rounded-2xl p-4 flex flex-col ${isHistory ? 'opacity-75 border-l-4 border-l-green-500' : 'card-hover'} ${!isHistory && waitTime > 15 ? 'border-2 border-red-500' : ''} ${!isHistory && waitTime > 10 && waitTime <= 15 ? 'border-2 border-yellow-500' : ''}">
-                                    <div class="flex items-center justify-between mb-3">
-                                        <div>
-                                            <span class="text-xl font-bold">#${order.id.toString().slice(-4)}</span>
-                                            <span class="ml-2 px-2 py-1 rounded-full text-xs ${order.type === 'table' ? 'bg-purple-500' : 'bg-blue-500'}">
-                                                ${order.type === 'table' ? `Mesa ${order.tableId}` : 'Mostrador'}
-                                            </span>
-                                        </div>
-                                        <span class="text-xs ${!isHistory && waitTime > 15 ? 'text-red-400 animate-pulse-custom font-bold' : !isHistory && waitTime > 10 ? 'text-yellow-400' : 'text-gray-400'}">
-                                            ⏱️ ${waitTime} min
-                                        </span>
-                                    </div>
-                                    <div class="space-y-2 mb-4 flex-1">
-                                        ${order.items.map(item => `
-                                            <div class="flex justify-between text-sm p-2 rounded-lg bg-white/5 border border-white/5">
-                                                <span>${item.quantity}x ${item.name}</span>
-                                            </div>
-                                        `).join('')}
-                                    </div>
-                                    <div class="flex items-center justify-between mt-auto border-t border-white/10 pt-3">
-                                        <span class="px-3 py-1 rounded-full text-xs font-medium ${getStatusClass(order.status)}">
-                                            ${getStatusLabel(order.status)}
-                                        </span>
-                                        
-                                        ${!isHistory ? `
-                                            <div class="flex gap-2">
-                                                ${order.status === 'pending' ? `
-                                                    <button onclick="updateOrderStatus(${order.id}, 'preparing')" class="px-3 py-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-sm font-medium transition shadow-lg">
-                                                        🍳 Preparar
-                                                    </button>
-                                                ` : order.status === 'preparing' ? `
-                                                    <button onclick="updateOrderStatus(${order.id}, 'ready')" class="px-3 py-1.5 rounded-lg bg-green-500 hover:bg-green-600 text-sm font-medium transition shadow-lg">
-                                                        ✅ Listo
-                                                    </button>
-                                                ` : order.status === 'ready' ? `
-                                                    <button onclick="updateOrderStatus(${order.id}, 'delivered')" class="px-3 py-1.5 rounded-lg bg-purple-500 hover:bg-purple-600 text-sm font-medium transition shadow-lg">
-                                                        🚀 Entregar
-                                                    </button>
-                                                ` : ''}
-                                            </div>
-                                        ` : `
-                                            <span class="text-xs text-gray-500">Terminado: ${new Date(order.statusUpdatedAt || order.createdAt).toLocaleTimeString('es-MX', {hour: '2-digit', minute:'2-digit'})}</span>
-                                        `}
-                                    </div>
-                                </div>
-                            `;
-                        }).join('') || `<p class="col-span-full text-center text-gray-400 py-12 text-xl">${tab === 'active' ? '🎉 ¡La cocina está al día!' : 'No hay pedidos terminados hoy.'}</p>`}
+                    <div class="overflow-auto pb-4 scrollbar-thin flex-1 pr-2">
+                        ${tab === 'active' ? renderActiveOrders(pendingOrders) : renderWeeklyHistory(groupedHistory, sortedDateKeys)}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderActiveOrders(orders) {
+            if (orders.length === 0) return '<div class="h-full flex items-center justify-center"><p class="text-theme-textMuted py-12 text-xl font-medium">🎉 ¡La cocina está al día!</p></div>';
+            
+            return `
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    ${orders.map(order => renderOrderCard(order, false)).join('')}
+                </div>
+            `;
+        }
+
+        function renderWeeklyHistory(groupedHistory, sortedKeys) {
+            if (sortedKeys.length === 0) return '<div class="h-full flex items-center justify-center"><p class="text-theme-textMuted py-12 text-xl font-medium">No hay pedidos registrados en los últimos 7 días.</p></div>';
+
+            return `
+                <div class="space-y-8">
+                    ${sortedKeys.map(dateKey => `
+                        <div class="bg-white/60 rounded-2xl p-5 border border-white animate-slideIn shadow-sm">
+                            <h3 class="text-lg font-bold text-theme-greenDark mb-4 border-b border-theme-beige pb-3 capitalize flex items-center gap-3">
+                                📅 ${groupedHistory[dateKey].label}
+                                <span class="text-xs text-white bg-theme-green px-3 py-1 rounded-full font-bold shadow-sm">
+                                    ${groupedHistory[dateKey].orders.length} pedidos
+                                </span>
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                ${groupedHistory[dateKey].orders.map(order => renderOrderCard(order, true)).join('')}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function renderOrderCard(order, isHistory) {
+            const endTime = order.statusUpdatedAt ? new Date(order.statusUpdatedAt) : new Date();
+            const waitTime = Math.floor((endTime - new Date(order.createdAt)) / 60000);
+                
+            return `
+                <div class="bg-white rounded-2xl p-4 flex flex-col border border-white shadow-sm ${isHistory ? 'opacity-80 border-l-4 border-l-green-400 bg-theme-bg' : 'card-hover'} ${!isHistory && waitTime > 15 ? 'border-2 border-red-400 shadow-[0_0_15px_rgba(239,68,68,0.2)]' : ''} ${!isHistory && waitTime > 10 && waitTime <= 15 ? 'border-2 border-yellow-400' : ''}">
+                    <div class="flex items-center justify-between mb-3">
+                        <div>
+                            <span class="text-xl font-extrabold text-theme-text">#${order.id.toString().slice(-4)}</span>
+                            <span class="ml-2 px-2 py-1 rounded-full text-xs font-bold text-white shadow-sm ${order.type === 'table' ? 'bg-purple-400' : 'bg-blue-400'}">
+                                ${order.type === 'table' ? `Mesa ${order.tableId}` : 'Mostrador'}
+                            </span>
+                        </div>
+                        <span class="text-xs ${!isHistory && waitTime > 15 ? 'text-red-600 animate-pulse-custom font-extrabold' : !isHistory && waitTime > 10 ? 'text-yellow-600 font-bold' : 'text-theme-textMuted font-medium'}">
+                            ⏱️ ${waitTime} min
+                        </span>
+                    </div>
+                    <div class="space-y-2 mb-4 flex-1">
+                        ${order.items.map(item => `
+                            <div class="flex justify-between text-sm p-2 rounded-lg bg-theme-bg border border-theme-beige text-theme-text font-medium">
+                                <span><strong class="text-theme-greenDark mr-1">${item.quantity}x</strong> ${item.name}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="flex items-center justify-between mt-auto border-t border-theme-beige pt-3">
+                        <span class="px-3 py-1 rounded-full text-xs font-bold ${getStatusClass(order.status)}">
+                            ${getStatusLabel(order.status)}
+                        </span>
+                        
+                        ${!isHistory ? `
+                            <div class="flex gap-2">
+                                ${order.status === 'pending' ? `
+                                    <button onclick="updateOrderStatus(${order.id}, 'preparing')" class="px-3 py-1.5 rounded-lg bg-blue-500 text-white hover:bg-blue-600 text-sm font-bold transition shadow-sm">
+                                        🍳 Preparar
+                                    </button>
+                                ` : order.status === 'preparing' ? `
+                                    <button onclick="updateOrderStatus(${order.id}, 'ready')" class="px-3 py-1.5 rounded-lg bg-green-500 text-white hover:bg-green-600 text-sm font-bold transition shadow-sm">
+                                        ✅ Listo
+                                    </button>
+                                ` : order.status === 'ready' ? `
+                                    <button onclick="updateOrderStatus(${order.id}, 'delivered')" class="px-3 py-1.5 rounded-lg bg-purple-500 text-white hover:bg-purple-600 text-sm font-bold transition shadow-sm">
+                                        🚀 Entregar
+                                    </button>
+                                ` : ''}
+                            </div>
+                        ` : `
+                            <span class="text-xs text-theme-textMuted bg-white border border-theme-beige px-2 py-1 rounded-lg font-medium">
+                                ✅ ${new Date(order.statusUpdatedAt || order.createdAt).toLocaleTimeString('es-MX', {hour: '2-digit', minute:'2-digit'})}
+                            </span>
+                        `}
                     </div>
                 </div>
             `;
@@ -1048,7 +1143,7 @@
             const order = state.orders.find(o => o.id === orderId);
             if (order) {
                 order.status = newStatus;
-                order.statusUpdatedAt = new Date().toISOString(); // Importante para saber cuándo se terminó
+                order.statusUpdatedAt = new Date().toISOString(); 
                 order.statusUpdatedBy = currentUser.id;
 
                 if (newStatus === 'ready') {
@@ -1070,7 +1165,6 @@
             const today = new Date().toDateString();
             const todayOrders = state.orders.filter(o => new Date(o.createdAt).toDateString() === today && o.status !== 'cancelled');
             
-            // Sumarizar productos preparados
             const productCounts = {};
             todayOrders.forEach(order => {
                 order.items.forEach(item => {
@@ -1084,47 +1178,47 @@
 
             const modal = document.getElementById('modalContainer');
             modal.innerHTML = `
-                <div class="glass rounded-2xl p-6 w-full max-w-lg animate-slideIn flex flex-col max-h-[90vh]">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-xl font-bold flex items-center gap-2">📊 Reporte de Cocina</h3>
-                        <button onclick="closeModal()" class="p-2 hover:bg-white/10 rounded-lg transition text-gray-400 hover:text-white">✕</button>
+                <div class="glass bg-white/90 rounded-3xl p-6 w-full max-w-lg animate-slideIn flex flex-col max-h-[90vh] shadow-2xl border-2 border-white">
+                    <div class="flex items-center justify-between mb-4 pb-2 border-b border-theme-beige">
+                        <h3 class="text-xl font-bold flex items-center gap-2 text-theme-greenDark">📊 Reporte de Cocina</h3>
+                        <button onclick="closeModal()" class="p-2 bg-white rounded-lg transition text-theme-textMuted hover:bg-theme-beige border border-theme-beige">✕</button>
                     </div>
                     
                     <div class="overflow-y-auto flex-1 scrollbar-thin pr-2 space-y-5 mb-4">
                         <div class="grid grid-cols-2 gap-4">
-                            <div class="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl text-center">
-                                <p class="text-gray-400 text-sm mb-1">Pedidos Atendidos</p>
-                                <p class="text-4xl font-bold text-blue-400">${todayOrders.length}</p>
+                            <div class="bg-blue-50 border border-blue-200 p-4 rounded-xl text-center shadow-sm">
+                                <p class="text-blue-700 text-sm mb-1 font-medium">Pedidos Atendidos</p>
+                                <p class="text-4xl font-extrabold text-blue-600">${todayOrders.length}</p>
                             </div>
-                            <div class="bg-green-500/10 border border-green-500/20 p-4 rounded-xl text-center">
-                                <p class="text-gray-400 text-sm mb-1">Items Preparados</p>
-                                <p class="text-4xl font-bold text-green-400">${totalItems}</p>
+                            <div class="bg-green-50 border border-green-200 p-4 rounded-xl text-center shadow-sm">
+                                <p class="text-green-700 text-sm mb-1 font-medium">Items Preparados</p>
+                                <p class="text-4xl font-extrabold text-green-600">${totalItems}</p>
                             </div>
                         </div>
 
                         <div>
-                            <h4 class="font-medium text-pizza-yellow mb-3 flex items-center gap-2">
+                            <h4 class="font-bold text-theme-greenDark mb-3 flex items-center gap-2">
                                 🍕 Desglose de Producción
                             </h4>
-                            <div class="space-y-2 max-h-48 overflow-y-auto scrollbar-thin pr-2 bg-black/20 p-3 rounded-xl border border-white/5">
+                            <div class="space-y-2 max-h-48 overflow-y-auto scrollbar-thin pr-2 bg-white border border-theme-beige p-3 rounded-xl shadow-inner">
                                 ${productsSummary.length > 0 ? productsSummary.map(([name, qty]) => `
-                                    <div class="flex justify-between items-center py-1.5 border-b border-white/5 last:border-0">
-                                        <span class="text-sm text-gray-200">${name}</span>
-                                        <span class="font-bold bg-white/10 px-3 py-0.5 rounded-lg text-sm">${qty}</span>
+                                    <div class="flex justify-between items-center py-2 border-b border-theme-beige last:border-0">
+                                        <span class="text-sm font-medium text-theme-text">${name}</span>
+                                        <span class="font-bold bg-theme-bg border border-theme-beige px-3 py-1 rounded-lg text-sm text-theme-greenDark">${qty}</span>
                                     </div>
-                                `).join('') : '<p class="text-gray-500 text-center py-4 text-sm">No se han preparado productos hoy.</p>'}
+                                `).join('') : '<p class="text-theme-textMuted text-center py-4 text-sm font-medium">No se han preparado productos hoy.</p>'}
                             </div>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">Notas para Administración (Opcional)</label>
-                            <textarea id="kitchenNotes" rows="3" class="w-full px-4 py-3 bg-black/20 border border-white/10 rounded-xl focus:outline-none focus:border-pizza-orange transition resize-none text-sm" placeholder="Ej. Hubo escasez de queso, la masa tardó en leudar..."></textarea>
+                            <label class="block text-sm font-bold text-theme-text mb-2">Notas para Administración (Opcional)</label>
+                            <textarea id="kitchenNotes" rows="3" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green transition resize-none text-sm text-theme-text shadow-sm" placeholder="Ej. Hubo escasez de queso, la masa tardó en leudar..."></textarea>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3 pt-2 shrink-0">
-                        <button onclick="closeModal()" class="py-3.5 rounded-xl bg-white/5 hover:bg-white/10 transition font-medium">Cancelar</button>
-                        <button onclick="sendKitchenReport()" class="btn-primary py-3.5 rounded-xl font-bold flex items-center justify-center gap-2" ${todayOrders.length === 0 ? 'disabled' : ''}>
+                    <div class="grid grid-cols-2 gap-3 pt-4 shrink-0 border-t border-theme-beige">
+                        <button onclick="closeModal()" class="py-3.5 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text">Cancelar</button>
+                        <button onclick="sendKitchenReport()" class="btn-primary py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-md" ${todayOrders.length === 0 ? 'disabled' : ''}>
                             📤 Enviar Cierre
                         </button>
                     </div>
@@ -1138,7 +1232,6 @@
             const today = new Date().toDateString();
             const todayOrders = state.orders.filter(o => new Date(o.createdAt).toDateString() === today && o.status !== 'cancelled');
             
-            // Asegurarnos de que exista el array de reportes en el state
             if (!state.kitchenReports) state.kitchenReports = [];
 
             const report = {
@@ -1152,10 +1245,7 @@
 
             state.kitchenReports.push(report);
             
-            // 1. Notificamos directamente al Admin (aparecerá en la campanita)
             addNotification('info', `👨‍🍳 Reporte de cocina enviado por ${currentUser.name}. Pedidos: ${todayOrders.length}. ${notes ? '⚠️ Tiene notas.' : ''}`, ['admin']);
-            
-            // 2. Queda guardado en la Actividad Global del sistema
             logActivity('KITCHEN_REPORT', `Reporte de cierre de cocina enviado. ${todayOrders.length} pedidos. Notas: ${notes || 'Ninguna'}`);
             
             saveToStorage();
@@ -1167,24 +1257,24 @@
         function renderWaiter(container) {
             container.innerHTML = `
                 <div class="animate-slideIn">
-                    <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">🍽️ Mesas</h2>
+                    <h2 class="text-2xl font-bold mb-6 flex items-center gap-3 text-theme-greenDark">🍽️ Mesas</h2>
                     
                     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                         ${state.tables.map(table => {
                             const activeOrder = state.orders.find(o => o.tableId === table.id && o.status !== 'delivered' && o.status !== 'cancelled');
                             return `
                                 <div onclick="selectTable(${table.id})" 
-                                    class="glass rounded-2xl p-6 cursor-pointer card-hover text-center
-                                    ${table.status === 'occupied' ? 'border-2 border-orange-500' : 'border border-green-500/50'}">
+                                    class="bg-white/80 rounded-2xl p-6 cursor-pointer card-hover text-center shadow-sm border-2
+                                    ${table.status === 'occupied' ? 'border-orange-400' : 'border-transparent hover:border-theme-green'}">
                                     <div class="text-4xl mb-3">${table.status === 'occupied' ? '🍽️' : '🪑'}</div>
-                                    <h3 class="text-xl font-bold">${table.name}</h3>
-                                    <p class="text-sm text-gray-400">${table.capacity} personas</p>
-                                    <span class="inline-block mt-3 px-3 py-1 rounded-full text-xs ${table.status === 'occupied' ? 'bg-orange-500' : 'bg-green-500'}">
+                                    <h3 class="text-xl font-bold text-theme-text">${table.name}</h3>
+                                    <p class="text-sm text-theme-textMuted font-medium">${table.capacity} personas</p>
+                                    <span class="inline-block mt-3 px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm ${table.status === 'occupied' ? 'bg-orange-400' : 'bg-green-400'}">
                                         ${table.status === 'occupied' ? 'Ocupada' : 'Libre'}
                                     </span>
                                     ${activeOrder ? `
-                                        <p class="mt-2 text-xs text-gray-400">Pedido #${activeOrder.id.toString().slice(-4)}</p>
-                                        <p class="text-xs ${getStatusClass(activeOrder.status)} px-2 py-1 rounded-full inline-block mt-1">${getStatusLabel(activeOrder.status)}</p>
+                                        <p class="mt-3 text-xs text-theme-textMuted font-medium">Pedido #${activeOrder.id.toString().slice(-4)}</p>
+                                        <p class="text-xs font-bold ${getStatusClass(activeOrder.status)} px-2 py-1 rounded-full inline-block mt-1 shadow-sm">${getStatusLabel(activeOrder.status)}</p>
                                     ` : ''}
                                 </div>
                             `;
@@ -1201,70 +1291,75 @@
 
             const modal = document.getElementById('modalContainer');
             modal.innerHTML = `
-                <div class="glass rounded-2xl p-6 w-full max-w-4xl animate-slideIn max-h-[90%] overflow-auto">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="text-xl font-bold flex items-center gap-2">🍽️ ${table.name}</h3>
-                        <button onclick="closeModal()" class="p-2 hover:bg-white/10 rounded-lg transition">✕</button>
+                <div class="glass bg-white/90 rounded-3xl p-6 w-full max-w-4xl animate-slideIn max-h-[90%] overflow-auto shadow-2xl border-2 border-white">
+                    <div class="flex items-center justify-between mb-6 border-b border-theme-beige pb-4">
+                        <h3 class="text-xl font-bold flex items-center gap-2 text-theme-greenDark">🍽️ ${table.name}</h3>
+                        <button onclick="closeModal()" class="p-2 bg-white rounded-lg transition text-theme-textMuted hover:bg-theme-beige border border-theme-beige font-bold">✕</button>
                     </div>
 
                     ${activeOrder ? `
-                        <div class="mb-6 p-4 rounded-xl bg-white/5">
-                            <h4 class="font-medium mb-3">Pedido Actual #${activeOrder.id.toString().slice(-4)}</h4>
+                        <div class="mb-6 p-4 rounded-2xl bg-theme-bg border border-theme-beige shadow-inner">
+                            <h4 class="font-bold mb-3 text-theme-text">Pedido Actual #${activeOrder.id.toString().slice(-4)}</h4>
                             <div class="space-y-2 mb-3">
                                 ${activeOrder.items.map(item => `
-                                    <div class="flex justify-between text-sm">
-                                        <span>${item.quantity}x ${item.name}</span>
-                                        <span>$${(item.price * item.quantity).toLocaleString()}</span>
+                                    <div class="flex justify-between text-sm font-medium">
+                                        <span><strong class="text-theme-greenDark">${item.quantity}x</strong> ${item.name}</span>
+                                        <span class="font-bold">$${(item.price * item.quantity).toLocaleString()}</span>
                                     </div>
                                 `).join('')}
                             </div>
-                            <div class="flex justify-between font-bold border-t border-white/20 pt-2">
+                            <div class="flex justify-between font-extrabold border-t border-theme-beige pt-3 text-lg text-theme-greenDark">
                                 <span>Total:</span>
                                 <span>$${activeOrder.total.toLocaleString()}</span>
                             </div>
                             <div class="flex gap-2 mt-4">
-                                <span class="px-3 py-1 rounded-full text-xs ${getStatusClass(activeOrder.status)}">${getStatusLabel(activeOrder.status)}</span>
+                                <span class="px-3 py-1.5 rounded-full text-xs font-bold shadow-sm ${getStatusClass(activeOrder.status)}">${getStatusLabel(activeOrder.status)}</span>
                             </div>
                         </div>
                     ` : ''}
 
                     <div class="flex gap-4 flex-col lg:flex-row">
                         <div class="flex-1">
-                            <h4 class="font-medium mb-3">Agregar Productos</h4>
-                            <div class="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-60 overflow-auto scrollbar-thin">
-                                ${state.products.filter(p => p.active).map(p => `
-                                    <div onclick="addToTableOrder(${p.id})" 
-                                        class="p-3 rounded-xl bg-white/5 hover:bg-white/10 cursor-pointer transition text-center">
-                                        <p class="text-sm font-medium">${p.name}</p>
-                                        <p class="text-pizza-yellow text-sm">$${p.price}</p>
-                                    </div>
-                                `).join('')}
+                            <h4 class="font-bold mb-3 text-theme-text">Agregar Productos</h4>
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-60 overflow-auto scrollbar-thin pr-2">
+                                ${state.products.filter(p => p.active).map(p => {
+                                    const categoryIcons = { pizza: '🍕', drink: '🥤', extra: '🍟', promo: '🎉' };
+                                    const displayIcon = p.icon || categoryIcons[p.category] || '🍽️';
+                                    return `
+                                        <div onclick="addToTableOrder(${p.id})" 
+                                            class="p-3 rounded-xl bg-white border border-theme-beige shadow-sm hover:border-theme-green cursor-pointer transition text-center flex flex-col items-center justify-center gap-1">
+                                            <span class="text-2xl drop-shadow-sm">${displayIcon}</span>
+                                            <p class="text-sm font-bold text-theme-text line-clamp-1">${p.name}</p>
+                                            <p class="text-theme-greenDark font-extrabold text-sm">$${p.price}</p>
+                                        </div>
+                                    `;
+                                }).join('')}
                             </div>
                         </div>
 
-                        <div class="w-full lg:w-72 p-4 rounded-xl bg-white/5">
-                            <h4 class="font-medium mb-3">Nueva Orden</h4>
-                            <div id="tableCart" class="space-y-2 max-h-40 overflow-auto scrollbar-thin mb-4">
-                                ${currentCart.length === 0 ? '<p class="text-gray-400 text-sm text-center py-4">Sin productos</p>' : 
+                        <div class="w-full lg:w-72 p-5 rounded-2xl bg-white border border-theme-beige shadow-sm">
+                            <h4 class="font-bold mb-3 text-theme-text">Nueva Orden</h4>
+                            <div id="tableCart" class="space-y-3 max-h-40 overflow-auto scrollbar-thin pr-2 mb-4">
+                                ${currentCart.length === 0 ? '<p class="text-theme-textMuted text-sm text-center py-4 font-medium">Sin productos</p>' : 
                                     currentCart.map(item => `
-                                        <div class="flex justify-between text-sm">
-                                            <span>${item.quantity}x ${item.name}</span>
-                                            <span>$${(item.price * item.quantity).toLocaleString()}</span>
+                                        <div class="flex justify-between text-sm font-medium border-b border-theme-bg pb-2 last:border-0">
+                                            <span><strong class="text-theme-greenDark">${item.quantity}x</strong> ${item.name}</span>
+                                            <span class="font-bold">$${(item.price * item.quantity).toLocaleString()}</span>
                                         </div>
                                     `).join('')
                                 }
                             </div>
-                            <div class="border-t border-white/20 pt-2 mb-4">
-                                <div class="flex justify-between font-bold">
+                            <div class="border-t border-theme-beige pt-3 mb-4">
+                                <div class="flex justify-between font-extrabold text-lg text-theme-greenDark">
                                     <span>Total:</span>
                                     <span id="tableCartTotal">$${calculateCartTotal().toLocaleString()}</span>
                                 </div>
                             </div>
                             <div class="space-y-2">
-                                <button onclick="sendTableOrder(${tableId})" class="w-full btn-primary py-2 rounded-xl text-sm" ${currentCart.length === 0 ? 'disabled' : ''}>
+                                <button onclick="sendTableOrder(${tableId})" class="w-full btn-primary py-3 rounded-xl text-sm font-bold shadow-md" ${currentCart.length === 0 ? 'disabled' : ''}>
                                     📤 Enviar a Cocina
                                 </button>
-                                <button onclick="clearCart(); selectTable(${tableId})" class="w-full py-2 rounded-xl bg-white/10 hover:bg-white/20 text-sm transition">
+                                <button onclick="clearCart(); selectTable(${tableId})" class="w-full py-3 rounded-xl bg-theme-bg hover:bg-theme-beige border border-theme-beige text-sm transition font-bold text-theme-text">
                                     🗑️ Limpiar
                                 </button>
                             </div>
@@ -1303,7 +1398,7 @@
             state.orders.push(order);
             table.status = 'occupied';
 
-            logActivity('ORDER_CREATE', `Pedido #${orderId} creado para ${table.name}`);
+            logActivity('ORDER_CREATE', `Pedido #${orderId.toString().slice(-4)} creado para ${table.name}`);
             addNotification('info', `🍕 Nuevo pedido #${orderId.toString().slice(-4)} de ${table.name}`, ['kitchen']);
             
             saveToStorage();
@@ -1320,22 +1415,22 @@
 
             container.innerHTML = `
                 <div class="animate-slideIn">
-                    <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">📋 Mis Pedidos</h2>
+                    <h2 class="text-2xl font-bold mb-6 flex items-center gap-3 text-theme-greenDark">📋 Mis Pedidos</h2>
                     
                     <div class="space-y-4">
                         ${myOrders.slice(0, 20).map(order => `
-                            <div class="glass rounded-xl p-4 flex items-center justify-between">
-                                <div>
-                                    <p class="font-bold">#${order.id.toString().slice(-4)} - ${order.type === 'table' ? `Mesa ${order.tableId}` : 'Mostrador'}</p>
-                                    <p class="text-sm text-gray-400">${order.items.map(i => `${i.quantity}x ${i.name}`).join(', ')}</p>
-                                    <p class="text-xs text-gray-500">${new Date(order.createdAt).toLocaleString('es-MX')}</p>
+                            <div class="bg-white/80 rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between shadow-sm border border-white">
+                                <div class="mb-3 md:mb-0">
+                                    <p class="font-extrabold text-theme-text text-lg">#${order.id.toString().slice(-4)} - <span class="text-theme-greenDark">${order.type === 'table' ? `Mesa ${order.tableId}` : 'Mostrador'}</span></p>
+                                    <p class="text-sm text-theme-textMuted font-medium mt-1">${order.items.map(i => `<strong>${i.quantity}x</strong> ${i.name}`).join(', ')}</p>
+                                    <p class="text-xs text-theme-textMuted mt-1">🕒 ${new Date(order.createdAt).toLocaleString('es-MX')}</p>
                                 </div>
-                                <div class="text-right">
-                                    <p class="font-bold text-pizza-yellow">$${order.total.toLocaleString()}</p>
-                                    <span class="px-3 py-1 rounded-full text-xs ${getStatusClass(order.status)}">${getStatusLabel(order.status)}</span>
+                                <div class="text-left md:text-right flex flex-col justify-between items-start md:items-end h-full">
+                                    <p class="font-extrabold text-xl text-theme-greenDark mb-2">$${order.total.toLocaleString()}</p>
+                                    <span class="px-3 py-1 rounded-full text-xs font-bold shadow-sm ${getStatusClass(order.status)}">${getStatusLabel(order.status)}</span>
                                 </div>
                             </div>
-                        `).join('') || '<p class="text-gray-400 text-center py-8">No has creado pedidos aún</p>'}
+                        `).join('') || '<p class="text-theme-textMuted text-center py-8 font-medium">No has creado pedidos aún</p>'}
                     </div>
                 </div>
             `;
@@ -1346,55 +1441,55 @@
             container.innerHTML = `
                 <div class="animate-slideIn">
                     <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-2xl font-bold flex items-center gap-3">📦 Inventario</h2>
-                        <button onclick="showAddInventoryModal()" class="btn-primary px-4 py-2 rounded-xl flex items-center gap-2">
+                        <h2 class="text-2xl font-bold flex items-center gap-3 text-theme-greenDark">📦 Inventario</h2>
+                        <button onclick="showAddInventoryModal()" class="btn-primary px-4 py-2 rounded-xl flex items-center gap-2 font-bold shadow-md">
                             ➕ Agregar Entrada
                         </button>
                     </div>
 
                     ${state.inventory.filter(i => i.stock <= i.minStock).length > 0 ? `
-                        <div class="mb-6 p-4 rounded-xl bg-red-500/20 border border-red-500/30">
-                            <h3 class="font-bold text-red-400 mb-2">⚠️ Alertas de Stock Bajo</h3>
+                        <div class="mb-6 p-5 rounded-2xl bg-red-50 border border-red-200 shadow-sm">
+                            <h3 class="font-bold text-red-600 mb-3 flex items-center gap-2">⚠️ Alertas de Stock Bajo</h3>
                             <div class="flex flex-wrap gap-2">
                                 ${state.inventory.filter(i => i.stock <= i.minStock).map(i => `
-                                    <span class="px-3 py-1 rounded-full bg-red-500/30 text-sm">${i.name}: ${i.stock} ${i.unit}</span>
+                                    <span class="px-3 py-1.5 rounded-full bg-red-100 text-red-700 text-sm font-bold shadow-sm">${i.name}: ${i.stock} ${i.unit}</span>
                                 `).join('')}
                             </div>
                         </div>
                     ` : ''}
 
-                    <div class="glass rounded-2xl overflow-hidden">
+                    <div class="bg-white/80 rounded-2xl overflow-hidden shadow-sm border border-white">
                         <div class="overflow-x-auto">
-                            <table class="w-full">
-                                <thead class="bg-white/10">
+                            <table class="w-full text-theme-text">
+                                <thead class="bg-theme-beige/50 border-b border-theme-beige">
                                     <tr>
-                                        <th class="px-4 py-3 text-left text-sm font-medium">Insumo</th>
-                                        <th class="px-4 py-3 text-left text-sm font-medium">Stock</th>
-                                        <th class="px-4 py-3 text-left text-sm font-medium">Mínimo</th>
-                                        <th class="px-4 py-3 text-left text-sm font-medium">Costo</th>
-                                        <th class="px-4 py-3 text-left text-sm font-medium">Proveedor</th>
-                                        <th class="px-4 py-3 text-left text-sm font-medium">Estado</th>
-                                        <th class="px-4 py-3 text-left text-sm font-medium">Acciones</th>
+                                        <th class="px-5 py-4 text-left text-sm font-bold">Insumo</th>
+                                        <th class="px-5 py-4 text-left text-sm font-bold">Stock</th>
+                                        <th class="px-5 py-4 text-left text-sm font-bold">Mínimo</th>
+                                        <th class="px-5 py-4 text-left text-sm font-bold">Costo</th>
+                                        <th class="px-5 py-4 text-left text-sm font-bold">Proveedor</th>
+                                        <th class="px-5 py-4 text-left text-sm font-bold">Estado</th>
+                                        <th class="px-5 py-4 text-left text-sm font-bold">Acciones</th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-white/10">
+                                <tbody class="divide-y divide-theme-beige">
                                     ${state.inventory.map(item => `
-                                        <tr class="hover:bg-white/5 transition">
-                                            <td class="px-4 py-3 font-medium">${item.name}</td>
-                                            <td class="px-4 py-3 ${item.stock <= item.minStock ? 'text-red-400 font-bold' : ''}">${item.stock.toFixed(2)} ${item.unit}</td>
-                                            <td class="px-4 py-3 text-gray-400">${item.minStock} ${item.unit}</td>
-                                            <td class="px-4 py-3">$${item.cost}</td>
-                                            <td class="px-4 py-3 text-gray-400">${item.supplier}</td>
-                                            <td class="px-4 py-3">
+                                        <tr class="hover:bg-white transition">
+                                            <td class="px-5 py-4 font-bold">${item.name}</td>
+                                            <td class="px-5 py-4 ${item.stock <= item.minStock ? 'text-red-600 font-extrabold' : 'font-medium'}">${item.stock.toFixed(2)} ${item.unit}</td>
+                                            <td class="px-5 py-4 text-theme-textMuted font-medium">${item.minStock} ${item.unit}</td>
+                                            <td class="px-5 py-4 font-bold text-theme-greenDark">$${item.cost}</td>
+                                            <td class="px-5 py-4 text-theme-textMuted text-sm font-medium">${item.supplier}</td>
+                                            <td class="px-5 py-4">
                                                 ${item.stock <= item.minStock ? 
-                                                    '<span class="px-2 py-1 rounded-full text-xs bg-red-500/30 text-red-400">Bajo</span>' :
+                                                    '<span class="px-3 py-1 rounded-full text-xs bg-red-100 text-red-700 font-bold shadow-sm">Bajo</span>' :
                                                     item.stock <= item.minStock * 2 ?
-                                                    '<span class="px-2 py-1 rounded-full text-xs bg-yellow-500/30 text-yellow-400">Medio</span>' :
-                                                    '<span class="px-2 py-1 rounded-full text-xs bg-green-500/30 text-green-400">OK</span>'
+                                                    '<span class="px-3 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800 font-bold shadow-sm">Medio</span>' :
+                                                    '<span class="px-3 py-1 rounded-full text-xs bg-green-100 text-green-700 font-bold shadow-sm">OK</span>'
                                                 }
                                             </td>
-                                            <td class="px-4 py-3">
-                                                <button onclick="showInventoryEntryModal(${item.id})" class="px-3 py-1 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 text-sm transition">
+                                            <td class="px-5 py-4">
+                                                <button onclick="showInventoryEntryModal(${item.id})" class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 text-sm transition font-bold shadow-sm">
                                                     ➕ Entrada
                                                 </button>
                                             </td>
@@ -1412,24 +1507,24 @@
             const item = state.inventory.find(i => i.id === itemId);
             const modal = document.getElementById('modalContainer');
             modal.innerHTML = `
-                <div class="glass rounded-2xl p-6 w-full max-w-md animate-slideIn">
-                    <h3 class="text-xl font-bold mb-4">➕ Entrada de Inventario</h3>
+                <div class="glass bg-white/90 rounded-3xl p-6 w-full max-w-md animate-slideIn shadow-2xl border-2 border-white">
+                    <h3 class="text-xl font-bold mb-4 text-theme-greenDark">➕ Entrada de Inventario</h3>
                     <div class="space-y-4">
-                        <div class="p-4 rounded-xl bg-white/5">
-                            <p class="font-medium">${item.name}</p>
-                            <p class="text-sm text-gray-400">Stock actual: ${item.stock.toFixed(2)} ${item.unit}</p>
+                        <div class="p-4 rounded-xl bg-theme-bg border border-theme-beige">
+                            <p class="font-bold text-theme-text">${item.name}</p>
+                            <p class="text-sm text-theme-textMuted font-medium mt-1">Stock actual: <span class="font-bold text-theme-greenDark">${item.stock.toFixed(2)} ${item.unit}</span></p>
                         </div>
                         <div>
-                            <label class="block text-sm mb-2">Cantidad a agregar (${item.unit})</label>
-                            <input type="number" id="entryQty" step="0.01" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl" placeholder="0">
+                            <label class="block text-sm font-bold mb-2 text-theme-text">Cantidad a agregar (${item.unit})</label>
+                            <input type="number" id="entryQty" step="0.01" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green transition font-bold" placeholder="0">
                         </div>
                         <div>
-                            <label class="block text-sm mb-2">Notas (opcional)</label>
-                            <input type="text" id="entryNotes" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl" placeholder="Ej: Compra a proveedor">
+                            <label class="block text-sm font-bold mb-2 text-theme-text">Notas (opcional)</label>
+                            <input type="text" id="entryNotes" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green transition font-medium text-sm" placeholder="Ej: Compra a proveedor">
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white/10 hover:bg-white/20 transition">Cancelar</button>
-                            <button onclick="addInventoryEntry(${itemId})" class="btn-primary py-3 rounded-xl">Agregar</button>
+                        <div class="grid grid-cols-2 gap-3 pt-2">
+                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text">Cancelar</button>
+                            <button onclick="addInventoryEntry(${itemId})" class="btn-primary py-3 rounded-xl font-bold shadow-md">Agregar</button>
                         </div>
                     </div>
                 </div>
@@ -1471,44 +1566,44 @@
         function showAddInventoryModal() {
             const modal = document.getElementById('modalContainer');
             modal.innerHTML = `
-                <div class="glass rounded-2xl p-6 w-full max-w-md animate-slideIn">
-                    <h3 class="text-xl font-bold mb-4">➕ Nuevo Insumo</h3>
+                <div class="glass bg-white/90 rounded-3xl p-6 w-full max-w-md animate-slideIn shadow-2xl border-2 border-white">
+                    <h3 class="text-xl font-bold mb-4 text-theme-greenDark">➕ Nuevo Insumo</h3>
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-sm mb-2">Nombre del insumo</label>
-                            <input type="text" id="newItemName" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl" placeholder="Ej: Queso Parmesano">
+                            <label class="block text-sm font-bold mb-2 text-theme-text">Nombre del insumo</label>
+                            <input type="text" id="newItemName" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm" placeholder="Ej: Queso Parmesano">
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm mb-2">Unidad</label>
-                                <select id="newItemUnit" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl">
+                                <label class="block text-sm font-bold mb-2 text-theme-text">Unidad</label>
+                                <select id="newItemUnit" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm">
                                     <option value="kg">Kilogramos (kg)</option>
                                     <option value="lt">Litros (lt)</option>
                                     <option value="pza">Piezas (pza)</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm mb-2">Stock inicial</label>
-                                <input type="number" id="newItemStock" step="0.01" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl" placeholder="0">
+                                <label class="block text-sm font-bold mb-2 text-theme-text">Stock inicial</label>
+                                <input type="number" id="newItemStock" step="0.01" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm" placeholder="0">
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm mb-2">Stock mínimo</label>
-                                <input type="number" id="newItemMin" step="0.01" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl" placeholder="0">
+                                <label class="block text-sm font-bold mb-2 text-theme-text">Stock mínimo</label>
+                                <input type="number" id="newItemMin" step="0.01" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm" placeholder="0">
                             </div>
                             <div>
-                                <label class="block text-sm mb-2">Costo unitario</label>
-                                <input type="number" id="newItemCost" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl" placeholder="0">
+                                <label class="block text-sm font-bold mb-2 text-theme-text">Costo unitario</label>
+                                <input type="number" id="newItemCost" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm" placeholder="0">
                             </div>
                         </div>
                         <div>
-                            <label class="block text-sm mb-2">Proveedor</label>
-                            <input type="text" id="newItemSupplier" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl" placeholder="Nombre del proveedor">
+                            <label class="block text-sm font-bold mb-2 text-theme-text">Proveedor</label>
+                            <input type="text" id="newItemSupplier" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm" placeholder="Nombre del proveedor">
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white/10 hover:bg-white/20 transition">Cancelar</button>
-                            <button onclick="saveNewInventoryItem()" class="btn-primary py-3 rounded-xl">Guardar</button>
+                        <div class="grid grid-cols-2 gap-3 pt-2">
+                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text">Cancelar</button>
+                            <button onclick="saveNewInventoryItem()" class="btn-primary py-3 rounded-xl font-bold shadow-md">Guardar</button>
                         </div>
                     </div>
                 </div>
@@ -1548,8 +1643,7 @@
         }
 
         // ==================== PRODUCTS MODULE ====================
-      // ==================== PRODUCTS MODULE ====================
-      function renderProducts(container) {
+        function renderProducts(container) {
             const categories = ['pizza', 'drink', 'extra', 'promo'];
             const categoryNames = { pizza: 'Pizzas', drink: 'Bebidas', extra: 'Extras', promo: 'Promociones' };
             const categoryIcons = { pizza: '🍕', drink: '🥤', extra: '🍟', promo: '🎉' };
@@ -1557,36 +1651,36 @@
             container.innerHTML = `
                 <div class="animate-slideIn">
                     <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-2xl font-bold flex items-center gap-3">🍕 Productos</h2>
-                        <button onclick="showAddProductModal()" class="btn-primary px-4 py-2 rounded-xl flex items-center gap-2">
+                        <h2 class="text-2xl font-bold flex items-center gap-3 text-theme-greenDark">🍕 Productos</h2>
+                        <button onclick="showAddProductModal()" class="btn-primary px-4 py-2 rounded-xl flex items-center gap-2 font-bold shadow-md">
                             ➕ Nuevo Producto
                         </button>
                     </div>
 
                     ${categories.map(cat => `
                         <div class="mb-6">
-                            <h3 class="text-lg font-bold mb-3 flex items-center gap-2">${categoryIcons[cat]} ${categoryNames[cat]}</h3>
+                            <h3 class="text-lg font-bold mb-4 flex items-center gap-2 border-b border-theme-beige pb-2 text-theme-text">${categoryIcons[cat]} ${categoryNames[cat]}</h3>
                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                                 ${state.products.filter(p => p.category === cat).map(p => {
                                     const displayIcon = p.icon || categoryIcons[p.category] || '🍽️';
                                     return `
-                                        <div class="glass rounded-xl p-4 ${!p.active ? 'opacity-50' : ''}">
+                                        <div class="glass bg-white/60 border border-white rounded-2xl p-5 shadow-sm ${!p.active ? 'opacity-50 grayscale' : ''}">
                                             <div class="flex items-start justify-between">
                                                 <div>
-                                                    <h4 class="font-medium flex items-center gap-2"><span class="text-xl">${displayIcon}</span> ${p.name}</h4>
-                                                    <p class="text-pizza-yellow font-bold mt-1">$${p.price}</p>
+                                                    <h4 class="font-bold flex items-center gap-2 text-theme-text"><span class="text-2xl drop-shadow-sm">${displayIcon}</span> ${p.name}</h4>
+                                                    <p class="text-theme-greenDark font-extrabold text-lg mt-1">$${p.price}</p>
                                                 </div>
-                                                <div class="flex gap-1">
-                                                    <button onclick="editProduct(${p.id})" class="p-2 hover:bg-white/10 rounded-lg transition">✏️</button>
-                                                    <button onclick="toggleProductActive(${p.id})" class="p-2 hover:bg-white/10 rounded-lg transition">
+                                                <div class="flex gap-1 bg-theme-bg p-1 rounded-xl border border-theme-beige">
+                                                    <button onclick="editProduct(${p.id})" class="p-2 hover:bg-white rounded-lg transition text-sm">✏️</button>
+                                                    <button onclick="toggleProductActive(${p.id})" class="p-2 hover:bg-white rounded-lg transition text-sm">
                                                         ${p.active ? '🟢' : '🔴'}
                                                     </button>
                                                 </div>
                                             </div>
-                                            <p class="text-xs text-gray-400 mt-2">${p.active ? 'Activo' : 'Inactivo'}</p>
+                                            <p class="text-xs font-bold mt-3 inline-block px-2 py-1 rounded-md ${p.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${p.active ? 'Activo en Menú' : 'Oculto'}</p>
                                         </div>
                                     `;
-                                }).join('') || '<p class="text-gray-400 col-span-full">Sin productos en esta categoría</p>'}
+                                }).join('') || '<p class="text-theme-textMuted font-medium col-span-full py-4 bg-white/40 text-center rounded-xl border border-dashed border-theme-beige">Sin productos en esta categoría</p>'}
                             </div>
                         </div>
                     `).join('')}
@@ -1594,26 +1688,37 @@
             `;
         }
 
+        function toggleProductActive(productId) {
+            const product = state.products.find(p => p.id === productId);
+            if (product) {
+                product.active = !product.active;
+                logActivity('PRODUCT_TOGGLE', `Producto ${product.name} ${product.active ? 'activado' : 'desactivado'}`);
+                saveToStorage();
+                showToast(`Producto ${product.active ? 'activado' : 'desactivado'}`, 'success');
+                renderProducts(document.getElementById('contentArea'));
+            }
+        }
+
         function showAddProductModal() {
             const modal = document.getElementById('modalContainer');
             modal.innerHTML = `
-                <div class="glass rounded-2xl p-6 w-full max-w-md animate-slideIn">
-                    <h3 class="text-xl font-bold mb-4">➕ Nuevo Producto</h3>
+                <div class="glass bg-white/90 rounded-3xl p-6 w-full max-w-md animate-slideIn shadow-2xl border-2 border-white">
+                    <h3 class="text-xl font-bold mb-4 text-theme-greenDark">➕ Nuevo Producto</h3>
                     <div class="space-y-4">
                         <div class="grid grid-cols-4 gap-4">
                             <div class="col-span-3">
-                                <label class="block text-sm mb-2">Nombre del producto</label>
-                                <input type="text" id="prodName" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl" placeholder="Ej: Pizza Especial">
+                                <label class="block text-sm font-bold mb-2 text-theme-text">Nombre del producto</label>
+                                <input type="text" id="prodName" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium" placeholder="Ej: Pizza Especial">
                             </div>
                             <div class="col-span-1">
-                                <label class="block text-sm mb-2">Emoji</label>
-                                <input type="text" id="prodIcon" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-center" placeholder="🍕">
+                                <label class="block text-sm font-bold mb-2 text-theme-text">Emoji</label>
+                                <input type="text" id="prodIcon" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-center text-xl" placeholder="🍕">
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm mb-2">Categoría</label>
-                                <select id="prodCategory" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl">
+                                <label class="block text-sm font-bold mb-2 text-theme-text">Categoría</label>
+                                <select id="prodCategory" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium">
                                     <option value="pizza">🍕 Pizza</option>
                                     <option value="drink">🥤 Bebida</option>
                                     <option value="extra">🍟 Extra</option>
@@ -1621,13 +1726,13 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm mb-2">Precio</label>
-                                <input type="number" id="prodPrice" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl" placeholder="0">
+                                <label class="block text-sm font-bold mb-2 text-theme-text">Precio</label>
+                                <input type="number" id="prodPrice" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium" placeholder="0">
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white/10 hover:bg-white/20 transition">Cancelar</button>
-                            <button onclick="saveNewProduct()" class="btn-primary py-3 rounded-xl">Guardar</button>
+                        <div class="grid grid-cols-2 gap-3 pt-2">
+                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text">Cancelar</button>
+                            <button onclick="saveNewProduct()" class="btn-primary py-3 rounded-xl font-bold shadow-md">Guardar</button>
                         </div>
                     </div>
                 </div>
@@ -1668,23 +1773,23 @@
             const product = state.products.find(p => p.id === productId);
             const modal = document.getElementById('modalContainer');
             modal.innerHTML = `
-                <div class="glass rounded-2xl p-6 w-full max-w-md animate-slideIn">
-                    <h3 class="text-xl font-bold mb-4">✏️ Editar Producto</h3>
+                <div class="glass bg-white/90 rounded-3xl p-6 w-full max-w-md animate-slideIn shadow-2xl border-2 border-white">
+                    <h3 class="text-xl font-bold mb-4 text-theme-greenDark">✏️ Editar Producto</h3>
                     <div class="space-y-4">
                         <div class="grid grid-cols-4 gap-4">
                             <div class="col-span-3">
-                                <label class="block text-sm mb-2">Nombre del producto</label>
-                                <input type="text" id="editProdName" value="${product.name}" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl">
+                                <label class="block text-sm font-bold mb-2 text-theme-text">Nombre del producto</label>
+                                <input type="text" id="editProdName" value="${product.name}" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium">
                             </div>
                             <div class="col-span-1">
-                                <label class="block text-sm mb-2">Emoji</label>
-                                <input type="text" id="editProdIcon" value="${product.icon || ''}" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-center" placeholder="🍕">
+                                <label class="block text-sm font-bold mb-2 text-theme-text">Emoji</label>
+                                <input type="text" id="editProdIcon" value="${product.icon || ''}" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-center text-xl" placeholder="🍕">
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm mb-2">Categoría</label>
-                                <select id="editProdCategory" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl">
+                                <label class="block text-sm font-bold mb-2 text-theme-text">Categoría</label>
+                                <select id="editProdCategory" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium">
                                     <option value="pizza" ${product.category === 'pizza' ? 'selected' : ''}>🍕 Pizza</option>
                                     <option value="drink" ${product.category === 'drink' ? 'selected' : ''}>🥤 Bebida</option>
                                     <option value="extra" ${product.category === 'extra' ? 'selected' : ''}>🍟 Extra</option>
@@ -1692,13 +1797,13 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm mb-2">Precio</label>
-                                <input type="number" id="editProdPrice" value="${product.price}" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl">
+                                <label class="block text-sm font-bold mb-2 text-theme-text">Precio</label>
+                                <input type="number" id="editProdPrice" value="${product.price}" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium">
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white/10 hover:bg-white/20 transition">Cancelar</button>
-                            <button onclick="updateProduct(${productId})" class="btn-primary py-3 rounded-xl">Guardar</button>
+                        <div class="grid grid-cols-2 gap-3 pt-2">
+                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text">Cancelar</button>
+                            <button onclick="updateProduct(${productId})" class="btn-primary py-3 rounded-xl font-bold shadow-md">Guardar</button>
                         </div>
                     </div>
                 </div>
@@ -1719,6 +1824,7 @@
             closeModal();
             renderProducts(document.getElementById('contentArea'));
         }
+
         // ==================== USERS MODULE ====================
         function renderUsers(container) {
             const roleNames = { admin: 'Administrador', cashier: 'Cajero', kitchen: 'Cocina', waiter: 'Mesero' };
@@ -1727,28 +1833,28 @@
             container.innerHTML = `
                 <div class="animate-slideIn">
                     <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-2xl font-bold flex items-center gap-3">👥 Usuarios</h2>
-                        <button onclick="showAddUserModal()" class="btn-primary px-4 py-2 rounded-xl flex items-center gap-2">
+                        <h2 class="text-2xl font-bold flex items-center gap-3 text-theme-greenDark">👥 Usuarios</h2>
+                        <button onclick="showAddUserModal()" class="btn-primary px-4 py-2 rounded-xl flex items-center gap-2 font-bold shadow-md">
                             ➕ Nuevo Usuario
                         </button>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         ${state.users.map(user => `
-                            <div class="glass rounded-xl p-4 ${!user.active ? 'opacity-50' : ''}">
-                                <div class="flex items-center gap-3 mb-3">
-                                    <span class="text-3xl">${roleIcons[user.role]}</span>
+                            <div class="glass bg-white/60 border border-white rounded-2xl p-5 shadow-sm ${!user.active ? 'opacity-50 grayscale' : ''}">
+                                <div class="flex items-center gap-4 mb-4">
+                                    <span class="text-4xl bg-theme-beige p-2 rounded-full shadow-inner">${roleIcons[user.role]}</span>
                                     <div>
-                                        <h4 class="font-medium">${user.name}</h4>
-                                        <p class="text-sm text-gray-400">@${user.username}</p>
+                                        <h4 class="font-extrabold text-theme-text">${user.name}</h4>
+                                        <p class="text-sm text-theme-greenDark font-bold">@${user.username}</p>
                                     </div>
                                 </div>
-                                <div class="flex items-center justify-between">
-                                    <span class="px-3 py-1 rounded-full text-xs bg-white/10">${roleNames[user.role]}</span>
-                                    <div class="flex gap-1">
-                                        <button onclick="editUser(${user.id})" class="p-2 hover:bg-white/10 rounded-lg transition">✏️</button>
+                                <div class="flex items-center justify-between pt-3 border-t border-theme-beige">
+                                    <span class="px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-theme-textMuted border border-theme-beige shadow-sm">${roleNames[user.role]}</span>
+                                    <div class="flex gap-2">
+                                        <button onclick="editUser(${user.id})" class="p-2 hover:bg-white rounded-lg transition border border-transparent hover:border-theme-beige bg-theme-bg">✏️</button>
                                         ${user.id !== currentUser.id ? `
-                                            <button onclick="toggleUserActive(${user.id})" class="p-2 hover:bg-white/10 rounded-lg transition">
+                                            <button onclick="toggleUserActive(${user.id})" class="p-2 hover:bg-white rounded-lg transition border border-transparent hover:border-theme-beige bg-theme-bg">
                                                 ${user.active ? '🟢' : '🔴'}
                                             </button>
                                         ` : ''}
@@ -1775,33 +1881,33 @@
         function showAddUserModal() {
             const modal = document.getElementById('modalContainer');
             modal.innerHTML = `
-                <div class="glass rounded-2xl p-6 w-full max-w-md animate-slideIn">
-                    <h3 class="text-xl font-bold mb-4">➕ Nuevo Usuario</h3>
+                <div class="glass bg-white/90 rounded-3xl p-6 w-full max-w-md animate-slideIn shadow-2xl border-2 border-white">
+                    <h3 class="text-xl font-bold mb-4 text-theme-greenDark">➕ Nuevo Usuario</h3>
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-sm mb-2">Nombre completo</label>
-                            <input type="text" id="userName" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl" placeholder="Ej: Juan Pérez">
+                            <label class="block text-sm font-bold mb-2 text-theme-text">Nombre completo</label>
+                            <input type="text" id="userName" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium" placeholder="Ej: Juan Pérez">
                         </div>
                         <div>
-                            <label class="block text-sm mb-2">Usuario</label>
-                            <input type="text" id="userUsername" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl" placeholder="Ej: jperez">
+                            <label class="block text-sm font-bold mb-2 text-theme-text">Usuario (Login)</label>
+                            <input type="text" id="userUsername" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium" placeholder="Ej: jperez">
                         </div>
                         <div>
-                            <label class="block text-sm mb-2">Contraseña</label>
-                            <input type="password" id="userPassword" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl" placeholder="••••••">
+                            <label class="block text-sm font-bold mb-2 text-theme-text">Contraseña</label>
+                            <input type="password" id="userPassword" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium" placeholder="••••••">
                         </div>
                         <div>
-                            <label class="block text-sm mb-2">Rol</label>
-                            <select id="userRole" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl">
+                            <label class="block text-sm font-bold mb-2 text-theme-text">Rol</label>
+                            <select id="userRole" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium">
                                 <option value="cashier">💰 Cajero</option>
                                 <option value="kitchen">👨‍🍳 Cocina</option>
                                 <option value="waiter">🍽️ Mesero</option>
                                 <option value="admin">👨‍💼 Administrador</option>
                             </select>
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white/10 hover:bg-white/20 transition">Cancelar</button>
-                            <button onclick="saveNewUser()" class="btn-primary py-3 rounded-xl">Guardar</button>
+                        <div class="grid grid-cols-2 gap-3 pt-2">
+                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text">Cancelar</button>
+                            <button onclick="saveNewUser()" class="btn-primary py-3 rounded-xl font-bold shadow-md">Guardar</button>
                         </div>
                     </div>
                 </div>
@@ -1846,33 +1952,33 @@
             const user = state.users.find(u => u.id === userId);
             const modal = document.getElementById('modalContainer');
             modal.innerHTML = `
-                <div class="glass rounded-2xl p-6 w-full max-w-md animate-slideIn">
-                    <h3 class="text-xl font-bold mb-4">✏️ Editar Usuario</h3>
+                <div class="glass bg-white/90 rounded-3xl p-6 w-full max-w-md animate-slideIn shadow-2xl border-2 border-white">
+                    <h3 class="text-xl font-bold mb-4 text-theme-greenDark">✏️ Editar Usuario</h3>
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-sm mb-2">Nombre completo</label>
-                            <input type="text" id="editUserName" value="${user.name}" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl">
+                            <label class="block text-sm font-bold mb-2 text-theme-text">Nombre completo</label>
+                            <input type="text" id="editUserName" value="${user.name}" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium">
                         </div>
                         <div>
-                            <label class="block text-sm mb-2">Usuario (Login)</label>
-                            <input type="text" id="editUserUsername" value="${user.username}" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl">
+                            <label class="block text-sm font-bold mb-2 text-theme-text">Usuario (Login)</label>
+                            <input type="text" id="editUserUsername" value="${user.username}" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium">
                         </div>
                         <div>
-                            <label class="block text-sm mb-2">Nueva contraseña (dejar vacío para no cambiar)</label>
-                            <input type="password" id="editUserPassword" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl" placeholder="••••••">
+                            <label class="block text-sm font-bold mb-2 text-theme-text">Nueva contraseña</label>
+                            <input type="password" id="editUserPassword" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium" placeholder="Dejar vacío para no cambiar">
                         </div>
                         <div>
-                            <label class="block text-sm mb-2">Rol</label>
-                            <select id="editUserRole" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl" ${user.id === currentUser.id ? 'disabled' : ''}>
+                            <label class="block text-sm font-bold mb-2 text-theme-text">Rol</label>
+                            <select id="editUserRole" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium" ${user.id === currentUser.id ? 'disabled' : ''}>
                                 <option value="cashier" ${user.role === 'cashier' ? 'selected' : ''}>💰 Cajero</option>
                                 <option value="kitchen" ${user.role === 'kitchen' ? 'selected' : ''}>👨‍🍳 Cocina</option>
                                 <option value="waiter" ${user.role === 'waiter' ? 'selected' : ''}>🍽️ Mesero</option>
                                 <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>👨‍💼 Administrador</option>
                             </select>
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white/10 hover:bg-white/20 transition">Cancelar</button>
-                            <button onclick="updateUser(${userId})" class="btn-primary py-3 rounded-xl">Guardar</button>
+                        <div class="grid grid-cols-2 gap-3 pt-2">
+                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text">Cancelar</button>
+                            <button onclick="updateUser(${userId})" class="btn-primary py-3 rounded-xl font-bold shadow-md">Guardar</button>
                         </div>
                     </div>
                 </div>
@@ -1886,19 +1992,16 @@
             const newUsername = document.getElementById('editUserUsername').value.trim().toLowerCase();
             const newPassword = document.getElementById('editUserPassword').value;
 
-            // Validaciones
             if (!newName || !newUsername) {
                 showToast('El nombre y el usuario no pueden estar vacíos', 'warning');
                 return;
             }
 
-            // Evitar que se duplique el nombre de usuario de login
             if (state.users.some(u => u.username === newUsername && u.id !== userId)) {
                 showToast('El nombre de usuario ya está en uso', 'error');
                 return;
             }
 
-            // Actualizar datos
             user.name = newName;
             user.username = newUsername;
             
@@ -1910,11 +2013,10 @@
                 user.role = document.getElementById('editUserRole').value;
             }
 
-            // ⚠️ FIX CLAVE: Si modificas tu propio usuario, actualizamos la sesión local
             if (user.id === currentUser.id) {
                 currentUser = { ...user };
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                document.getElementById('userName').textContent = currentUser.name; // Actualiza el header
+                document.getElementById('userName').textContent = currentUser.name; 
             }
 
             logActivity('USER_UPDATE', `Usuario actualizado: ${user.name}`);
@@ -1923,6 +2025,7 @@
             closeModal();
             renderUsers(document.getElementById('contentArea'));
         }
+
         // ==================== CASH REGISTER MODULE ====================
         function renderCashRegister(container) {
             const cr = state.cashRegister;
@@ -1936,74 +2039,74 @@
 
             container.innerHTML = `
                 <div class="animate-slideIn">
-                    <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">💵 Caja Registradora</h2>
+                    <h2 class="text-2xl font-bold mb-6 flex items-center gap-3 text-theme-greenDark">💵 Caja Registradora</h2>
 
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div class="glass rounded-2xl p-6">
-                            <div class="flex items-center justify-between mb-6">
-                                <h3 class="font-bold text-lg">Estado de Caja</h3>
-                                <span class="px-4 py-2 rounded-full ${cr.isOpen ? 'bg-green-500' : 'bg-red-500'} font-medium">
+                        <div class="glass bg-white/60 rounded-2xl p-6 border border-white shadow-sm">
+                            <div class="flex items-center justify-between mb-6 pb-4 border-b border-theme-beige">
+                                <h3 class="font-extrabold text-lg text-theme-text">Estado de Caja</h3>
+                                <span class="px-4 py-2 rounded-full ${cr.isOpen ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} font-bold shadow-sm">
                                     ${cr.isOpen ? '🟢 Abierta' : '🔴 Cerrada'}
                                 </span>
                             </div>
                             
                             ${cr.isOpen ? `
                                 <div class="space-y-4 mb-6">
-                                    <div class="flex justify-between p-3 rounded-xl bg-white/5">
-                                        <span>Abierta por:</span>
-                                        <span class="font-medium">${state.users.find(u => u.id === cr.openedBy)?.name || 'Sistema'}</span>
+                                    <div class="flex justify-between p-3 rounded-xl bg-white border border-theme-beige shadow-sm">
+                                        <span class="font-bold text-theme-textMuted">Abierta por:</span>
+                                        <span class="font-extrabold text-theme-text">${state.users.find(u => u.id === cr.openedBy)?.name || 'Sistema'}</span>
                                     </div>
-                                    <div class="flex justify-between p-3 rounded-xl bg-white/5">
-                                        <span>Hora apertura:</span>
-                                        <span class="font-medium">${new Date(cr.openedAt).toLocaleTimeString('es-MX')}</span>
+                                    <div class="flex justify-between p-3 rounded-xl bg-white border border-theme-beige shadow-sm">
+                                        <span class="font-bold text-theme-textMuted">Hora apertura:</span>
+                                        <span class="font-extrabold text-theme-text">${new Date(cr.openedAt).toLocaleTimeString('es-MX')}</span>
                                     </div>
-                                    <div class="flex justify-between p-3 rounded-xl bg-white/5">
-                                        <span>Fondo inicial:</span>
-                                        <span class="font-medium">$${cr.initialAmount.toLocaleString()}</span>
+                                    <div class="flex justify-between p-3 rounded-xl bg-theme-bg border border-theme-beige shadow-inner">
+                                        <span class="font-bold text-theme-textMuted">Fondo inicial:</span>
+                                        <span class="font-extrabold text-theme-text">$${cr.initialAmount.toLocaleString()}</span>
                                     </div>
-                                    <div class="flex justify-between p-3 rounded-xl bg-green-500/20">
-                                        <span>Ventas efectivo:</span>
-                                        <span class="font-bold text-green-400">$${cashSales.toLocaleString()}</span>
+                                    <div class="flex justify-between p-3 rounded-xl bg-green-50 border border-green-200">
+                                        <span class="font-bold text-green-700">Ventas efectivo:</span>
+                                        <span class="font-extrabold text-green-600">+$${cashSales.toLocaleString()}</span>
                                     </div>
-                                    <div class="flex justify-between p-3 rounded-xl bg-blue-500/20">
-                                        <span>Ventas transferencia:</span>
-                                        <span class="font-bold text-blue-400">$${transferSales.toLocaleString()}</span>
+                                    <div class="flex justify-between p-3 rounded-xl bg-blue-50 border border-blue-200">
+                                        <span class="font-bold text-blue-700">Ventas transferencia:</span>
+                                        <span class="font-extrabold text-blue-600">+$${transferSales.toLocaleString()}</span>
                                     </div>
-                                    <div class="flex justify-between p-4 rounded-xl bg-pizza-yellow/20 text-lg">
-                                        <span class="font-bold">En caja (efectivo):</span>
-                                        <span class="font-bold text-pizza-yellow">$${(cr.initialAmount + cashSales).toLocaleString()}</span>
+                                    <div class="flex justify-between p-5 rounded-2xl bg-white border-2 border-theme-green shadow-sm mt-4">
+                                        <span class="font-extrabold text-lg text-theme-text">En caja (efectivo):</span>
+                                        <span class="font-extrabold text-2xl text-theme-greenDark">$${(cr.initialAmount + cashSales).toLocaleString()}</span>
                                     </div>
                                 </div>
-                                <button onclick="showCloseCashModal()" class="w-full btn-primary py-3 rounded-xl">
+                                <button onclick="showCloseCashModal()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-4 rounded-xl shadow-md transition">
                                     🔒 Hacer Corte de Caja
                                 </button>
                             ` : `
-                                <div class="text-center py-8">
-                                    <p class="text-gray-400 mb-4">La caja está cerrada</p>
-                                    <button onclick="showOpenCashModal()" class="btn-primary px-6 py-3 rounded-xl">
-                                        🔓 Abrir Caja
+                                <div class="text-center py-12">
+                                    <p class="text-theme-textMuted mb-6 font-medium text-lg">La caja se encuentra cerrada</p>
+                                    <button onclick="showOpenCashModal()" class="btn-primary font-bold px-8 py-4 rounded-xl shadow-lg text-lg">
+                                        🔓 Abrir Caja Ahora
                                     </button>
                                 </div>
                             `}
                         </div>
 
-                        <div class="glass rounded-2xl p-6">
-                            <h3 class="font-bold text-lg mb-4">Movimientos de Hoy</h3>
-                            <div class="space-y-2 max-h-96 overflow-auto scrollbar-thin">
+                        <div class="glass bg-white/60 rounded-2xl p-6 border border-white shadow-sm">
+                            <h3 class="font-extrabold text-lg mb-4 text-theme-text border-b border-theme-beige pb-4">Movimientos de Hoy</h3>
+                            <div class="space-y-3 max-h-[500px] overflow-auto scrollbar-thin pr-2">
                                 ${todayMovements.length > 0 ? todayMovements.slice().reverse().map(m => `
-                                    <div class="flex items-center justify-between p-3 rounded-xl bg-white/5">
+                                    <div class="flex items-center justify-between p-4 rounded-xl bg-white border border-theme-beige shadow-sm">
                                         <div>
-                                            <p class="font-medium">${m.type === 'sale' ? '💰 Venta' : m.type === 'open' ? '🔓 Apertura' : '🔒 Cierre'}</p>
-                                            <p class="text-xs text-gray-400">${new Date(m.timestamp).toLocaleTimeString('es-MX')}</p>
+                                            <p class="font-extrabold text-theme-text">${m.type === 'sale' ? '💰 Venta' : m.type === 'open' ? '🔓 Apertura' : '🔒 Cierre'}</p>
+                                            <p class="text-xs font-bold text-theme-textMuted mt-1">${new Date(m.timestamp).toLocaleTimeString('es-MX')}</p>
                                         </div>
                                         <div class="text-right">
-                                            <p class="font-bold ${m.amount >= 0 ? 'text-green-400' : 'text-red-400'}">
+                                            <p class="font-extrabold text-lg ${m.amount >= 0 ? 'text-green-600' : 'text-red-600'}">
                                                 ${m.amount >= 0 ? '+' : ''}$${m.amount.toLocaleString()}
                                             </p>
-                                            ${m.paymentMethod ? `<p class="text-xs text-gray-400">${m.paymentMethod === 'cash' ? 'Efectivo' : 'Transferencia'}</p>` : ''}
+                                            ${m.paymentMethod ? `<p class="text-xs font-bold mt-1 ${m.paymentMethod === 'cash' ? 'text-green-600 bg-green-100' : 'text-blue-600 bg-blue-100'} inline-block px-2 py-0.5 rounded-md">${m.paymentMethod === 'cash' ? 'Efectivo' : 'Transferencia'}</p>` : ''}
                                         </div>
                                     </div>
-                                `).join('') : '<p class="text-gray-400 text-center py-8">Sin movimientos hoy</p>'}
+                                `).join('') : '<p class="text-theme-textMuted font-medium text-center py-12">Sin movimientos registrados hoy</p>'}
                             </div>
                         </div>
                     </div>
@@ -2014,16 +2117,16 @@
         function showOpenCashModal() {
             const modal = document.getElementById('modalContainer');
             modal.innerHTML = `
-                <div class="glass rounded-2xl p-6 w-full max-w-md animate-slideIn">
-                    <h3 class="text-xl font-bold mb-4">🔓 Abrir Caja</h3>
+                <div class="glass bg-white/90 rounded-3xl p-6 w-full max-w-md animate-slideIn shadow-2xl border-2 border-white">
+                    <h3 class="text-xl font-bold mb-4 text-theme-greenDark">🔓 Abrir Caja</h3>
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-sm mb-2">Fondo inicial (efectivo)</label>
-                            <input type="number" id="initialAmount" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-xl" placeholder="0">
+                            <label class="block text-sm font-bold mb-2 text-theme-text">Fondo inicial (efectivo)</label>
+                            <input type="number" id="initialAmount" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl text-xl font-bold focus:outline-none focus:border-theme-green transition text-theme-text" placeholder="0">
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white/10 hover:bg-white/20 transition">Cancelar</button>
-                            <button onclick="openCashRegister()" class="btn-primary py-3 rounded-xl">Abrir Caja</button>
+                        <div class="grid grid-cols-2 gap-3 pt-2">
+                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text">Cancelar</button>
+                            <button onclick="openCashRegister()" class="btn-primary py-3 rounded-xl font-bold shadow-md">Abrir Caja</button>
                         </div>
                     </div>
                 </div>
@@ -2061,25 +2164,25 @@
 
             const modal = document.getElementById('modalContainer');
             modal.innerHTML = `
-                <div class="glass rounded-2xl p-6 w-full max-w-md animate-slideIn">
-                    <h3 class="text-xl font-bold mb-4">🔒 Corte de Caja</h3>
+                <div class="glass bg-white/90 rounded-3xl p-6 w-full max-w-md animate-slideIn shadow-2xl border-2 border-white">
+                    <h3 class="text-xl font-bold mb-4 text-theme-greenDark">🔒 Corte de Caja</h3>
                     <div class="space-y-4">
-                        <div class="p-4 rounded-xl bg-white/5">
-                            <p class="text-sm text-gray-400">Efectivo esperado en caja:</p>
-                            <p class="text-2xl font-bold text-pizza-yellow">$${expectedCash.toLocaleString()}</p>
+                        <div class="p-4 rounded-xl bg-theme-bg border border-theme-beige text-center">
+                            <p class="text-sm font-bold text-theme-textMuted">Efectivo esperado en caja</p>
+                            <p class="text-3xl font-extrabold text-theme-greenDark mt-1">$${expectedCash.toLocaleString()}</p>
                         </div>
                         <div>
-                            <label class="block text-sm mb-2">Efectivo contado</label>
-                            <input type="number" id="countedCash" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-xl" 
+                            <label class="block text-sm font-bold mb-2 text-theme-text">Efectivo contado físico</label>
+                            <input type="number" id="countedCash" class="w-full px-4 py-3 bg-white border-2 border-theme-beige rounded-xl text-2xl text-center focus:outline-none focus:border-theme-green font-bold text-theme-text" 
                                 placeholder="0" oninput="calculateDifference(${expectedCash})">
                         </div>
-                        <div id="differenceDisplay" class="p-4 rounded-xl bg-white/5 hidden">
-                            <p class="text-sm text-gray-400">Diferencia:</p>
-                            <p id="differenceAmount" class="text-xl font-bold"></p>
+                        <div id="differenceDisplay" class="p-4 rounded-xl bg-theme-bg border border-theme-beige hidden text-center">
+                            <p class="text-sm font-bold text-theme-textMuted">Diferencia</p>
+                            <p id="differenceAmount" class="text-2xl font-extrabold mt-1"></p>
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white/10 hover:bg-white/20 transition">Cancelar</button>
-                            <button onclick="closeCashRegister(${expectedCash})" class="btn-primary py-3 rounded-xl">Cerrar Caja</button>
+                        <div class="grid grid-cols-2 gap-3 pt-2">
+                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text">Cancelar</button>
+                            <button onclick="closeCashRegister(${expectedCash})" class="bg-red-500 hover:bg-red-600 text-white py-3 rounded-xl font-bold shadow-md transition">Cerrar Caja</button>
                         </div>
                     </div>
                 </div>
@@ -2094,8 +2197,8 @@
             const amount = document.getElementById('differenceAmount');
 
             display.classList.remove('hidden');
-            amount.textContent = `$${diff >= 0 ? '+' : ''}${diff.toLocaleString()}`;
-            amount.className = `text-xl font-bold ${diff >= 0 ? 'text-green-400' : 'text-red-400'}`;
+            amount.textContent = `${diff >= 0 ? '+' : ''}$${diff.toLocaleString()}`;
+            amount.className = `text-2xl font-extrabold mt-1 ${diff === 0 ? 'text-green-600' : 'text-red-600'}`;
         }
 
         function closeCashRegister(expected) {
@@ -2112,7 +2215,6 @@
 
             logActivity('CASH_CLOSE', `Caja cerrada. Esperado: $${expected}, Contado: $${counted}, Diferencia: $${difference}`);
             
-            // Reset cash register
             state.cashRegister.isOpen = false;
             
             saveToStorage();
@@ -2128,29 +2230,29 @@
 
             container.innerHTML = `
                 <div class="animate-slideIn">
-                    <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">📋 Pedidos</h2>
+                    <h2 class="text-2xl font-bold mb-6 flex items-center gap-3 text-theme-greenDark">📋 Historial General de Pedidos</h2>
                     
                     <div class="space-y-4">
-                        ${activeOrders.slice(0, 30).map(order => `
-                            <div class="glass rounded-xl p-4">
-                                <div class="flex items-center justify-between mb-3">
-                                    <div class="flex items-center gap-3">
-                                        <span class="text-xl font-bold">#${order.id.toString().slice(-4)}</span>
-                                        <span class="px-2 py-1 rounded-full text-xs ${order.type === 'table' ? 'bg-purple-500' : 'bg-blue-500'}">
+                        ${activeOrders.slice(0, 50).map(order => `
+                            <div class="glass bg-white/60 border border-white rounded-2xl p-5 shadow-sm hover:shadow-md transition">
+                                <div class="flex flex-col md:flex-row md:items-center justify-between mb-3 gap-2">
+                                    <div class="flex items-center gap-3 flex-wrap">
+                                        <span class="text-xl font-extrabold text-theme-text">#${order.id.toString().slice(-4)}</span>
+                                        <span class="px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm ${order.type === 'table' ? 'bg-purple-400' : 'bg-blue-400'}">
                                             ${order.type === 'table' ? `Mesa ${order.tableId}` : 'Mostrador'}
                                         </span>
-                                        <span class="px-2 py-1 rounded-full text-xs ${getStatusClass(order.status)}">${getStatusLabel(order.status)}</span>
+                                        <span class="px-3 py-1 rounded-full text-xs font-bold shadow-sm ${getStatusClass(order.status)}">${getStatusLabel(order.status)}</span>
                                     </div>
-                                    <div class="text-right">
-                                        <p class="font-bold text-pizza-yellow">$${order.total.toLocaleString()}</p>
-                                        <p class="text-xs text-gray-400">${new Date(order.createdAt).toLocaleString('es-MX')}</p>
+                                    <div class="text-left md:text-right">
+                                        <p class="font-extrabold text-xl text-theme-greenDark">$${order.total.toLocaleString()}</p>
+                                        <p class="text-xs font-bold text-theme-textMuted mt-1">🕒 ${new Date(order.createdAt).toLocaleString('es-MX')}</p>
                                     </div>
                                 </div>
-                                <div class="flex flex-wrap gap-2 text-sm text-gray-400">
-                                    ${order.items.map(i => `<span class="px-2 py-1 rounded bg-white/5">${i.quantity}x ${i.name}</span>`).join('')}
+                                <div class="flex flex-wrap gap-2 text-sm font-medium mt-3 border-t border-theme-beige pt-3">
+                                    ${order.items.map(i => `<span class="px-3 py-1 rounded-lg bg-theme-bg border border-theme-beige text-theme-text"><strong class="text-theme-greenDark">${i.quantity}x</strong> ${i.name}</span>`).join('')}
                                 </div>
                             </div>
-                        `).join('') || '<p class="text-gray-400 text-center py-8">Sin pedidos registrados</p>'}
+                        `).join('') || '<p class="text-theme-textMuted text-center py-12 font-medium text-lg">Sin pedidos registrados</p>'}
                     </div>
                 </div>
             `;
@@ -2174,7 +2276,6 @@
             const monthOrders = monthSales.length;
             const avgTicket = todayOrders > 0 ? todayTotal / todayOrders : 0;
 
-            // Top products
             const productSales = {};
             state.sales.forEach(sale => {
                 sale.items.forEach(item => {
@@ -2189,61 +2290,61 @@
 
             container.innerHTML = `
                 <div class="animate-slideIn">
-                    <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">📈 Reportes</h2>
+                    <h2 class="text-2xl font-bold mb-6 flex items-center gap-3 text-theme-greenDark">📈 Reportes Estadísticos</h2>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                        <div class="glass rounded-2xl p-5">
-                            <p class="text-gray-400 text-sm mb-1">Ventas Hoy</p>
-                            <p class="text-3xl font-bold text-green-400">$${todayTotal.toLocaleString()}</p>
-                            <p class="text-xs text-gray-500">${todayOrders} transacciones</p>
+                        <div class="glass bg-white/60 border border-white rounded-2xl p-6 shadow-sm">
+                            <p class="text-theme-textMuted text-sm font-bold mb-1">Ventas Hoy</p>
+                            <p class="text-3xl font-extrabold text-green-600">$${todayTotal.toLocaleString()}</p>
+                            <p class="text-xs text-theme-textMuted font-medium mt-2 bg-theme-bg inline-block px-2 py-1 rounded-md border border-theme-beige">${todayOrders} tickets</p>
                         </div>
-                        <div class="glass rounded-2xl p-5">
-                            <p class="text-gray-400 text-sm mb-1">Ventas del Mes</p>
-                            <p class="text-3xl font-bold text-blue-400">$${monthTotal.toLocaleString()}</p>
-                            <p class="text-xs text-gray-500">${monthOrders} transacciones</p>
+                        <div class="glass bg-white/60 border border-white rounded-2xl p-6 shadow-sm">
+                            <p class="text-theme-textMuted text-sm font-bold mb-1">Ventas del Mes</p>
+                            <p class="text-3xl font-extrabold text-blue-600">$${monthTotal.toLocaleString()}</p>
+                            <p class="text-xs text-theme-textMuted font-medium mt-2 bg-theme-bg inline-block px-2 py-1 rounded-md border border-theme-beige">${monthOrders} tickets</p>
                         </div>
-                        <div class="glass rounded-2xl p-5">
-                            <p class="text-gray-400 text-sm mb-1">Ticket Promedio (hoy)</p>
-                            <p class="text-3xl font-bold text-purple-400">$${avgTicket.toFixed(0)}</p>
+                        <div class="glass bg-white/60 border border-white rounded-2xl p-6 shadow-sm">
+                            <p class="text-theme-textMuted text-sm font-bold mb-1">Ticket Promedio (hoy)</p>
+                            <p class="text-3xl font-extrabold text-purple-600">$${avgTicket.toFixed(0)}</p>
                         </div>
-                        <div class="glass rounded-2xl p-5">
-                            <p class="text-gray-400 text-sm mb-1">Productos Vendidos (hoy)</p>
-                            <p class="text-3xl font-bold text-pizza-yellow">${todaySales.reduce((sum, s) => sum + s.items.reduce((is, i) => is + i.quantity, 0), 0)}</p>
+                        <div class="glass bg-white/60 border border-white rounded-2xl p-6 shadow-sm">
+                            <p class="text-theme-textMuted text-sm font-bold mb-1">Pizzas/Artículos (hoy)</p>
+                            <p class="text-3xl font-extrabold text-theme-greenDark">${todaySales.reduce((sum, s) => sum + s.items.reduce((is, i) => is + i.quantity, 0), 0)}</p>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div class="glass rounded-2xl p-5">
-                            <h3 class="font-bold mb-4">🏆 Productos Más Vendidos</h3>
+                        <div class="glass bg-white/60 border border-white rounded-2xl p-6 shadow-sm">
+                            <h3 class="font-extrabold text-lg mb-5 text-theme-text border-b border-theme-beige pb-3">🏆 Lo Más Vendido</h3>
                             <div class="space-y-3">
                                 ${topProducts.map(([name, data], i) => `
-                                    <div class="flex items-center justify-between p-3 rounded-xl bg-white/5">
-                                        <div class="flex items-center gap-3">
-                                            <span class="text-2xl">${['🥇', '🥈', '🥉', '4️⃣', '5️⃣'][i]}</span>
-                                            <span class="font-medium">${name}</span>
+                                    <div class="flex items-center justify-between p-4 rounded-xl bg-white shadow-sm border border-theme-beige">
+                                        <div class="flex items-center gap-4">
+                                            <span class="text-2xl drop-shadow-sm">${['🥇', '🥈', '🥉', '4️⃣', '5️⃣'][i]}</span>
+                                            <span class="font-bold text-theme-text text-lg">${name}</span>
                                         </div>
                                         <div class="text-right">
-                                            <p class="font-bold">${data.qty} vendidos</p>
-                                            <p class="text-sm text-gray-400">$${data.total.toLocaleString()}</p>
+                                            <p class="font-extrabold text-theme-greenDark">${data.qty} vendidos</p>
+                                            <p class="text-sm font-bold text-theme-textMuted">$${data.total.toLocaleString()}</p>
                                         </div>
                                     </div>
-                                `).join('') || '<p class="text-gray-400 text-center py-4">Sin datos</p>'}
+                                `).join('') || '<p class="text-theme-textMuted text-center font-medium py-8">Sin datos suficientes</p>'}
                             </div>
                         </div>
 
-                        <div class="glass rounded-2xl p-5">
-                            <h3 class="font-bold mb-4">📜 Actividad Reciente</h3>
-                            <div class="space-y-2 max-h-80 overflow-auto scrollbar-thin">
+                        <div class="glass bg-white/60 border border-white rounded-2xl p-6 shadow-sm">
+                            <h3 class="font-extrabold text-lg mb-5 text-theme-text border-b border-theme-beige pb-3">📜 Actividad Reciente</h3>
+                            <div class="space-y-3 max-h-[400px] overflow-auto scrollbar-thin pr-2">
                                 ${state.activityLog.slice(-20).reverse().map(log => `
-                                    <div class="p-3 rounded-xl bg-white/5 text-sm">
-                                        <div class="flex justify-between">
-                                            <span class="font-medium">${log.action}</span>
-                                            <span class="text-gray-400">${new Date(log.timestamp).toLocaleTimeString('es-MX')}</span>
+                                    <div class="p-4 rounded-xl bg-white border border-theme-beige shadow-sm text-sm">
+                                        <div class="flex justify-between items-start mb-2">
+                                            <span class="font-extrabold text-theme-greenDark px-2 py-1 bg-green-50 rounded-md border border-green-100">${log.action}</span>
+                                            <span class="text-xs font-bold text-theme-textMuted">${new Date(log.timestamp).toLocaleTimeString('es-MX')}</span>
                                         </div>
-                                        <p class="text-gray-400 text-xs">${log.details}</p>
-                                        <p class="text-gray-500 text-xs">Por: ${log.userName}</p>
+                                        <p class="text-theme-text font-medium text-[13px] mb-2">${log.details}</p>
+                                        <p class="text-xs font-bold text-theme-textMuted">👤 ${log.userName}</p>
                                     </div>
-                                `).join('') || '<p class="text-gray-400 text-center py-4">Sin actividad</p>'}
+                                `).join('') || '<p class="text-theme-textMuted text-center font-medium py-8">Sin actividad registrada</p>'}
                             </div>
                         </div>
                     </div>
@@ -2255,73 +2356,69 @@
         function renderSettings(container) {
             container.innerHTML = `
                 <div class="animate-slideIn">
-                    <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">⚙️ Configuración</h2>
+                    <h2 class="text-2xl font-bold mb-6 flex items-center gap-3 text-theme-greenDark">⚙️ Configuración</h2>
 
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div class="glass rounded-2xl p-6">
-                            <h3 class="font-bold mb-4">💾 Gestión de Datos</h3>
+                        <div class="glass bg-white/60 border border-white rounded-2xl p-6 shadow-sm">
+                            <h3 class="font-extrabold text-lg mb-5 text-theme-text border-b border-theme-beige pb-3">💾 Gestión de Datos</h3>
                             <div class="space-y-3">
-                                <button onclick="exportData()" class="w-full py-3 rounded-xl bg-blue-500 hover:bg-blue-600 transition flex items-center justify-center gap-2">
-                                    📥 Exportar Datos (JSON)
+                                <button onclick="exportData()" class="w-full py-4 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold border border-blue-200 transition flex items-center justify-center gap-2 shadow-sm">
+                                    📥 Descargar Copia de Seguridad (JSON)
                                 </button>
-                                <button onclick="showImportModal()" class="w-full py-3 rounded-xl bg-green-500 hover:bg-green-600 transition flex items-center justify-center gap-2">
+                                <button onclick="showImportModal()" class="w-full py-4 rounded-xl bg-green-50 hover:bg-green-100 text-green-700 font-bold border border-green-200 transition flex items-center justify-center gap-2 shadow-sm">
                                     📤 Importar Datos a Firebase
                                 </button>
-                                <button onclick="confirmResetData()" class="w-full py-3 rounded-xl bg-red-500 hover:bg-red-600 transition flex items-center justify-center gap-2">
-                                    🗑️ Restaurar Datos Predeterminados
+                                <button onclick="confirmResetData()" class="w-full py-4 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 font-bold border border-red-200 transition flex items-center justify-center gap-2 shadow-sm mt-6">
+                                    ⚠️ Restaurar Sistema de Fábrica
                                 </button>
                             </div>
                         </div>
 
-                        <div class="glass rounded-2xl p-6">
-                            <h3 class="font-bold mb-4">ℹ️ Información del Sistema</h3>
-                            <div class="space-y-3 text-sm">
-                                <div class="flex justify-between p-3 rounded-xl bg-white/5">
-                                    <span>Base de Datos:</span>
-                                    <span class="font-medium text-pizza-yellow">Cloud Firestore (En Vivo)</span>
+                        <div class="glass bg-white/60 border border-white rounded-2xl p-6 shadow-sm">
+                            <h3 class="font-extrabold text-lg mb-5 text-theme-text border-b border-theme-beige pb-3">ℹ️ Información del Sistema</h3>
+                            <div class="space-y-3 text-sm font-medium">
+                                <div class="flex justify-between p-4 rounded-xl bg-white shadow-sm border border-theme-beige">
+                                    <span class="text-theme-textMuted font-bold">Base de Datos:</span>
+                                    <span class="font-extrabold text-theme-greenDark bg-theme-bg px-3 py-1 rounded-lg">Cloud Firestore (En Vivo)</span>
                                 </div>
-                                <div class="flex justify-between p-3 rounded-xl bg-white/5">
-                                    <span>Usuarios registrados:</span>
-                                    <span class="font-medium">${state.users.length}</span>
+                                <div class="flex justify-between p-4 rounded-xl bg-white shadow-sm border border-theme-beige">
+                                    <span class="text-theme-textMuted font-bold">Usuarios registrados:</span>
+                                    <span class="font-extrabold text-theme-text text-base">${state.users.length}</span>
                                 </div>
-                                <div class="flex justify-between p-3 rounded-xl bg-white/5">
-                                    <span>Productos:</span>
-                                    <span class="font-medium">${state.products.length}</span>
+                                <div class="flex justify-between p-4 rounded-xl bg-white shadow-sm border border-theme-beige">
+                                    <span class="text-theme-textMuted font-bold">Productos en menú:</span>
+                                    <span class="font-extrabold text-theme-text text-base">${state.products.length}</span>
                                 </div>
-                                <div class="flex justify-between p-3 rounded-xl bg-white/5">
-                                    <span>Insumos en inventario:</span>
-                                    <span class="font-medium">${state.inventory.length}</span>
-                                </div>
-                                <div class="flex justify-between p-3 rounded-xl bg-white/5">
-                                    <span>Total de ventas:</span>
-                                    <span class="font-medium">${state.sales.length}</span>
+                                <div class="flex justify-between p-4 rounded-xl bg-white shadow-sm border border-theme-beige">
+                                    <span class="text-theme-textMuted font-bold">Insumos en inventario:</span>
+                                    <span class="font-extrabold text-theme-text text-base">${state.inventory.length}</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="glass rounded-2xl p-6">
-                            <h3 class="font-bold mb-4">🪑 Gestión de Mesas</h3>
-                            <div class="space-y-3">
+                        <div class="glass bg-white/60 border border-white rounded-2xl p-6 shadow-sm">
+                            <h3 class="font-extrabold text-lg mb-5 text-theme-text border-b border-theme-beige pb-3">🪑 Gestión de Mesas</h3>
+                            <div class="space-y-3 max-h-60 overflow-auto scrollbar-thin pr-2 mb-4">
                                 ${state.tables.map(t => `
-                                    <div class="flex items-center justify-between p-3 rounded-xl bg-white/5">
-                                        <span>${t.name} (${t.capacity} personas)</span>
-                                        <span class="px-2 py-1 rounded-full text-xs ${t.status === 'occupied' ? 'bg-orange-500' : 'bg-green-500'}">${t.status === 'occupied' ? 'Ocupada' : 'Libre'}</span>
+                                    <div class="flex items-center justify-between p-3 rounded-xl bg-white shadow-sm border border-theme-beige">
+                                        <span class="font-bold text-theme-text">${t.name} <span class="text-theme-textMuted text-xs font-medium ml-1">(${t.capacity} pers.)</span></span>
+                                        <span class="px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm ${t.status === 'occupied' ? 'bg-orange-400' : 'bg-green-400'}">${t.status === 'occupied' ? 'Ocupada' : 'Libre'}</span>
                                     </div>
                                 `).join('')}
-                                <button onclick="addTable()" class="w-full py-2 rounded-xl bg-white/10 hover:bg-white/20 transition text-sm">
-                                    ➕ Agregar Mesa
-                                </button>
                             </div>
+                            <button onclick="addTable()" class="w-full py-3 rounded-xl bg-theme-bg hover:bg-theme-beige border border-theme-beige font-bold text-theme-text transition text-sm shadow-sm">
+                                ➕ Agregar Nueva Mesa
+                            </button>
                         </div>
 
-                        <div class="glass rounded-2xl p-6">
-                            <h3 class="font-bold mb-4">📞 Proveedores</h3>
-                            <div class="space-y-3 max-h-60 overflow-auto scrollbar-thin">
+                        <div class="glass bg-white/60 border border-white rounded-2xl p-6 shadow-sm">
+                            <h3 class="font-extrabold text-lg mb-5 text-theme-text border-b border-theme-beige pb-3">📞 Catálogo de Proveedores</h3>
+                            <div class="space-y-3 max-h-80 overflow-auto scrollbar-thin pr-2">
                                 ${state.suppliers.map(s => `
-                                    <div class="p-3 rounded-xl bg-white/5">
-                                        <p class="font-medium">${s.name}</p>
-                                        <p class="text-xs text-gray-400">📞 ${s.contact}</p>
-                                        <p class="text-xs text-gray-400">✉️ ${s.email}</p>
+                                    <div class="p-4 rounded-xl bg-white shadow-sm border border-theme-beige">
+                                        <p class="font-extrabold text-theme-greenDark text-lg mb-1">${s.name}</p>
+                                        <p class="text-sm font-medium text-theme-textMuted flex gap-2"><span class="w-4">📞</span> ${s.contact}</p>
+                                        <p class="text-sm font-medium text-theme-textMuted flex gap-2"><span class="w-4">✉️</span> ${s.email}</p>
                                     </div>
                                 `).join('')}
                             </div>
@@ -2346,14 +2443,14 @@
         function showImportModal() {
             const modal = document.getElementById('modalContainer');
             modal.innerHTML = `
-                <div class="glass rounded-2xl p-6 w-full max-w-md animate-slideIn">
-                    <h3 class="text-xl font-bold mb-4">📤 Importar Datos</h3>
+                <div class="glass bg-white/90 rounded-3xl p-6 w-full max-w-md animate-slideIn shadow-2xl border-2 border-white">
+                    <h3 class="text-xl font-bold mb-4 text-theme-greenDark">📤 Importar Datos</h3>
                     <div class="space-y-4">
-                        <p class="text-sm text-gray-400">Selecciona un archivo JSON exportado anteriormente. Esto reemplazará todos los datos en la base de datos de Firebase.</p>
-                        <input type="file" id="importFile" accept=".json" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl">
-                        <div class="grid grid-cols-2 gap-3">
-                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white/10 hover:bg-white/20 transition">Cancelar</button>
-                            <button onclick="importData()" class="btn-primary py-3 rounded-xl">Importar</button>
+                        <p class="text-sm text-theme-textMuted font-medium">Selecciona un archivo JSON exportado anteriormente. Esto reemplazará todos los datos en la base de datos de Firebase.</p>
+                        <input type="file" id="importFile" accept=".json" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium">
+                        <div class="grid grid-cols-2 gap-3 pt-2">
+                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text">Cancelar</button>
+                            <button onclick="importData()" class="btn-primary py-3 rounded-xl font-bold shadow-md">Importar a la Nube</button>
                         </div>
                     </div>
                 </div>
@@ -2374,7 +2471,7 @@
                     const imported = JSON.parse(e.target.result);
                     state = { ...DEFAULT_DATA, ...imported };
                     saveToStorage();
-                    showToast('Datos importados a Firebase', 'success');
+                    showToast('Datos importados a Firebase exitosamente', 'success');
                     closeModal();
                     renderView(currentView);
                 } catch (err) {
@@ -2387,12 +2484,12 @@
         function confirmResetData() {
             const modal = document.getElementById('modalContainer');
             modal.innerHTML = `
-                <div class="glass rounded-2xl p-6 w-full max-w-md animate-slideIn">
-                    <h3 class="text-xl font-bold mb-4 text-red-400">⚠️ Restaurar Datos</h3>
-                    <p class="text-gray-300 mb-4">¿Estás seguro de que quieres restaurar todos los datos a los valores predeterminados? Esta acción eliminará los datos en Firebase.</p>
+                <div class="glass bg-white/90 rounded-3xl p-6 w-full max-w-md animate-slideIn shadow-2xl border-2 border-red-200">
+                    <h3 class="text-xl font-extrabold mb-4 text-red-600">⚠️ Restaurar Datos</h3>
+                    <p class="text-theme-text font-medium mb-6">¿Estás seguro de que quieres restaurar todos los datos a los valores predeterminados? Esta acción eliminará los datos en Firebase de manera permanente.</p>
                     <div class="grid grid-cols-2 gap-3">
-                        <button onclick="closeModal()" class="py-3 rounded-xl bg-white/10 hover:bg-white/20 transition">Cancelar</button>
-                        <button onclick="resetData()" class="py-3 rounded-xl bg-red-500 hover:bg-red-600 transition">Restaurar</button>
+                        <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text">Cancelar</button>
+                        <button onclick="resetData()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl shadow-md transition">Sí, Restaurar Todo</button>
                     </div>
                 </div>
             `;
@@ -2416,19 +2513,19 @@
                 status: 'free'
             });
             saveToStorage();
-            showToast('Mesa agregada', 'success');
+            showToast('Mesa agregada correctamente', 'success');
             renderSettings(document.getElementById('contentArea'));
         }
 
         // ==================== INITIALIZATION ====================
         document.addEventListener('DOMContentLoaded', async function() {
-            // Quitamos el intervalo estático de recarga de cocina ya que usamos Real-time Database listeners
-            
             // Cargar de Firebase en vez de localStorage
             await loadFromStorage();
             
             // Remover pantalla de carga y mostrar login/app
-            document.getElementById('loadingScreen').classList.add('hidden');
+            const loadingScreen = document.getElementById('loadingScreen');
+            if(loadingScreen) loadingScreen.classList.add('hidden');
+            
             checkSession();
 
             // Handle Enter key on login
