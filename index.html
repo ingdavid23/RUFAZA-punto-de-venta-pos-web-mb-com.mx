@@ -228,6 +228,7 @@
                     </p>
                 </div>
                 <div class="space-y-4">
+
                     <div>
                         <label class="block text-sm font-bold mb-2 text-theme-text">Usuario</label>
                         <input type="text" id="loginUser"
@@ -240,6 +241,14 @@
                             class="w-full px-4 py-3 bg-white/80 border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green transition text-theme-text font-medium"
                             placeholder="Ingrese su contraseña">
                     </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-2 text-theme-text">Sucursal</label>
+                        <select id="loginBranch" class="w-full px-4 py-3 bg-white/80 border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green transition text-theme-text font-bold">
+                            <option value="sucursal_principal">📍 Sucursal Principal</option>
+                            <option value="sucursal_centro">🏪 Sucursal Centro</option>
+                        </select>
+                    </div>
+                    
                     <div id="loginError" class="hidden text-red-600 text-sm font-bold text-center p-3 bg-red-50 border border-red-200 rounded-xl">
                     </div>
                     <button onclick="handleLogin()" class="w-full btn-primary font-bold py-3.5 rounded-xl mt-4 shadow-md text-lg">
@@ -258,8 +267,10 @@
                     <img src="rufaza.jpg" alt="Logo Rufaza" class="w-10 h-10 md:w-12 md:h-12 object-contain rounded-lg drop-shadow-sm">
                     
                     <div>
-                        <h1 class="text-lg md:text-xl font-bold text-theme-greenDark leading-tight">SISTEMA-POS-RUFAZA-PIZZERIA</h1>
-                        <p id="currentDateTime" class="text-[10px] md:text-xs text-theme-textMuted hidden sm:block"></p>
+                        <h1 class="text-lg md:text-xl font-bold text-theme-greenDark leading-tight flex items-center gap-2">
+                            SISTEMA POS 
+                            <span id="headerBranchName" class="text-[10px] md:text-xs bg-theme-green text-white px-2 py-1 rounded-lg shadow-sm">Principal</span>
+                        </h1>
                     </div>
                 </div>
                 <div class="flex items-center gap-2 md:gap-4">
@@ -359,6 +370,8 @@ function clearAllNotifications() {
                 }
             });
 
+            
+
         // ==================== ALERTAS DE CONEXIÓN ====================
         // Le avisa visualmente al usuario si se cae o regresa el internet
         window.addEventListener('offline', () => {
@@ -441,34 +454,46 @@ function clearAllNotifications() {
         };
 
         // ==================== STATE MANAGEMENT ====================
+        // ==================== STATE MANAGEMENT ====================
         let state = {};
         let currentUser = null;
         let currentView = 'pos';
         let currentCart = [];
         let selectedTable = null;
+        
+        // NUEVAS VARIABLES PARA MULTI-SUCURSAL
+        let currentBranch = 'sucursal_principal'; 
+        let stateUnsubscribe = null; // Para detener la sincronización al cambiar de sucursal
 
         async function saveToStorage() {
             try {
-                await db.collection('pizzaManager').doc('state').set(state);
+                // Guarda específicamente en la sucursal seleccionada
+                await db.collection('pizzaManager').doc(currentBranch).set(state);
             } catch (error) {
                 console.error("Error al guardar en Firebase:", error);
                 showToast('Error al guardar datos', 'error');
             }
         }
 
-        function loadFromStorage() {
+        function loadFromStorage(branchId) {
             return new Promise((resolve) => {
-                db.collection('pizzaManager').doc('state').onSnapshot((doc) => {
+                if (stateUnsubscribe) {
+                    stateUnsubscribe(); // Apaga la conexión a la sucursal anterior si existía
+                }
+                
+                currentBranch = branchId;
+                
+                // Conecta en tiempo real con la base de datos de ESA sucursal
+                stateUnsubscribe = db.collection('pizzaManager').doc(currentBranch).onSnapshot((doc) => {
                     if (doc.exists) {
                         state = { ...DEFAULT_DATA, ...doc.data() };
 
                         if (currentUser) {
-                            if (currentView === 'kitchen' || currentView === 'orders' || currentView === 'waiter') {
-                                renderView(currentView);
-                            }
+                            renderView(currentView); // Actualiza la vista completa siempre
                             updateNotificationBadge();
                         }
                     } else {
+                        // Si la sucursal es nueva (Ej. Sucursal Centro), la crea automáticamente con los datos por defecto
                         state = JSON.parse(JSON.stringify(DEFAULT_DATA));
                         saveToStorage();
                     }
@@ -482,7 +507,6 @@ function clearAllNotifications() {
                 });
             });
         }
-
         function logActivity(action, details) {
             state.activityLog.push({
                 id: Date.now(),
@@ -570,26 +594,56 @@ function clearAllNotifications() {
         }
 
         // ==================== AUTHENTICATION ====================
-        function handleLogin() {
+       // ==================== AUTHENTICATION ====================
+       async function handleLogin() {
             const username = document.getElementById('loginUser').value.toLowerCase();
             const password = document.getElementById('loginPass').value;
+            const branch = document.getElementById('loginBranch').value;
             const errorDiv = document.getElementById('loginError');
+            
+            const btn = document.querySelector('button[onclick="handleLogin()"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '⏳ Conectando a Sucursal...';
+            btn.disabled = true;
 
-            const user = state.users.find(u => u.username === username && u.password === password && u.active);
+            try {
+                // 1. Buscamos los datos de ESA sucursal en Firebase ANTES de hacer login
+                const doc = await db.collection('pizzaManager').doc(branch).get();
+                let branchState = doc.exists ? doc.data() : DEFAULT_DATA; // Si es nueva, usa los datos por defecto
 
-            if (user) {
-                currentUser = user;
-                localStorage.setItem('currentUser', JSON.stringify(user));
-                logActivity('LOGIN', `Usuario ${user.name} inició sesión`);
-                errorDiv.classList.add('hidden');
-                document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('mainApp').classList.remove('hidden');
-                initMainApp();
-            } else {
-                errorDiv.textContent = 'Usuario o contraseña incorrectos';
+                // 2. Verificamos si el usuario existe EN ESA sucursal
+                const user = branchState.users.find(u => u.username === username && u.password === password && u.active);
+
+                if (user) {
+                    currentUser = user;
+                    currentBranch = branch;
+                    localStorage.setItem('currentUser', JSON.stringify(user));
+                    localStorage.setItem('currentBranch', branch);
+                    
+                    // 3. Arrancamos la sincronización en vivo de la sucursal
+                    await loadFromStorage(branch); 
+                    
+                    const branchLabel = document.getElementById('headerBranchName');
+                    if (branchLabel) branchLabel.textContent = branch === 'sucursal_principal' ? 'Principal' : 'Centro';
+                    logActivity('LOGIN', `Usuario ${user.name} inició sesión`);
+                    
+                    errorDiv.classList.add('hidden');
+                    document.getElementById('loginScreen').classList.add('hidden');
+                    document.getElementById('mainApp').classList.remove('hidden');
+                    initMainApp();
+                } else {
+                    errorDiv.textContent = 'Usuario o contraseña incorrectos en esta Sucursal';
+                    errorDiv.classList.remove('hidden');
+                    document.getElementById('loginUser').parentElement.classList.add('animate-shake');
+                    setTimeout(() => document.getElementById('loginUser').parentElement.classList.remove('animate-shake'), 500);
+                }
+            } catch (error) {
+                console.error("🔥 Error exacto de Firebase:", error); // Lo mostrará en la consola (F12)
+                errorDiv.textContent = 'Error: ' + error.message; // Te lo mostrará en la pantalla roja
                 errorDiv.classList.remove('hidden');
-                document.getElementById('loginUser').parentElement.classList.add('animate-shake');
-                setTimeout(() => document.getElementById('loginUser').parentElement.classList.remove('animate-shake'), 500);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
             }
         }
 
@@ -597,31 +651,80 @@ function clearAllNotifications() {
             logActivity('LOGOUT', `Usuario ${currentUser.name} cerró sesión`);
             currentUser = null;
             localStorage.removeItem('currentUser');
+            localStorage.removeItem('currentBranch');
+            
+            if (stateUnsubscribe) stateUnsubscribe(); // Detener internet de la sucursal actual
+            
             document.getElementById('mainApp').classList.add('hidden');
             document.getElementById('loginScreen').classList.remove('hidden');
             document.getElementById('loginUser').value = '';
             document.getElementById('loginPass').value = '';
         }
 
-        function checkSession() {
+        async function checkSession() {
             const savedUser = localStorage.getItem('currentUser');
-            if (savedUser) {
+            const savedBranch = localStorage.getItem('currentBranch');
+            
+            if (savedUser && savedBranch) {
                 currentUser = JSON.parse(savedUser);
+                currentBranch = savedBranch;
+                const branchLabel = document.getElementById('headerBranchName');
+if (branchLabel) branchLabel.textContent = currentBranch === 'sucursal_principal' ? 'Principal' : 'Centro';
+                
+                // Conectar directamente a la sucursal guardada
+                await loadFromStorage(currentBranch); 
+                
                 document.getElementById('loginScreen').classList.add('hidden');
                 document.getElementById('mainApp').classList.remove('hidden');
                 initMainApp();
+                
+                const loadingScreen = document.getElementById('loadingScreen');
+                if (loadingScreen) loadingScreen.classList.add('hidden');
             } else {
+                const loadingScreen = document.getElementById('loadingScreen');
+                if (loadingScreen) loadingScreen.classList.add('hidden');
                 document.getElementById('loginScreen').classList.remove('hidden');
             }
         }
 
+        // ==================== INITIALIZATION ====================
+        document.addEventListener('DOMContentLoaded', function () {
+            // Revisar si ya hay sesión para cargar directo la sucursal
+            checkSession();
+
+            // Handle Enter key on login
+            document.getElementById('loginPass')?.addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') handleLogin();
+            });
+            document.getElementById('loginUser')?.addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') document.getElementById('loginPass').focus();
+            });
+
+            // Close notifications panel when clicking outside
+            document.addEventListener('click', function (e) {
+                const notifPanel = document.getElementById('notifPanel');
+                const notifBell = document.getElementById('notificationBell');
+                if (notifPanel && notifBell && !notifPanel.contains(e.target) && !notifBell.contains(e.target)) {
+                    notifPanel.classList.add('hidden');
+                }
+            });
+        });
+
+        // ==================== MAIN APP INITIALIZATION ====================
         // ==================== MAIN APP INITIALIZATION ====================
         function initMainApp() {
-            document.getElementById('userName').textContent = currentUser.name;
+            // Buscamos los elementos de forma segura. Si existen, les ponemos texto, si no, no pasa nada.
+            const elName = document.getElementById('userName');
+            if (elName) elName.textContent = currentUser.name;
+            
             const roleNames = { admin: 'Administrador', cashier: 'Cajero', kitchen: 'Cocina', waiter: 'Mesero' };
             const roleIcons = { admin: '👨‍💼', cashier: '💰', kitchen: '👨‍🍳', waiter: '🍽️' };
-            document.getElementById('userRole').textContent = roleNames[currentUser.role];
-            document.getElementById('userIcon').textContent = roleIcons[currentUser.role];
+            
+            const elRole = document.getElementById('userRole');
+            if (elRole) elRole.textContent = roleNames[currentUser.role];
+            
+            const elIcon = document.getElementById('userIcon');
+            if (elIcon) elIcon.textContent = roleIcons[currentUser.role];
 
             renderNavigation();
             updateDateTime();
@@ -634,17 +737,23 @@ function clearAllNotifications() {
         }
 
         function updateDateTime() {
-            const now = new Date();
-            document.getElementById('currentDateTime').textContent = now.toLocaleString('es-MX', {
-                weekday: 'long', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-            });
+            const dateEl = document.getElementById('currentDateTime');
+            if (dateEl) { // Solo si la etiqueta existe, ponemos la hora
+                const now = new Date();
+                dateEl.textContent = now.toLocaleString('es-MX', {
+                    weekday: 'long', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+            }
         }
 
         function updateNotificationBadge() {
+            const badge = document.getElementById('notifCount');
+            if (!badge) return; // Si la campanita no existe, abortamos sin generar error
+
             const relevant = state.notifications.filter(n =>
                 !n.read && (n.forRoles.length === 0 || n.forRoles.includes(currentUser.role))
             );
-            const badge = document.getElementById('notifCount');
+            
             if (relevant.length > 0) {
                 badge.textContent = relevant.length;
                 badge.classList.remove('hidden');
@@ -721,6 +830,13 @@ function clearAllNotifications() {
             };
 
             const items = navItems[currentUser.role] || [];
+            
+            // Inyectar pestaña de Control Global SOLO para el Admin de la Principal
+            if (currentUser.role === 'admin' && currentBranch === 'sucursal_principal') {
+                if (!items.find(item => item.id === 'global')) {
+                    items.splice(1, 0, { id: 'global', icon: '🌍', label: 'Control Global' }); // Se inserta junto al Dashboard
+                }
+            }
             nav.querySelector('div').innerHTML = items.map(item => `
                 <button onclick="renderView('${item.id}')" id="nav-${item.id}" 
                     class="flex items-center gap-2 px-4 py-2 rounded-xl transition whitespace-nowrap
@@ -751,7 +867,8 @@ function clearAllNotifications() {
                 orders: renderOrders,
                 cashregister: renderCashRegister,
                 myorders: renderMyOrders,
-                tickethistory: renderTicketHistory 
+                tickethistory: renderTicketHistory,
+                global: renderGlobalDashboard
             };
 
             if (views[viewId]) {
@@ -3726,6 +3843,113 @@ function updateProduct(productId) {
                 }
             });
         });
+
+        // ==================== GLOBAL DASHBOARD (MULTI-SUCURSAL) ====================
+        async function renderGlobalDashboard(container) {
+            // 1. Mostrar pantalla de carga
+            container.innerHTML = `
+                <div class="h-full flex flex-col items-center justify-center animate-pulse">
+                    <div class="text-5xl mb-4">🌍</div>
+                    <p class="text-theme-greenDark font-bold text-lg">Recolectando información de las sucursales...</p>
+                </div>
+            `;
+
+            try {
+                // 2. Extraer datos en vivo de la Sucursal Centro desde Firebase
+                const centroDoc = await db.collection('pizzaManager').doc('sucursal_centro').get();
+                const centroState = centroDoc.exists ? centroDoc.data() : null;
+
+                const todayStr = new Date().toDateString();
+
+                // 3. Cálculos Sucursal Principal (Local)
+                const prinSalesToday = state.sales.filter(s => new Date(s.timestamp).toDateString() === todayStr).reduce((sum, s) => sum + s.total, 0);
+                const prinOrdersActive = state.orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled').length;
+                const prinLowStock = state.inventory.filter(i => i.stock <= i.minStock).length;
+
+                // 4. Cálculos Sucursal Centro (Remota)
+                let centroSalesToday = 0;
+                let centroOrdersActive = 0;
+                let centroLowStock = 0;
+
+                if (centroState) {
+                    centroSalesToday = (centroState.sales || []).filter(s => new Date(s.timestamp).toDateString() === todayStr).reduce((sum, s) => sum + s.total, 0);
+                    centroOrdersActive = (centroState.orders || []).filter(o => o.status !== 'delivered' && o.status !== 'cancelled').length;
+                    centroLowStock = (centroState.inventory || []).filter(i => i.stock <= i.minStock).length;
+                }
+
+                const totalGlobal = prinSalesToday + centroSalesToday;
+
+                // 5. Dibujar la Interfaz Comparativa
+                container.innerHTML = `
+                    <div class="animate-slideIn">
+                        <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4 border-b border-theme-beige pb-4">
+                            <div>
+                                <h2 class="text-2xl font-bold flex items-center gap-3 text-theme-greenDark">🌍 Control Global de Franquicia</h2>
+                                <p class="text-theme-textMuted text-sm font-medium mt-1">Monitoreo en tiempo real de todas las sucursales activas</p>
+                            </div>
+                            <div class="bg-theme-green text-white px-5 py-3 rounded-2xl shadow-md text-right">
+                                <p class="text-xs font-bold opacity-80 uppercase tracking-wider">Ingresos Globales Hoy</p>
+                                <p class="text-3xl font-extrabold">$${totalGlobal.toLocaleString()}</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="glass bg-white/80 border-2 border-theme-green rounded-3xl p-6 shadow-lg relative overflow-hidden">
+                                <div class="absolute top-0 left-0 w-full h-2 bg-theme-green"></div>
+                                <h3 class="text-xl font-extrabold text-theme-text mb-6 flex items-center gap-2">📍 Sucursal Principal <span class="bg-green-100 text-green-700 text-[10px] px-2 py-1 rounded-md ml-auto">ESTA SUCURSAL</span></h3>
+                                
+                                <div class="space-y-4">
+                                    <div class="flex justify-between items-center p-4 bg-theme-bg rounded-xl border border-theme-beige">
+                                        <span class="font-bold text-theme-textMuted flex items-center gap-2">💰 Ventas Hoy</span>
+                                        <span class="text-2xl font-extrabold text-green-600">$${prinSalesToday.toLocaleString()}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center p-4 bg-theme-bg rounded-xl border border-theme-beige">
+                                        <span class="font-bold text-theme-textMuted flex items-center gap-2">🔥 Pedidos Activos</span>
+                                        <span class="text-xl font-bold text-blue-600">${prinOrdersActive} en curso</span>
+                                    </div>
+                                    <div class="flex justify-between items-center p-4 ${prinLowStock > 0 ? 'bg-red-50 border-red-200' : 'bg-theme-bg border-theme-beige'} rounded-xl border">
+                                        <span class="font-bold ${prinLowStock > 0 ? 'text-red-600' : 'text-theme-textMuted'} flex items-center gap-2">⚠️ Alertas Inventario</span>
+                                        <span class="text-lg font-bold ${prinLowStock > 0 ? 'text-red-600' : 'text-theme-text'}">${prinLowStock} insumos bajos</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="glass bg-white/60 border border-white rounded-3xl p-6 shadow-md relative overflow-hidden">
+                                <div class="absolute top-0 left-0 w-full h-2 bg-blue-400"></div>
+                                <h3 class="text-xl font-extrabold text-theme-text mb-6 flex items-center gap-2">🏪 Sucursal Centro ${!centroState ? '<span class="text-red-500 text-sm ml-auto font-medium">Sin datos</span>' : ''}</h3>
+                                
+                                <div class="space-y-4 ${!centroState ? 'opacity-50 grayscale' : ''}">
+                                    <div class="flex justify-between items-center p-4 bg-white rounded-xl shadow-sm border border-theme-beige">
+                                        <span class="font-bold text-theme-textMuted flex items-center gap-2">💰 Ventas Hoy</span>
+                                        <span class="text-2xl font-extrabold text-blue-600">$${centroSalesToday.toLocaleString()}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center p-4 bg-white rounded-xl shadow-sm border border-theme-beige">
+                                        <span class="font-bold text-theme-textMuted flex items-center gap-2">🔥 Pedidos Activos</span>
+                                        <span class="text-xl font-bold text-blue-600">${centroOrdersActive} en curso</span>
+                                    </div>
+                                    <div class="flex justify-between items-center p-4 ${centroLowStock > 0 ? 'bg-red-50 border-red-200' : 'bg-white border-theme-beige'} rounded-xl shadow-sm border">
+                                        <span class="font-bold ${centroLowStock > 0 ? 'text-red-600' : 'text-theme-textMuted'} flex items-center gap-2">⚠️ Alertas Inventario</span>
+                                        <span class="text-lg font-bold ${centroLowStock > 0 ? 'text-red-600' : 'text-theme-text'}">${centroLowStock} insumos bajos</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4 text-right">
+                                    <button onclick="handleLogout(); setTimeout(() => { document.getElementById('loginBranch').value = 'sucursal_centro'; }, 100);" class="text-xs text-blue-500 font-bold hover:underline">Cambiar a esta sucursal ➡️</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error("Error cargando Dashboard Global:", error);
+                container.innerHTML = `
+                    <div class="p-8 text-center">
+                        <div class="text-4xl mb-4">❌</div>
+                        <h2 class="text-xl font-bold text-red-600">No se pudo contactar con las demás sucursales.</h2>
+                        <p class="text-theme-textMuted mt-2">${error.message}</p>
+                    </div>
+                `;
+            }
+        }
     </script>
 </body>
 
