@@ -198,31 +198,31 @@
         </div>
 
         <div id="mainApp" class="hidden h-full flex flex-col">
-            <header class="glass border-b border-white px-4 py-3 flex items-center justify-between shrink-0">
-                <div class="flex items-center gap-3"><span class="text-3xl">🍕</span>
+            <header class="glass border-b border-white px-3 md:px-4 py-3 flex items-center justify-between shrink-0 gap-2">
+                <div class="flex items-center gap-2 md:gap-3">
+                    <span class="text-2xl md:text-3xl">🍕</span>
                     <div>
-                        <h1 class="text-xl font-bold text-theme-greenDark">PizzaManager Pro</h1>
-                        <p id="currentDateTime" class="text-xs text-theme-textMuted"></p>
+                        <h1 class="text-lg md:text-xl font-bold text-theme-greenDark leading-tight">PizzaManager Pro</h1>
+                        <p id="currentDateTime" class="text-[10px] md:text-xs text-theme-textMuted hidden sm:block"></p>
                     </div>
                 </div>
-                <div class="flex items-center gap-4">
-                    <div id="notificationBell" class="relative cursor-pointer" onclick="toggleNotifications()">
-                        <span class="text-2xl">🔔</span>
-                        <span id="notifCount"
-                            class="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center hidden shadow-md">0</span>
+                <div class="flex items-center gap-2 md:gap-4">
+                    <div id="notificationBell" class="relative cursor-pointer p-1" onclick="toggleNotifications()">
+                        <span class="text-xl md:text-2xl">🔔</span>
+                        <span id="notifCount" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] md:text-xs w-4 h-4 md:w-5 md:h-5 rounded-full flex items-center justify-center hidden shadow-md">0</span>
                     </div>
-                    <div class="flex items-center gap-2 glass px-3 py-2 rounded-xl border border-white">
-                        <span class="text-xl" id="userIcon">👤</span>
-                        <div>
-                            <p id="userName" class="text-sm font-bold text-theme-greenDark"></p>
-                            <p id="userRole" class="text-xs text-theme-textMuted font-medium"></p>
+                    <div class="flex items-center gap-2 glass px-2 md:px-3 py-1.5 md:py-2 rounded-xl border border-white">
+                        <span class="text-lg md:text-xl" id="userIcon">👤</span>
+                        <div class="hidden sm:block">
+                            <p id="userName" class="text-xs md:text-sm font-bold text-theme-greenDark leading-tight"></p>
+                            <p id="userRole" class="text-[10px] md:text-xs text-theme-textMuted font-medium"></p>
                         </div>
                     </div>
-                    <button onclick="handleLogout()" class="p-2 hover:bg-white/60 rounded-lg transition"
-                        title="Cerrar Sesión"> 🚪 </button>
+                    <button onclick="handleLogout()" class="p-1.5 md:p-2 hover:bg-white/60 rounded-lg transition text-lg md:text-xl" title="Cerrar Sesión">
+                        🚪
+                    </button>
                 </div>
             </header>
-
             <nav id="mainNav" class="glass border-b border-white px-4 py-2 shrink-0">
                 <div class="flex gap-2 overflow-x-auto scrollbar-thin pb-1">
                 </div>
@@ -722,67 +722,66 @@
 
         // ==================== POS (Point of Sale) ====================
 
+      
         function renderPOS(container) {
-    const categories = [
-        { id: 'all', name: 'Todo', icon: '🍽️' },
-        { id: 'pizza', name: 'Pizzas', icon: '🍕' },
-        { id: 'drink', name: 'Bebidas', icon: '🥤' },
-        { id: 'extra', name: 'Extras', icon: '🍟' },
-        { id: 'promo', name: 'Promociones', icon: '🎉' }
-    ];
+            const categories = [
+                { id: 'all', name: 'Todo', icon: '🍽️' },
+                { id: 'pizza', name: 'Pizzas', icon: '🍕' },
+                { id: 'drink', name: 'Bebidas', icon: '🥤' },
+                { id: 'extra', name: 'Extras', icon: '🍟' },
+                { id: 'promo', name: 'Promociones', icon: '🎉' }
+            ];
 
-    container.innerHTML = `
-        <div class="animate-slideIn h-full flex flex-col lg:flex-row gap-4">
-            <div class="flex-1 flex flex-col min-h-0">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-xl font-bold flex items-center gap-2 text-theme-greenDark">🛒 Punto de Venta</h2>
-                    <div class="flex gap-2">
-                        ${categories.map(c => `
-                            <button onclick="filterPOSProducts('${c.id}')" id="cat-${c.id}" 
-                                class="px-3 py-2 rounded-xl text-sm transition font-medium border border-white ${c.id === 'all' ? 'bg-theme-green text-white shadow-md' : 'bg-white/60 hover:bg-white/90 text-theme-textMuted'}">
-                                ${c.icon} ${c.name}
-                            </button>
-                        `).join('')}
+            container.innerHTML = `
+                <div class="animate-slideIn h-full flex flex-col lg:flex-row gap-4">
+                    <div class="flex-1 flex flex-col min-h-0">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3 shrink-0">
+                            <h2 class="text-lg md:text-xl font-bold flex items-center gap-2 text-theme-greenDark">🛒 Punto de Venta</h2>
+                            <div class="flex gap-2 overflow-x-auto scrollbar-thin pb-1 w-full sm:w-auto">
+                                ${categories.map(c => `
+                                    <button onclick="filterPOSProducts('${c.id}')" id="cat-${c.id}" 
+                                        class="px-3 py-2 rounded-xl text-xs md:text-sm transition font-medium border border-white whitespace-nowrap shrink-0 ${c.id === 'all' ? 'bg-theme-green text-white shadow-md' : 'bg-white/60 hover:bg-white/90 text-theme-textMuted'}">
+                                        ${c.icon} ${c.name}
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div id="posProducts" class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-3 overflow-auto flex-1 scrollbar-thin pb-4 pr-1 md:pr-2">
+                            ${renderPOSProducts('all')}
+                        </div>
                     </div>
-                </div>
-                <div id="posProducts" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 overflow-auto flex-1 scrollbar-thin pb-4 pr-2">
-                    ${renderPOSProducts('all')}
-                </div>
-            </div>
 
-            <div class="w-full lg:w-96 glass bg-white/50 rounded-2xl p-4 flex flex-col">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="font-bold flex items-center gap-2 text-theme-greenDark">🧾 Cuenta</h3>
-                    <button onclick="clearCart()" class="text-xs font-bold text-red-500 hover:text-red-600 bg-white/60 px-2 py-1 rounded-lg transition">Limpiar</button>
-                </div>
-                <div id="cartItems" class="flex-1 overflow-auto scrollbar-thin space-y-2 mb-4 pr-1">
-                    ${renderCartItems()}
-                </div>
-                <div class="border-t border-theme-beige pt-4 space-y-3">
-                    <div class="flex justify-between text-lg font-medium">
-                        <span>Subtotal:</span>
-                        <span id="cartSubtotal">$${calculateCartTotal().toLocaleString()}</span>
+                    <div class="w-full lg:w-96 glass bg-white/50 rounded-2xl p-3 md:p-4 flex flex-col shrink-0 lg:h-full h-auto">
+                        <div class="flex items-center justify-between mb-3 md:mb-4">
+                            <h3 class="font-bold flex items-center gap-2 text-theme-greenDark text-sm md:text-base">🧾 Cuenta</h3>
+                            <button onclick="clearCart()" class="text-xs font-bold text-red-500 hover:text-red-600 bg-white/60 px-2 py-1 rounded-lg transition">Limpiar</button>
+                        </div>
+                        <div id="cartItems" class="flex-1 overflow-auto scrollbar-thin space-y-2 mb-3 md:mb-4 pr-1 min-h-[150px] lg:min-h-0">
+                            ${renderCartItems()}
+                        </div>
+                        <div class="border-t border-theme-beige pt-3 md:pt-4 space-y-2 md:space-y-3 shrink-0">
+                            <div class="flex justify-between text-base md:text-lg font-medium">
+                                <span>Subtotal:</span>
+                                <span id="cartSubtotal">$${calculateCartTotal().toLocaleString()}</span>
+                            </div>
+                            <div class="flex justify-between text-xl md:text-2xl font-bold text-theme-greenDark">
+                                <span>Total:</span>
+                                <span id="cartTotal">$${calculateCartTotal().toLocaleString()}</span>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-2 mt-2">
+                                <button id="btnPayCash" onclick="processPayment('cash')" class="btn-primary py-2.5 md:py-3 rounded-xl text-sm md:text-base font-medium flex items-center justify-center gap-1 md:gap-2 shadow-md disabled:opacity-50 disabled:cursor-not-allowed" ${currentCart.length === 0 ? 'disabled' : ''}>
+                                    💵 <span class="hidden sm:inline">Efectivo</span><span class="sm:hidden">Efect.</span>
+                                </button>
+                                <button id="btnPayTransfer" onclick="processPayment('transfer')" class="bg-blue-400 hover:bg-blue-500 text-white py-2.5 md:py-3 rounded-xl text-sm md:text-base font-medium flex items-center justify-center gap-1 md:gap-2 transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed" ${currentCart.length === 0 ? 'disabled' : ''}>
+                                    📱 <span class="hidden sm:inline">Transferencia</span><span class="sm:hidden">Transf.</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="flex justify-between text-2xl font-bold text-theme-greenDark">
-                        <span>Total:</span>
-                        <span id="cartTotal">$${calculateCartTotal().toLocaleString()}</span>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-2">
-                        <button id="btnPayCash" onclick="processPayment('cash')" class="btn-primary py-3 rounded-xl font-medium flex items-center justify-center gap-2 shadow-md disabled:opacity-50 disabled:cursor-not-allowed" ${currentCart.length === 0 ? 'disabled' : ''}>
-                            💵 Efectivo
-                        </button>
-                        <button id="btnPayTransfer" onclick="processPayment('transfer')" class="bg-blue-400 hover:bg-blue-500 text-white py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed" ${currentCart.length === 0 ? 'disabled' : ''}>
-                            📱 Transferencia
-                        </button>
-                    </div>
-                    
                 </div>
-            </div>
-        </div>
-    `;
-}
-
+            `;
+        }
 
        
 
@@ -1044,7 +1043,7 @@
         function showReceipt(sale) {
             const modal = document.getElementById('modalContainer');
             modal.innerHTML = `
-                <div class="bg-white text-theme-text rounded-3xl p-8 w-full max-w-sm animate-slideIn shadow-2xl" id="printArea">
+                <div class="bg-white text-theme-text rounded-3xl p-5 md:p-8 w-[95%] max-w-sm animate-slideIn shadow-2xl max-h-[90vh] overflow-y-auto scrollbar-thin" id="printArea">
                     <div class="text-center border-b-2 border-dashed border-theme-beige pb-6 mb-6">
                         <p class="text-5xl mb-3">🍕</p>
                         <h3 class="text-2xl font-extrabold text-theme-greenDark">PIZZERÍA</h3>
@@ -2457,7 +2456,7 @@
         function showOrderCashModal(order) {
             const modal = document.getElementById('modalContainer');
             modal.innerHTML = `
-                <div class="glass bg-white/90 rounded-3xl p-6 w-full max-w-md animate-slideIn border-2 border-white shadow-2xl">
+                <div class="glass bg-white/90 rounded-3xl p-5 md:p-6 w-[95%] max-w-md animate-slideIn border-2 border-white shadow-2xl max-h-[90vh] overflow-y-auto scrollbar-thin">
                     <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-theme-greenDark">💵 Cobrar Pedido #${order.id.toString().slice(-4)}</h3>
                     <div class="space-y-4">
                         <div class="text-center p-4 rounded-xl bg-theme-bg border border-theme-beige">
