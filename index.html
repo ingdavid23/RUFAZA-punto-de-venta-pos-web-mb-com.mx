@@ -9,6 +9,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
 
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        
+
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics-compat.js"></script>
@@ -546,13 +549,12 @@
             const navItems = {
                 admin: [
                     { id: 'dashboard', icon: '📊', label: 'Dashboard' },
-                    // Se eliminó la línea de 'Punto de Venta' aquí
                     { id: 'kitchen', icon: '👨‍🍳', label: 'Cocina' },
                     { id: 'waiter', icon: '🍽️', label: 'Meseros' },
                     { id: 'inventory', icon: '📦', label: 'Inventario' },
                     { id: 'products', icon: '🍕', label: 'Productos' },
                     { id: 'users', icon: '👥', label: 'Usuarios' },
-                    { id: 'reports', icon: '📈', label: 'Reportes' },
+                    { id: 'reports', icon: '📈', label: 'Estadísticas' }, // <-- CAMBIADO AQUÍ
                     { id: 'settings', icon: '⚙️', label: 'Configuración' }
                 ],
                 cashier: [
@@ -720,6 +722,61 @@
             return labels[status] || status;
         }
 
+        // ==================== VERIFICACIÓN DE STOCK AUTOMÁTICA ====================
+        function checkProductAvailability() {
+            let inventoryChanged = false;
+            
+            state.products.forEach(product => {
+                // Solo revisamos los productos que actualmente están activos y tienen receta
+                if (product.active && product.ingredients && product.ingredients.length > 0) {
+                    let hasStock = true;
+                    
+                    for (let ing of product.ingredients) {
+                        const invItem = state.inventory.find(i => i.id === ing.id);
+                        // Si el insumo no existe o el stock bajó a menos de lo que pide 1 receta
+                        if (!invItem || invItem.stock < ing.qty) {
+                            hasStock = false;
+                            break;
+                        }
+                    }
+
+                    if (!hasStock) {
+                        product.active = false; // Oculta el producto
+                        inventoryChanged = true;
+                        
+                        // Enviar alerta roja al sistema
+                        addNotification('error', `🚫 ${product.name} agotado (Se ocultó del menú automáticamente).`, ['admin', 'cashier', 'waiter']);
+                        logActivity('SYSTEM_AUTO', `Producto ${product.name} desactivado por falta de insumos.`);
+                    }
+                }
+            });
+
+            if (inventoryChanged) {
+                saveToStorage();
+                // Refrescar la pantalla si el usuario está viendo el menú en ese momento
+                if (currentView === 'pos') renderPOS(document.getElementById('contentArea'));
+                if (currentView === 'products') renderProducts(document.getElementById('contentArea'));
+                
+                // Si el modal de la mesa está abierto, lo actualizamos para que desaparezca el producto
+                if (!document.getElementById('modalContainer').classList.contains('hidden') && selectedTable) {
+                    selectTable(selectedTable); 
+                }
+            }
+        }
+
+        // ==================== VERIFICACIÓN DINÁMICA DE STOCK ====================
+        function hasEnoughStock(product) {
+            if (!product.ingredients || product.ingredients.length === 0) return true;
+            for (let ing of product.ingredients) {
+                const invItem = state.inventory.find(i => i.id === ing.id);
+                // Si el insumo no existe o el stock es menor a lo que pide la receta
+                if (!invItem || invItem.stock < ing.qty) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         // ==================== POS (Point of Sale) ====================
 
       
@@ -793,13 +850,19 @@
             return filtered.map(p => {
                 const categoryIcons = { pizza: '🍕', drink: '🥤', extra: '🍟', promo: '🎉' };
                 const displayIcon = p.icon || categoryIcons[p.category] || '🍽️';
+                
+                // Verificamos si hay ingredientes suficientes
+                const available = hasEnoughStock(p);
 
                 return `
-                    <div onclick="addToCart(${p.id})" 
-                        class="bg-white/80 rounded-xl p-4 cursor-pointer card-hover hover:border-theme-green border-2 border-transparent shadow-sm flex flex-col items-center text-center">
-                        <div class="text-4xl mb-2 drop-shadow-sm">${displayIcon}</div>
-                        <h4 class="font-bold text-sm mb-1 line-clamp-2 text-theme-text">${p.name}</h4>
-                        <p class="text-theme-greenDark font-extrabold text-lg">$${p.price}</p>
+                    <div ${available ? `onclick="addToCart(${p.id})"` : ''} 
+                        class="bg-white/80 rounded-xl p-4 ${available ? 'cursor-pointer card-hover hover:border-theme-green border-transparent' : 'cursor-not-allowed opacity-70 border-red-400 bg-red-50'} border-2 shadow-sm flex flex-col items-center text-center relative overflow-hidden transition-all">
+                        
+                        ${!available ? '<div class="absolute top-0 w-full bg-red-500 text-white text-[10px] font-extrabold py-0.5 tracking-wider">AGOTADO</div>' : ''}
+                        
+                        <div class="text-4xl mb-2 drop-shadow-sm ${!available ? 'mt-3 grayscale' : ''}">${displayIcon}</div>
+                        <h4 class="font-bold text-sm mb-1 line-clamp-2 ${!available ? 'text-red-800' : 'text-theme-text'}">${p.name}</h4>
+                        <p class="${!available ? 'text-red-600' : 'text-theme-greenDark'} font-extrabold text-lg">$${p.price}</p>
                     </div>
                 `;
             }).join('') || '<p class="col-span-full text-center text-theme-textMuted py-8">No hay productos en esta categoría</p>';
@@ -1003,7 +1066,7 @@
 
             state.sales.push(sale);
 
-            // Deduct inventory
+            // Descontar inventario
             currentCart.forEach(cartItem => {
                 const product = state.products.find(p => p.id === cartItem.productId);
                 if (product && product.ingredients) {
@@ -1018,6 +1081,9 @@
                     });
                 }
             });
+
+            // ---> NUEVO: Verificar si los productos se quedaron sin ingredientes <---
+            checkProductAvailability();
 
             if (state.cashRegister.isOpen) {
                 state.cashRegister.movements.push({
@@ -1039,6 +1105,7 @@
             currentCart = [];
             updateCartDisplay();
         }
+
 
         function showReceipt(sale) {
             const modal = document.getElementById('modalContainer');
@@ -1437,22 +1504,26 @@
                         </div>
                     ` : ''}
 
-                    <div class="flex gap-4 flex-col lg:flex-row">
-                        <div class="flex-1">
+                    <div class="flex-1">
                             <h4 class="font-bold mb-3 text-theme-text">Agregar Productos</h4>
                             <div class="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-60 overflow-auto scrollbar-thin pr-2">
                                 ${state.products.filter(p => p.active).map(p => {
-                const categoryIcons = { pizza: '🍕', drink: '🥤', extra: '🍟', promo: '🎉' };
-                const displayIcon = p.icon || categoryIcons[p.category] || '🍽️';
-                return `
-                                        <div onclick="addToTableOrder(${p.id})" 
-                                            class="p-3 rounded-xl bg-white border border-theme-beige shadow-sm hover:border-theme-green cursor-pointer transition text-center flex flex-col items-center justify-center gap-1">
-                                            <span class="text-2xl drop-shadow-sm">${displayIcon}</span>
-                                            <p class="text-sm font-bold text-theme-text line-clamp-1">${p.name}</p>
-                                            <p class="text-theme-greenDark font-extrabold text-sm">$${p.price}</p>
+                                    const categoryIcons = { pizza: '🍕', drink: '🥤', extra: '🍟', promo: '🎉' };
+                                    const displayIcon = p.icon || categoryIcons[p.category] || '🍽️';
+                                    const available = hasEnoughStock(p);
+                                    
+                                    return `
+                                        <div ${available ? `onclick="addToTableOrder(${p.id})"` : ''} 
+                                            class="p-3 rounded-xl ${available ? 'bg-white border-theme-beige hover:border-theme-green cursor-pointer' : 'bg-red-50 border-red-300 opacity-70 cursor-not-allowed'} border-2 shadow-sm transition text-center flex flex-col items-center justify-center gap-1 relative overflow-hidden">
+                                            
+                                            ${!available ? '<div class="absolute top-0 w-full bg-red-500 text-white text-[9px] font-extrabold py-0.5 tracking-wider">AGOTADO</div>' : ''}
+                                            
+                                            <span class="text-2xl drop-shadow-sm ${!available ? 'mt-2 grayscale' : ''}">${displayIcon}</span>
+                                            <p class="text-sm font-bold ${!available ? 'text-red-800' : 'text-theme-text'} line-clamp-1">${p.name}</p>
+                                            <p class="${!available ? 'text-red-600' : 'text-theme-greenDark'} font-extrabold text-sm">$${p.price}</p>
                                         </div>
                                     `;
-            }).join('')}
+                                }).join('')}
                             </div>
                         </div>
 
@@ -1516,6 +1587,25 @@
 
             state.orders.push(order);
             table.status = 'occupied';
+
+            // Descuento de inventario inmediato basado en receta
+            currentCart.forEach(cartItem => {
+                const product = state.products.find(p => p.id === cartItem.productId);
+                if (product && product.ingredients) {
+                    product.ingredients.forEach(ing => {
+                        const invItem = state.inventory.find(i => i.id === ing.id);
+                        if (invItem) {
+                            invItem.stock -= (ing.qty * cartItem.quantity);
+                            if (invItem.stock <= invItem.minStock) {
+                                addNotification('warning', `⚠️ Stock bajo: ${invItem.name}`, ['admin', 'kitchen']);
+                            }
+                        }
+                    });
+                }
+            });
+
+            // ---> NUEVO: Verificar si los productos se quedaron sin ingredientes <---
+            checkProductAvailability();
 
             logActivity('ORDER_CREATE', `Pedido #${orderId.toString().slice(-4)} creado para ${table.name}`);
             addNotification('info', `🍕 Nuevo pedido #${orderId.toString().slice(-4)} de ${table.name}`, ['kitchen']);
@@ -1931,27 +2021,40 @@
             renderProducts(document.getElementById('contentArea'));
         }
 
+        // ==================== PRODUCTS MODULE ====================
+        let currentEditIngredients = []; // Variable temporal para la receta mientras se edita
+
+        // ... (Aquí dejas intactas tus funciones renderProducts, toggleProductActive, showAddProductModal, saveNewProduct) ...
+
         function editProduct(productId) {
             const product = state.products.find(p => p.id === productId);
+            
+            // Clonamos los ingredientes actuales para no afectar la base de datos hasta que le den "Guardar"
+            currentEditIngredients = JSON.parse(JSON.stringify(product.ingredients || []));
+            
             const modal = document.getElementById('modalContainer');
             modal.innerHTML = `
-                <div class="glass bg-white/90 rounded-3xl p-6 w-full max-w-md animate-slideIn shadow-2xl border-2 border-white">
-                    <h3 class="text-xl font-bold mb-4 text-theme-greenDark">✏️ Editar Producto</h3>
+                <div class="glass bg-white/90 rounded-3xl p-5 md:p-6 w-[95%] max-w-lg animate-slideIn shadow-2xl border-2 border-white max-h-[90vh] overflow-y-auto scrollbar-thin">
+                    <div class="flex items-center justify-between mb-4 pb-2 border-b border-theme-beige">
+                        <h3 class="text-xl font-bold text-theme-greenDark">✏️ Editar Producto y Receta</h3>
+                        <button onclick="closeModal()" class="p-2 bg-white rounded-lg transition text-theme-textMuted hover:bg-theme-beige border border-theme-beige">✕</button>
+                    </div>
+                    
                     <div class="space-y-4">
                         <div class="grid grid-cols-4 gap-4">
                             <div class="col-span-3">
-                                <label class="block text-sm font-bold mb-2 text-theme-text">Nombre del producto</label>
-                                <input type="text" id="editProdName" value="${product.name}" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium">
+                                <label class="block text-sm font-bold mb-1 text-theme-text">Nombre</label>
+                                <input type="text" id="editProdName" value="${product.name}" class="w-full px-4 py-2 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium">
                             </div>
                             <div class="col-span-1">
-                                <label class="block text-sm font-bold mb-2 text-theme-text">Emoji</label>
-                                <input type="text" id="editProdIcon" value="${product.icon || ''}" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-center text-xl" placeholder="🍕">
+                                <label class="block text-sm font-bold mb-1 text-theme-text">Emoji</label>
+                                <input type="text" id="editProdIcon" value="${product.icon || ''}" class="w-full px-4 py-2 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-center text-xl" placeholder="🍕">
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-bold mb-2 text-theme-text">Categoría</label>
-                                <select id="editProdCategory" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium">
+                                <label class="block text-sm font-bold mb-1 text-theme-text">Categoría</label>
+                                <select id="editProdCategory" class="w-full px-4 py-2 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium">
                                     <option value="pizza" ${product.category === 'pizza' ? 'selected' : ''}>🍕 Pizza</option>
                                     <option value="drink" ${product.category === 'drink' ? 'selected' : ''}>🥤 Bebida</option>
                                     <option value="extra" ${product.category === 'extra' ? 'selected' : ''}>🍟 Extra</option>
@@ -1959,30 +2062,183 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm font-bold mb-2 text-theme-text">Precio</label>
-                                <input type="number" id="editProdPrice" value="${product.price}" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium">
+                                <label class="block text-sm font-bold mb-1 text-theme-text">Precio</label>
+                                <input type="number" id="editProdPrice" value="${product.price}" class="w-full px-4 py-2 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green text-sm font-medium">
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-3 pt-2">
-                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text">Cancelar</button>
-                            <button onclick="updateProduct(${productId})" class="btn-primary py-3 rounded-xl font-bold shadow-md">Guardar</button>
+                        
+                        <div class="mt-6 border-t border-theme-beige pt-4">
+                            <h4 class="font-bold text-theme-text mb-3 flex items-center gap-2">📝 Receta / Insumos a descontar</h4>
+                            
+                            <div class="flex gap-2 mb-3 bg-theme-bg p-3 rounded-xl border border-theme-beige">
+                                <div class="flex-1">
+                                    <select id="recipeIngredientSelect" class="w-full px-2 py-2 bg-white border border-theme-beige rounded-lg focus:outline-none focus:border-theme-green text-sm font-medium truncate">
+                                        <option value="">Seleccionar insumo...</option>
+                                        ${state.inventory.map(i => `<option value="${i.id}">${i.name} (${i.unit})</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div class="w-20 md:w-24">
+                                    <input type="number" id="recipeIngredientQty" step="0.01" placeholder="Cant." class="w-full px-2 py-2 bg-white border border-theme-beige rounded-lg focus:outline-none focus:border-theme-green text-sm text-center font-bold">
+                                </div>
+                                <button onclick="addIngredientToRecipe()" class="bg-theme-green hover:bg-theme-greenDark text-white px-3 py-2 rounded-lg font-bold transition shadow-sm">➕</button>
+                            </div>
+
+                            <div id="recipeItemsContainer" class="space-y-2 max-h-40 overflow-y-auto scrollbar-thin pr-1">
+                                </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3 pt-4 border-t border-theme-beige mt-4">
+                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text shadow-sm">Cancelar</button>
+                            <button onclick="updateProduct(${productId})" class="btn-primary py-3 rounded-xl font-bold shadow-md">Guardar Cambios</button>
                         </div>
                     </div>
                 </div>
             `;
             modal.classList.remove('hidden');
+            
+            // Dibujamos la lista de la receta actual
+            renderRecipeItems();
         }
 
+        // --- Funciones para manipular la receta temporal ---
+       // --- Funciones para manipular la receta temporal ---
+       function renderRecipeItems() {
+            const container = document.getElementById('recipeItemsContainer');
+            if (!container) return;
+
+            if (currentEditIngredients.length === 0) {
+                container.innerHTML = '<p class="text-sm text-theme-textMuted text-center py-4 italic">No hay insumos asignados. Este producto no descontará nada del inventario.</p>';
+                return;
+            }
+
+            container.innerHTML = currentEditIngredients.map((ing, index) => {
+                const invItem = state.inventory.find(i => i.id === ing.id);
+                const name = invItem ? invItem.name : '<span class="text-red-500">Insumo eliminado</span>';
+                const unit = invItem ? invItem.unit : '';
+                return `
+                    <div class="flex items-center justify-between p-2 rounded-lg bg-white border border-theme-beige shadow-sm">
+                        <span class="text-sm font-medium text-theme-text truncate flex-1">${name}</span>
+                        <div class="flex items-center gap-3 ml-2 shrink-0">
+                            <span class="text-sm font-extrabold text-theme-greenDark bg-green-50 px-2 py-0.5 rounded border border-green-100">${ing.qty} ${unit}</span>
+                            <button onclick="removeIngredientFromRecipe(${index})" class="text-red-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded transition" title="Quitar">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function addIngredientToRecipe() {
+            const select = document.getElementById('recipeIngredientSelect');
+            const qtyInput = document.getElementById('recipeIngredientQty');
+            
+            const invId = parseInt(select.value);
+            const qty = parseFloat(qtyInput.value);
+
+            if (!invId || isNaN(qty) || qty <= 0) {
+                showToast('Selecciona un insumo y una cantidad mayor a 0', 'warning');
+                return;
+            }
+
+            // Si el insumo ya está en la receta, solo le sumamos la cantidad
+            const existing = currentEditIngredients.find(i => i.id === invId);
+            if (existing) {
+                existing.qty += qty;
+            } else {
+                currentEditIngredients.push({ id: invId, qty: qty });
+            }
+
+            // Limpiamos los inputs
+            select.value = '';
+            qtyInput.value = '';
+            
+            // Actualizamos la vista
+            renderRecipeItems();
+        }
+
+        function removeIngredientFromRecipe(index) {
+            currentEditIngredients.splice(index, 1);
+            renderRecipeItems();
+        }
+
+        // --- Al guardar, aplicamos la receta al producto real ---
+        function updateProduct(productId) {
+            // 1. Aseguramos que el ID se lea como número
+            const id = parseInt(productId);
+            const product = state.products.find(p => p.id === id);
+            
+            if (!product) {
+                showToast('Error al encontrar el producto', 'error');
+                return;
+            }
+
+            // 2. Actualizamos los datos básicos
+            product.name = document.getElementById('editProdName').value.trim();
+            product.icon = document.getElementById('editProdIcon').value.trim() || null;
+            product.category = document.getElementById('editProdCategory').value;
+            product.price = parseFloat(document.getElementById('editProdPrice').value) || product.price;
+            
+            // 3. Forzamos el guardado de la nueva receta (desvinculando el arreglo temporal)
+            product.ingredients = JSON.parse(JSON.stringify(currentEditIngredients));
+
+            // 4. Registramos y guardamos en Firebase
+            logActivity('PRODUCT_UPDATE', `Producto y receta actualizados: ${product.name}`);
+            saveToStorage();
+            
+            // 5. Limpiamos la variable temporal por seguridad
+            currentEditIngredients = [];
+            
+            showToast('Producto y receta guardados exitosamente', 'success');
+            closeModal();
+            renderProducts(document.getElementById('contentArea'));
+        }
+
+        function addIngredientToRecipe() {
+            const select = document.getElementById('recipeIngredientSelect');
+            const qtyInput = document.getElementById('recipeIngredientQty');
+            
+            const invId = parseInt(select.value);
+            const qty = parseFloat(qtyInput.value);
+
+            if (!invId || isNaN(qty) || qty <= 0) {
+                showToast('Selecciona un insumo y una cantidad mayor a 0', 'warning');
+                return;
+            }
+
+            // Si el insumo ya está en la receta, solo le sumamos la cantidad
+            const existing = currentEditIngredients.find(i => i.id === invId);
+            if (existing) {
+                existing.qty += qty;
+            } else {
+                currentEditIngredients.push({ id: invId, qty: qty });
+            }
+
+            // Limpiamos los inputs
+            select.value = '';
+            qtyInput.value = '';
+            
+            // Actualizamos la vista
+            renderRecipeItems();
+        }
+
+        function removeIngredientFromRecipe(index) {
+            currentEditIngredients.splice(index, 1);
+            renderRecipeItems();
+        }
+
+        // --- Al guardar, aplicamos la receta al producto real ---
         function updateProduct(productId) {
             const product = state.products.find(p => p.id === productId);
             product.name = document.getElementById('editProdName').value.trim();
             product.icon = document.getElementById('editProdIcon').value.trim() || null;
             product.category = document.getElementById('editProdCategory').value;
             product.price = parseFloat(document.getElementById('editProdPrice').value) || product.price;
+            
+            // Guardamos la receta modificada en el producto
+            product.ingredients = [...currentEditIngredients];
 
-            logActivity('PRODUCT_UPDATE', `Producto actualizado: ${product.name}`);
+            logActivity('PRODUCT_UPDATE', `Producto y receta actualizados: ${product.name}`);
             saveToStorage();
-            showToast('Producto actualizado', 'success');
+            showToast('Producto y receta guardados exitosamente', 'success');
             closeModal();
             renderProducts(document.getElementById('contentArea'));
         }
@@ -2528,21 +2784,8 @@
 
             state.sales.push(sale);
 
-            // Descontar del inventario (Las mesas descuentan al cobrar, no al ordenar)
-            order.items.forEach(cartItem => {
-                const product = state.products.find(p => p.id === cartItem.productId);
-                if (product && product.ingredients) {
-                    product.ingredients.forEach(ing => {
-                        const invItem = state.inventory.find(i => i.id === ing.id);
-                        if (invItem) {
-                            invItem.stock -= (ing.qty * cartItem.quantity);
-                            if (invItem.stock <= invItem.minStock) {
-                                addNotification('warning', `⚠️ Stock bajo: ${invItem.name}`, ['admin', 'cashier']);
-                            }
-                        }
-                    });
-                }
-            });
+            // Nota: Aquí se eliminó el ciclo que descontaba el inventario, 
+            // porque ahora se descuenta desde que el mesero manda la orden.
 
             if (state.cashRegister.isOpen) {
                 state.cashRegister.movements.push({
@@ -2609,99 +2852,208 @@
         }
 
         // ==================== REPORTS MODULE ====================
+        // ==================== REPORTS MODULE ====================
         function renderReports(container) {
-            const today = new Date().toDateString();
-            const thisMonth = new Date().getMonth();
-            const thisYear = new Date().getFullYear();
-
-            const todaySales = state.sales.filter(s => new Date(s.timestamp).toDateString() === today);
-            const monthSales = state.sales.filter(s => {
-                const d = new Date(s.timestamp);
-                return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            // Calcular los últimos 7 días para la gráfica
+            const last7Days = [...Array(7)].map((_, i) => {
+                const d = new Date();
+                d.setDate(d.getDate() - (6 - i)); // De más antiguo a hoy
+                d.setHours(0, 0, 0, 0);
+                return d;
             });
+
+            const chartLabels = last7Days.map(d => d.toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric' }));
+            
+            // Obtener ventas por día para la gráfica
+            const chartData = last7Days.map(date => {
+                return state.sales
+                    .filter(s => {
+                        const saleDate = new Date(s.timestamp);
+                        saleDate.setHours(0, 0, 0, 0);
+                        return saleDate.getTime() === date.getTime();
+                    })
+                    .reduce((sum, s) => sum + s.total, 0);
+            });
+
+            // Totales de Hoy y Semana
+            const todaySales = state.sales.filter(s => {
+                const d = new Date(s.timestamp);
+                d.setHours(0, 0, 0, 0);
+                return d.getTime() === today.getTime();
+            });
+            const weekSales = state.sales.filter(s => new Date(s.timestamp) >= last7Days[0]);
 
             const todayTotal = todaySales.reduce((sum, s) => sum + s.total, 0);
-            const monthTotal = monthSales.reduce((sum, s) => sum + s.total, 0);
-            const todayOrders = todaySales.length;
-            const monthOrders = monthSales.length;
-            const avgTicket = todayOrders > 0 ? todayTotal / todayOrders : 0;
-
-            const productSales = {};
-            state.sales.forEach(sale => {
-                sale.items.forEach(item => {
-                    if (!productSales[item.name]) productSales[item.name] = { qty: 0, total: 0 };
-                    productSales[item.name].qty += item.quantity;
-                    productSales[item.name].total += item.price * item.quantity;
-                });
-            });
-            const topProducts = Object.entries(productSales)
-                .sort((a, b) => b[1].qty - a[1].qty)
-                .slice(0, 5);
+            const weekTotal = weekSales.reduce((sum, s) => sum + s.total, 0);
 
             container.innerHTML = `
                 <div class="animate-slideIn">
-                    <h2 class="text-2xl font-bold mb-6 flex items-center gap-3 text-theme-greenDark">📈 Reportes Estadísticos</h2>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                        <div class="glass bg-white/60 border border-white rounded-2xl p-6 shadow-sm">
-                            <p class="text-theme-textMuted text-sm font-bold mb-1">Ventas Hoy</p>
-                            <p class="text-3xl font-extrabold text-green-600">$${todayTotal.toLocaleString()}</p>
-                            <p class="text-xs text-theme-textMuted font-medium mt-2 bg-theme-bg inline-block px-2 py-1 rounded-md border border-theme-beige">${todayOrders} tickets</p>
-                        </div>
-                        <div class="glass bg-white/60 border border-white rounded-2xl p-6 shadow-sm">
-                            <p class="text-theme-textMuted text-sm font-bold mb-1">Ventas del Mes</p>
-                            <p class="text-3xl font-extrabold text-blue-600">$${monthTotal.toLocaleString()}</p>
-                            <p class="text-xs text-theme-textMuted font-medium mt-2 bg-theme-bg inline-block px-2 py-1 rounded-md border border-theme-beige">${monthOrders} tickets</p>
-                        </div>
-                        <div class="glass bg-white/60 border border-white rounded-2xl p-6 shadow-sm">
-                            <p class="text-theme-textMuted text-sm font-bold mb-1">Ticket Promedio (hoy)</p>
-                            <p class="text-3xl font-extrabold text-purple-600">$${avgTicket.toFixed(0)}</p>
-                        </div>
-                        <div class="glass bg-white/60 border border-white rounded-2xl p-6 shadow-sm">
-                            <p class="text-theme-textMuted text-sm font-bold mb-1">Pizzas/Artículos (hoy)</p>
-                            <p class="text-3xl font-extrabold text-theme-greenDark">${todaySales.reduce((sum, s) => sum + s.items.reduce((is, i) => is + i.quantity, 0), 0)}</p>
+                    <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
+                        <h2 class="text-2xl font-bold flex items-center gap-3 text-theme-greenDark">📈 Estadísticas y Reportes</h2>
+                        
+                        <div class="flex gap-2 w-full md:w-auto">
+                            <button onclick="generateReport('daily')" class="flex-1 md:flex-none btn-primary px-4 py-2.5 rounded-xl text-sm font-bold shadow-md flex items-center justify-center gap-2">
+                                📄 Reporte Diario
+                            </button>
+                            <button onclick="generateReport('weekly')" class="flex-1 md:flex-none bg-blue-500 hover:bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-md flex items-center justify-center gap-2 transition">
+                                📅 Reporte Semanal
+                            </button>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                         <div class="glass bg-white/60 border border-white rounded-2xl p-6 shadow-sm">
-                            <h3 class="font-extrabold text-lg mb-5 text-theme-text border-b border-theme-beige pb-3">🏆 Lo Más Vendido</h3>
-                            <div class="space-y-3">
-                                ${topProducts.map(([name, data], i) => `
-                                    <div class="flex items-center justify-between p-4 rounded-xl bg-white shadow-sm border border-theme-beige">
-                                        <div class="flex items-center gap-4">
-                                            <span class="text-2xl drop-shadow-sm">${['🥇', '🥈', '🥉', '4️⃣', '5️⃣'][i]}</span>
-                                            <span class="font-bold text-theme-text text-lg">${name}</span>
-                                        </div>
-                                        <div class="text-right">
-                                            <p class="font-extrabold text-theme-greenDark">${data.qty} vendidos</p>
-                                            <p class="text-sm font-bold text-theme-textMuted">$${data.total.toLocaleString()}</p>
-                                        </div>
-                                    </div>
-                                `).join('') || '<p class="text-theme-textMuted text-center font-medium py-8">Sin datos suficientes</p>'}
-                            </div>
+                            <p class="text-theme-textMuted text-sm font-bold mb-1">Ventas del Día (Hoy)</p>
+                            <p class="text-4xl font-extrabold text-green-600">$${todayTotal.toLocaleString()}</p>
+                            <p class="text-xs text-theme-textMuted font-medium mt-3 bg-theme-bg inline-block px-3 py-1.5 rounded-md border border-theme-beige">${todaySales.length} tickets procesados hoy</p>
                         </div>
-
                         <div class="glass bg-white/60 border border-white rounded-2xl p-6 shadow-sm">
-                            <h3 class="font-extrabold text-lg mb-5 text-theme-text border-b border-theme-beige pb-3">📜 Actividad Reciente</h3>
-                            <div class="space-y-3 max-h-[400px] overflow-auto scrollbar-thin pr-2">
-                                ${state.activityLog.slice(-20).reverse().map(log => `
-                                    <div class="p-4 rounded-xl bg-white border border-theme-beige shadow-sm text-sm">
-                                        <div class="flex justify-between items-start mb-2">
-                                            <span class="font-extrabold text-theme-greenDark px-2 py-1 bg-green-50 rounded-md border border-green-100">${log.action}</span>
-                                            <span class="text-xs font-bold text-theme-textMuted">${new Date(log.timestamp).toLocaleTimeString('es-MX')}</span>
-                                        </div>
-                                        <p class="text-theme-text font-medium text-[13px] mb-2">${log.details}</p>
-                                        <p class="text-xs font-bold text-theme-textMuted">👤 ${log.userName}</p>
-                                    </div>
-                                `).join('') || '<p class="text-theme-textMuted text-center font-medium py-8">Sin actividad registrada</p>'}
-                            </div>
+                            <p class="text-theme-textMuted text-sm font-bold mb-1">Ventas de la Semana (Últimos 7 días)</p>
+                            <p class="text-4xl font-extrabold text-blue-600">$${weekTotal.toLocaleString()}</p>
+                            <p class="text-xs text-theme-textMuted font-medium mt-3 bg-theme-bg inline-block px-3 py-1.5 rounded-md border border-theme-beige">${weekSales.length} tickets en total</p>
+                        </div>
+                    </div>
+
+                    <div class="glass bg-white/60 border border-white rounded-2xl p-6 shadow-sm mb-6">
+                        <h3 class="font-extrabold text-lg mb-4 text-theme-text border-b border-theme-beige pb-3">📊 Tendencia de Ingresos</h3>
+                        <div class="w-full h-72">
+                            <canvas id="salesChart"></canvas>
                         </div>
                     </div>
                 </div>
             `;
+
+            // Inicializar la gráfica después de inyectar el HTML
+            setTimeout(() => {
+                const ctx = document.getElementById('salesChart');
+                if(ctx) {
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: chartLabels,
+                            datasets: [{
+                                label: 'Ingresos por día ($)',
+                                data: chartData,
+                                borderColor: '#7A9E7E',
+                                backgroundColor: 'rgba(167, 196, 170, 0.4)',
+                                borderWidth: 3,
+                                fill: true,
+                                tension: 0.3, // Curva suave
+                                pointBackgroundColor: '#4A504A',
+                                pointRadius: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return '$' + context.parsed.y.toLocaleString();
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: { 
+                                    beginAtZero: true, 
+                                    grid: { color: '#EAE5D9' },
+                                    ticks: { callback: function(value) { return '$' + value; } }
+                                },
+                                x: { grid: { display: false } }
+                            }
+                        }
+                    });
+                }
+            }, 50);
         }
 
+        function generateReport(type) {
+            const today = new Date();
+            let filteredSales = [];
+            let title = "";
+            let dateStr = "";
+
+            if (type === 'daily') {
+                filteredSales = state.sales.filter(s => new Date(s.timestamp).toDateString() === today.toDateString());
+                title = "Corte de Ventas Diario";
+                dateStr = today.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            } else if (type === 'weekly') {
+                const sevenDaysAgo = new Date();
+                sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+                sevenDaysAgo.setHours(0, 0, 0, 0);
+                filteredSales = state.sales.filter(s => new Date(s.timestamp) >= sevenDaysAgo);
+                title = "Reporte de Ventas Semanal";
+                dateStr = `Del ${sevenDaysAgo.toLocaleDateString('es-MX')} al ${today.toLocaleDateString('es-MX')}`;
+            }
+
+            const total = filteredSales.reduce((sum, s) => sum + s.total, 0);
+            const cashTotal = filteredSales.filter(s => s.paymentMethod === 'cash').reduce((sum, s) => sum + s.total, 0);
+            const transferTotal = filteredSales.filter(s => s.paymentMethod === 'transfer').reduce((sum, s) => sum + s.total, 0);
+            
+            const totalItemsSold = filteredSales.reduce((sum, s) => sum + s.items.reduce((itemSum, i) => itemSum + i.quantity, 0), 0);
+
+            const modal = document.getElementById('modalContainer');
+            modal.innerHTML = `
+                <div class="bg-white text-theme-text rounded-3xl p-6 md:p-8 w-[95%] max-w-lg animate-slideIn shadow-2xl max-h-[90vh] overflow-y-auto scrollbar-thin" id="printArea">
+                    <div class="text-center border-b-2 border-dashed border-theme-beige pb-6 mb-6">
+                        <p class="text-4xl mb-3">📈</p>
+                        <h3 class="text-2xl font-extrabold text-theme-greenDark">PIZZAMANAGER PRO</h3>
+                        <p class="text-lg font-bold text-theme-text mt-2 uppercase">${title}</p>
+                        <p class="text-sm text-theme-textMuted mt-1 capitalize">${dateStr}</p>
+                    </div>
+
+                    <div class="space-y-4 mb-8">
+                        <div class="flex justify-between p-4 bg-theme-bg rounded-xl border border-theme-beige">
+                            <span class="font-bold text-theme-textMuted">Tickets Procesados:</span>
+                            <span class="font-extrabold text-theme-text">${filteredSales.length}</span>
+                        </div>
+                        <div class="flex justify-between p-4 bg-theme-bg rounded-xl border border-theme-beige">
+                            <span class="font-bold text-theme-textMuted">Artículos Vendidos:</span>
+                            <span class="font-extrabold text-theme-text">${totalItemsSold}</span>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4 mt-2">
+                            <div class="p-4 bg-green-50 rounded-xl border border-green-200 text-center">
+                                <p class="text-xs font-bold text-green-700">En Efectivo</p>
+                                <p class="text-xl font-extrabold text-green-600 mt-1">$${cashTotal.toLocaleString()}</p>
+                            </div>
+                            <div class="p-4 bg-blue-50 rounded-xl border border-blue-200 text-center">
+                                <p class="text-xs font-bold text-blue-700">En Transferencia</p>
+                                <p class="text-xl font-extrabold text-blue-600 mt-1">$${transferTotal.toLocaleString()}</p>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-center p-5 bg-white rounded-xl border-2 border-theme-green shadow-sm mt-4">
+                            <span class="font-extrabold text-lg text-theme-text">INGRESOS TOTALES:</span>
+                            <span class="font-extrabold text-2xl text-theme-greenDark">$${total.toLocaleString()}</span>
+                        </div>
+                    </div>
+
+                    <div class="text-center pt-6 border-t border-theme-beige text-xs font-medium text-theme-textMuted">
+                        <p>Reporte generado por: ${currentUser.name} (${currentUser.role})</p>
+                        <p>Fecha de impresión: ${new Date().toLocaleString('es-MX')}</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 mt-8 print:hidden">
+                        <button onclick="closeModal()" class="py-3.5 bg-theme-bg text-theme-text font-bold rounded-xl border border-theme-beige hover:bg-theme-beige transition">
+                            Cerrar
+                        </button>
+                        <button onclick="window.print()" class="btn-primary py-3.5 font-bold rounded-xl shadow-md flex items-center justify-center gap-2">
+                            🖨️ Imprimir Reporte
+                        </button>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        // ==================== SETTINGS MODULE ====================
         // ==================== SETTINGS MODULE ====================
         function renderSettings(container) {
             container.innerHTML = `
@@ -2752,7 +3104,12 @@
                                 ${state.tables.map(t => `
                                     <div class="flex items-center justify-between p-3 rounded-xl bg-white shadow-sm border border-theme-beige">
                                         <span class="font-bold text-theme-text">${t.name} <span class="text-theme-textMuted text-xs font-medium ml-1">(${t.capacity} pers.)</span></span>
-                                        <span class="px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm ${t.status === 'occupied' ? 'bg-orange-400' : 'bg-green-400'}">${t.status === 'occupied' ? 'Ocupada' : 'Libre'}</span>
+                                        <div class="flex items-center gap-2">
+                                            <span class="px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold text-white shadow-sm ${t.status === 'occupied' ? 'bg-orange-400' : 'bg-green-400'}">${t.status === 'occupied' ? 'Ocupada' : 'Libre'}</span>
+                                            <button onclick="confirmDeleteTable(${t.id})" class="p-1.5 sm:p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition border border-red-100" title="Eliminar Mesa">
+                                                🗑️
+                                            </button>
+                                        </div>
                                     </div>
                                 `).join('')}
                             </div>
@@ -2777,7 +3134,6 @@
                 </div>
             `;
         }
-
         function exportData() {
             const dataStr = JSON.stringify(state, null, 2);
             const blob = new Blob([dataStr], { type: 'application/json' });
@@ -2865,6 +3221,41 @@
             saveToStorage();
             showToast('Mesa agregada correctamente', 'success');
             renderSettings(document.getElementById('contentArea'));
+        }
+
+        function confirmDeleteTable(tableId) {
+            const table = state.tables.find(t => t.id === tableId);
+            if (!table) return;
+
+            if (table.status === 'occupied') {
+                showToast('No puedes eliminar una mesa ocupada. Cierra su cuenta primero.', 'error');
+                return;
+            }
+
+            const modal = document.getElementById('modalContainer');
+            modal.innerHTML = `
+                <div class="glass bg-white/90 rounded-3xl p-6 w-[95%] max-w-md animate-slideIn shadow-2xl border-2 border-red-200">
+                    <h3 class="text-xl font-extrabold mb-4 text-red-600">⚠️ Eliminar Mesa</h3>
+                    <p class="text-theme-text font-medium mb-6">¿Estás seguro de que quieres eliminar la <strong>${table.name}</strong>? Esta acción la borrará permanentemente del sistema.</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text">Cancelar</button>
+                        <button onclick="deleteTable(${table.id})" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl shadow-md transition">Sí, Eliminar</button>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        function deleteTable(tableId) {
+            const table = state.tables.find(t => t.id === tableId);
+            if (table) {
+                state.tables = state.tables.filter(t => t.id !== tableId);
+                logActivity('TABLE_DELETE', `Mesa eliminada: ${table.name}`);
+                saveToStorage();
+                showToast(`Mesa ${table.name} eliminada correctamente`, 'success');
+                closeModal();
+                renderSettings(document.getElementById('contentArea'));
+            }
         }
 
         // ==================== INITIALIZATION ====================
