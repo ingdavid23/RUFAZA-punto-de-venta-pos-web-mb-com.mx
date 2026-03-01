@@ -370,6 +370,26 @@ function clearAllNotifications() {
                 }
             });
 
+            // ==================== SINCRONIZACIÓN DE MENÚ (FRANQUICIA) ====================
+        // ==================== SINCRONIZACIÓN DE MENÚ (FRANQUICIA) ====================
+        async function syncMenuToBranches() {
+            if (currentBranch === 'sucursal_principal') {
+                try {
+                    // Si no hay sucursales registradas, usamos la del centro por compatibilidad
+                    const branchesToSync = state.franchiseBranches || ['sucursal_centro'];
+                    
+                    for (let branchId of branchesToSync) {
+                        await db.collection('pizzaManager').doc(branchId).set(
+                            { products: state.products }, 
+                            { merge: true } // Actualiza solo los productos
+                        );
+                    }
+                    console.log("Menú maestro sincronizado con:", branchesToSync.join(', '));
+                } catch (error) {
+                    console.error("Error al sincronizar el menú:", error);
+                }
+            }
+        }
             
 
         // ==================== ALERTAS DE CONEXIÓN ====================
@@ -2491,15 +2511,35 @@ function renderProducts(container) {
     `;
 }
 
-function toggleProductActive(productId) {
-    const product = state.products.find(p => p.id === productId);
-    if (product) {
-        product.active = !product.active;
-        saveToStorage();
-        showToast(`Producto ${product.active ? 'activado' : 'desactivado'}`, 'success');
-        renderProducts(document.getElementById('contentArea'));
-    }
-}
+function saveNewProduct() {
+            const name = document.getElementById('prodName').value.trim();
+            const category = document.getElementById('prodCategory').value;
+            const price = parseFloat(document.getElementById('prodPrice').value) || 0;
+            
+            const imageBase64 = document.getElementById('hiddenImageBase64').value;
+            const imageUrl = document.getElementById('prodImageUrl').value.trim();
+            const finalImage = imageBase64 || imageUrl || null;
+
+            if (!name || price <= 0) {
+                showToast('Completa el nombre y el precio', 'warning'); return;
+            }
+
+            state.products.push({
+                id: Date.now(),
+                name, category, price,
+                image: finalImage,
+                icon: null,
+                ingredients: [],
+                active: true
+            });
+            
+            saveToStorage(); 
+            syncMenuToBranches(); // 🚀 Dispara el nuevo producto a las demás sucursales
+            
+            showToast('Producto guardado y sincronizado', 'success'); 
+            closeModal(); 
+            renderProducts(document.getElementById('contentArea'));
+        }
 
 function showAddProductModal() {
     const modal = document.getElementById('modalContainer');
@@ -2744,33 +2784,28 @@ function updateProduct(productId) {
         // --- Al guardar, aplicamos la receta al producto real ---
         function updateProduct(productId) {
             try {
-                // 1. Búsqueda segura: Compara el ID como texto para evitar fallos con Firebase
                 const product = state.products.find(p => String(p.id) === String(productId));
                 
                 if (!product) {
-                    showToast('❌ Error: No se encontró el producto en la memoria.', 'error');
+                    showToast('❌ Error: No se encontró el producto.', 'error');
                     return;
                 }
 
-                // 2. Lectura segura de los campos HTML
                 const nameInput = document.getElementById('editProdName');
                 const catInput = document.getElementById('editProdCategory');
                 const priceInput = document.getElementById('editProdPrice');
                 const hiddenImgInput = document.getElementById('hiddenImageBase64');
                 const urlInput = document.getElementById('editProdImageUrl');
 
-                // Si por alguna razón la ventana no cargó bien, te avisará en lugar de trabarse
                 if (!nameInput || !priceInput) {
-                    showToast('❌ Error: Falta un campo en el formulario.', 'error');
+                    showToast('❌ Error: Falta un campo.', 'error');
                     return;
                 }
 
-                // 3. Actualizar datos básicos
                 product.name = nameInput.value.trim();
                 product.category = catInput.value;
                 product.price = parseFloat(priceInput.value) || product.price;
                 
-                // 4. Actualizar Imagen solo si se subió o pegó una nueva
                 const imageBase64 = hiddenImgInput ? hiddenImgInput.value : '';
                 const imageUrl = urlInput ? urlInput.value.trim() : '';
                 
@@ -2780,21 +2815,19 @@ function updateProduct(productId) {
                     product.image = imageUrl;
                 }
                 
-                // 5. Guardar la receta
                 product.ingredients = JSON.parse(JSON.stringify(currentEditIngredients));
 
-                // 6. Guardar en Base de Datos y cerrar
                 saveToStorage(); 
+                syncMenuToBranches(); // 🚀 Envía la edición a las demás sucursales
                 
                 currentEditIngredients = []; 
-                if (hiddenImgInput) hiddenImgInput.value = ''; // Limpiar memoria de foto
+                if (hiddenImgInput) hiddenImgInput.value = ''; 
 
-                showToast('✅ Producto guardado exitosamente', 'success'); 
+                showToast('✅ Producto actualizado en todas las sucursales', 'success'); 
                 closeModal(); 
                 renderProducts(document.getElementById('contentArea'));
 
             } catch (error) {
-                // Si algo explota, te mostrará un mensaje rojo con el problema exacto
                 console.error("Error al guardar el producto:", error);
                 showToast('❌ Error al guardar: ' + error.message, 'error');
             }
@@ -3612,6 +3645,7 @@ function updateProduct(productId) {
 
         // ==================== SETTINGS MODULE ====================
         // ==================== SETTINGS MODULE ====================
+        // ==================== SETTINGS MODULE ====================
         function renderSettings(container) {
             container.innerHTML = `
                 <div class="animate-slideIn">
@@ -3663,9 +3697,7 @@ function updateProduct(productId) {
                                         <span class="font-bold text-theme-text">${t.name} <span class="text-theme-textMuted text-xs font-medium ml-1">(${t.capacity} pers.)</span></span>
                                         <div class="flex items-center gap-2">
                                             <span class="px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold text-white shadow-sm ${t.status === 'occupied' ? 'bg-orange-400' : 'bg-green-400'}">${t.status === 'occupied' ? 'Ocupada' : 'Libre'}</span>
-                                            <button onclick="confirmDeleteTable(${t.id})" class="p-1.5 sm:p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition border border-red-100" title="Eliminar Mesa">
-                                                🗑️
-                                            </button>
+                                            <button onclick="confirmDeleteTable(${t.id})" class="p-1.5 sm:p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition border border-red-100" title="Eliminar Mesa">🗑️</button>
                                         </div>
                                     </div>
                                 `).join('')}
@@ -3687,6 +3719,17 @@ function updateProduct(productId) {
                                 `).join('')}
                             </div>
                         </div>
+
+                        ${currentBranch === 'sucursal_principal' && currentUser.role === 'admin' ? `
+                        <div class="glass bg-purple-50/50 border-2 border-purple-200 rounded-3xl p-6 shadow-md lg:col-span-2 relative overflow-hidden mt-2">
+                            <div class="absolute top-0 left-0 w-full h-2 bg-purple-400"></div>
+                            <h3 class="font-extrabold text-xl mb-3 text-purple-800 flex items-center gap-2">🏢 Expansión de Franquicia</h3>
+                            <p class="text-sm text-theme-text font-medium mb-5">Despliega una nueva base de datos para una sucursal nueva. El sistema la conectará automáticamente a tu menú maestro.</p>
+                            <button onclick="showCreateBranchModal()" class="w-full md:w-auto py-3.5 px-6 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold transition shadow-md flex items-center justify-center gap-2">
+                                ➕ Desplegar Nueva Sucursal
+                            </button>
+                        </div>
+                        ` : ''}
                     </div>
                 </div>
             `;
@@ -3843,6 +3886,106 @@ function updateProduct(productId) {
                 }
             });
         });
+
+        // ==================== SISTEMA DE CREACIÓN DE SUCURSALES ====================
+        function showCreateBranchModal() {
+            const modal = document.getElementById('modalContainer');
+            modal.innerHTML = `
+                <div class="glass bg-white/90 rounded-3xl p-6 w-[95%] max-w-md animate-slideIn shadow-2xl border-2 border-purple-300">
+                    <h3 class="text-xl font-bold mb-3 text-purple-700 flex items-center gap-2">🏪 Nueva Sucursal</h3>
+                    <p class="text-sm text-theme-textMuted mb-5">Creará una base de datos limpia (sin ventas ni mesas) pero <strong>heredará tu menú y usuarios administradores</strong> actuales.</p>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-bold mb-2 text-theme-text">Nombre de la Sucursal (Ej. Norte, Sur, Plaza)</label>
+                            <input type="text" id="newBranchName" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-purple-400 font-bold" placeholder="Ej: Sucursal Sur">
+                            <p class="text-xs text-theme-textMuted mt-2">ID interno de base de datos: <span id="newBranchIdPreview" class="font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded">sucursal_...</span></p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 pt-4 border-t border-theme-beige">
+                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text">Cancelar</button>
+                            <button onclick="createNewBranch()" class="bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-xl font-bold shadow-md transition">🚀 Crear en la Nube</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+
+            // Generador automático de ID para la base de datos (quita acentos y espacios)
+            document.getElementById('newBranchName').addEventListener('input', function(e) {
+                let val = e.target.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                val = val.replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+                document.getElementById('newBranchIdPreview').textContent = val ? `sucursal_${val}` : 'sucursal_...';
+            });
+        }
+
+        async function createNewBranch() {
+            const nameInput = document.getElementById('newBranchName').value.trim();
+            if (!nameInput) {
+                showToast('Ingresa un nombre para la sucursal', 'warning');
+                return;
+            }
+
+            // Mismo formateo de ID
+            let cleanName = nameInput.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            cleanName = cleanName.replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+            const branchId = 'sucursal_' + cleanName;
+
+            try {
+                // 1. Verificamos que no estemos sobreescribiendo una sucursal existente
+                const docRef = await db.collection('pizzaManager').doc(branchId).get();
+                if (docRef.exists) {
+                    showToast('Ese nombre de sucursal ya existe', 'error');
+                    return;
+                }
+
+                // 2. Preparamos la nueva base de datos limpia pero clonando el MENÚ ACTUAL
+                const newEnvironment = JSON.parse(JSON.stringify(DEFAULT_DATA));
+                newEnvironment.products = JSON.parse(JSON.stringify(state.products)); 
+                
+                // Le pasamos solo a los administradores para que puedan acceder
+                newEnvironment.users = state.users.filter(u => u.role === 'admin' || u.id === currentUser.id);
+
+                // 3. Subimos la nueva sucursal a la nube
+                await db.collection('pizzaManager').doc(branchId).set(newEnvironment);
+                
+                // 4. Registramos el ID en la matriz de la Sucursal Principal para el Motor de Sincronización
+                if (!state.franchiseBranches) {
+                    state.franchiseBranches = ['sucursal_centro']; // Metemos la del centro por defecto
+                }
+                if (!state.franchiseBranches.includes(branchId)) {
+                    state.franchiseBranches.push(branchId);
+                    saveToStorage();
+                }
+                
+                logActivity('BRANCH_CREATE', `Nueva sucursal desplegada: ${nameInput}`);
+                
+                // 5. ¡Éxito! Mostrarle al usuario qué hacer ahora.
+                showBranchCreatedSuccessModal(nameInput, branchId);
+                
+            } catch (error) {
+                console.error('Error al crear sucursal:', error);
+                showToast('Error al crear la base de datos', 'error');
+            }
+        }
+
+        function showBranchCreatedSuccessModal(name, id) {
+            const modal = document.getElementById('modalContainer');
+            modal.innerHTML = `
+                <div class="glass bg-white/90 rounded-3xl p-6 w-[95%] max-w-md animate-slideIn shadow-2xl border-2 border-green-400 text-center">
+                    <div class="text-6xl mb-4 drop-shadow-md">🎉</div>
+                    <h3 class="text-2xl font-bold mb-2 text-green-700">¡Base de Datos Creada!</h3>
+                    <p class="text-sm text-theme-text font-medium mb-6">El entorno para <strong>${name}</strong> ya está corriendo en vivo. Se le ha copiado tu menú maestro automáticamente.</p>
+                    
+                    <div class="bg-gray-900 text-green-400 p-4 rounded-xl text-left text-xs overflow-x-auto mb-6 border border-gray-700 shadow-inner">
+                        <p class="text-gray-300 mb-3 font-bold">⚠️ PASO FINAL: Agrega esto en tu código HTML</p>
+                        <p class="text-gray-400 mb-2">Abre tu archivo HTML, busca la etiqueta <span class="text-pink-400">&lt;select id="loginBranch"&gt;</span> (está en la pantalla de Login) y pega esta nueva línea adentro:</p>
+                        <code class="block bg-black p-3 rounded-lg text-yellow-300 select-all border border-gray-600 mt-2">&lt;option value="${id}"&gt;🏪 ${name}&lt;/option&gt;</code>
+                    </div>
+
+                    <button onclick="closeModal()" class="w-full bg-green-500 hover:bg-green-600 text-white py-3.5 rounded-xl font-bold shadow-md transition text-lg">Entendido 👍</button>
+                </div>
+            `;
+        }
 
         // ==================== GLOBAL DASHBOARD (MULTI-SUCURSAL) ====================
         async function renderGlobalDashboard(container) {
