@@ -166,15 +166,17 @@
         <div id="loadingScreen"
             class="h-full flex flex-col items-center justify-center p-4 bg-theme-bg z-50 absolute inset-0">
             <div class="text-6xl mb-4 animate-pulse-custom">🍕</div>
-            <h2 class="text-xl font-bold text-theme-greenDark">Conectando con Firebase...</h2>
+            <h2 class="text-xl font-bold text-theme-greenDark">Conectando con a la nube...</h2>
         </div>
 
         <div id="loginScreen" class="hidden h-full flex items-center justify-center p-4">
             <div class="glass rounded-3xl p-8 w-full max-w-md animate-slideIn">
                 <div class="text-center mb-8">
                     <div class="text-6xl mb-4">🍕</div>
-                    <h1 class="text-3xl font-bold text-theme-greenDark">PizzaManager Pro</h1>
-                    <p class="text-theme-textMuted mt-2">Sistema de Gestión Integral</p>
+                    <h1 class="text-3xl font-bold text-theme-greenDark">RUFAZA</h1>
+                    <p class="text-theme-textMuted mt-2">Sistema de Gestión Integral 
+                        punto de venta y control de inventarios 
+                    </p>
                 </div>
                 <div class="space-y-4">
                     <div>
@@ -879,9 +881,51 @@
             document.getElementById('posProducts').innerHTML = renderPOSProducts(category);
         }
 
+        // ==================== VERIFICACIÓN INTELIGENTE DE STOCK EN CARRITO ====================
+        function canAddToCart(productId, qtyToAdd) {
+            const product = state.products.find(p => p.id === productId);
+            if (!product || !product.ingredients || product.ingredients.length === 0) return true;
+
+            // 1. Calculamos cuánto de cada insumo ya está "reservado" en el carrito actual
+            const currentUsage = {};
+            currentCart.forEach(cartItem => {
+                const p = state.products.find(x => x.id === cartItem.productId);
+                if (p && p.ingredients) {
+                    p.ingredients.forEach(ing => {
+                        currentUsage[ing.id] = (currentUsage[ing.id] || 0) + (ing.qty * cartItem.quantity);
+                    });
+                }
+            });
+
+            // 2. Verificamos si al intentar agregar la nueva cantidad, superamos el stock real
+            for (let ing of product.ingredients) {
+                const invItem = state.inventory.find(i => i.id === ing.id);
+                if (!invItem) return false;
+                
+                const alreadyUsedInCart = currentUsage[ing.id] || 0;
+                const newlyNeeded = ing.qty * qtyToAdd;
+                
+                // Redondeamos a 3 decimales para evitar el clásico error de precisión de Javascript
+                const totalNeeded = Number((alreadyUsedInCart + newlyNeeded).toFixed(3));
+                const availableStock = Number(invItem.stock.toFixed(3));
+
+                if (availableStock < totalNeeded) {
+                    const remainingStock = Number((availableStock - alreadyUsedInCart).toFixed(3));
+                    showToast(`Stock insuficiente de ${invItem.name}. Solo quedan para ${remainingStock} ${invItem.unit} disponibles.`, 'error');
+                    return false;
+                }
+            }
+            return true;
+        }
+
         function addToCart(productId) {
             const product = state.products.find(p => p.id === productId);
             if (!product) return;
+
+            // 🚫 BLOQUEO: Pregunta si los ingredientes alcanzan antes de agregar
+            if (!canAddToCart(productId, 1)) {
+                return; // Se cancela la acción si no hay stock
+            }
 
             const existing = currentCart.find(item => item.productId === productId);
             if (existing) {
@@ -900,6 +944,11 @@
         function updateCartItemQty(productId, delta) {
             const item = currentCart.find(i => i.productId === productId);
             if (item) {
+                // 🚫 BLOQUEO: Si el usuario presiona "+1", verificamos el stock primero
+                if (delta > 0 && !canAddToCart(productId, delta)) {
+                    return; // Se cancela la acción si no hay stock
+                }
+
                 item.quantity += delta;
                 if (item.quantity <= 0) {
                     removeFromCart(productId);
@@ -908,7 +957,6 @@
                 }
             }
         }
-
         function clearCart() {
             currentCart = [];
             updateCartDisplay();
