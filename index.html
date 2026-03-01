@@ -38,6 +38,53 @@
         }
     </script>
     <style>
+
+        /* ==================== MODO OSCURO ==================== */
+        body.dark {
+            background-color: #121826 !important; /* Fondo noche profundo */
+            color: #e2e8f0 !important;
+        }
+        body.dark .glass, body.dark .bg-white, body.dark .bg-white\/80, body.dark .bg-white\/90 {
+            background-color: rgba(30, 41, 59, 0.85) !important;
+            border-color: rgba(255, 255, 255, 0.1) !important;
+            color: #f8fafc !important;
+        }
+        body.dark .text-theme-text, body.dark .text-theme-greenDark {
+            color: #6ee7b7 !important; /* Verde menta para resaltar en oscuro */
+        }
+        body.dark .text-theme-textMuted {
+            color: #94a3b8 !important;
+        }
+        body.dark .bg-theme-bg, body.dark .bg-theme-beige {
+            background-color: #1e293b !important;
+            border-color: #334155 !important;
+        }
+        body.dark input, body.dark select {
+            background-color: #334155 !important;
+            color: white !important;
+            border-color: #475569 !important;
+        }
+
+        /* ==================== ANIMACIONES MICRO-INTERACTIVAS ==================== */
+        /* Efecto de rebote para el carrito */
+        @keyframes cartBump {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15) translateY(-2px); color: #10b981; }
+            100% { transform: scale(1); }
+        }
+        .animate-cart-bump {
+            animation: cartBump 0.3s ease-out;
+        }
+
+        /* Efecto de explosión de éxito al cobrar */
+        @keyframes successPop {
+            0% { transform: scale(0.5); opacity: 0; }
+            60% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-success-pop {
+            animation: successPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
         * {
             font-family: 'Poppins', sans-serif;
         }
@@ -170,33 +217,36 @@
         </div>
 
         <div id="loginScreen" class="hidden h-full flex items-center justify-center p-4">
-            <div class="glass rounded-3xl p-8 w-full max-w-md animate-slideIn">
+            <div class="glass rounded-3xl p-8 w-full max-w-md animate-slideIn border border-white shadow-2xl">
                 <div class="text-center mb-8">
-                    <div class="text-6xl mb-4">🍕</div>
+                    <img src="rufaza.jpg" alt="Logo Rufaza" class="w-32 h-32 mx-auto mb-4 object-contain drop-shadow-md rounded-2xl">
+                    
                     <h1 class="text-3xl font-bold text-theme-greenDark">RUFAZA</h1>
-                    <p class="text-theme-textMuted mt-2">Sistema de Gestión Integral 
-                        punto de venta y control de inventarios 
+                    <p class="text-theme-textMuted mt-2 leading-tight">
+                        Sistema de Gestión Integral <br> 
+                        <span class="text-sm">punto de venta y control de inventarios</span>
                     </p>
                 </div>
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium mb-2">Usuario</label>
+                        <label class="block text-sm font-bold mb-2 text-theme-text">Usuario</label>
                         <input type="text" id="loginUser"
-                            class="w-full px-4 py-3 bg-white/80 border border-white rounded-xl focus:outline-none focus:border-theme-green transition text-theme-text"
+                            class="w-full px-4 py-3 bg-white/80 border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green transition text-theme-text font-medium"
                             placeholder="Ingrese su usuario">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-2">Contraseña</label>
+                        <label class="block text-sm font-bold mb-2 text-theme-text">Contraseña</label>
                         <input type="password" id="loginPass"
-                            class="w-full px-4 py-3 bg-white/80 border border-white rounded-xl focus:outline-none focus:border-theme-green transition text-theme-text"
+                            class="w-full px-4 py-3 bg-white/80 border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green transition text-theme-text font-medium"
                             placeholder="Ingrese su contraseña">
                     </div>
-                    <div id="loginError" class="hidden text-red-600 text-sm text-center p-2 bg-red-100 rounded-lg">
+                    <div id="loginError" class="hidden text-red-600 text-sm font-bold text-center p-3 bg-red-50 border border-red-200 rounded-xl">
                     </div>
-                    <button onclick="handleLogin()" class="w-full btn-primary font-semibold py-3 rounded-xl mt-4">
-                        Iniciar Sesión </button>
+                    <button onclick="handleLogin()" class="w-full btn-primary font-bold py-3.5 rounded-xl mt-4 shadow-md text-lg">
+                        Iniciar Sesión 
+                    </button>
                 </div>
-                <div class="mt-6 text-center text-xs text-theme-textMuted">
+                <div class="mt-8 text-center text-xs font-medium text-theme-textMuted bg-theme-bg p-3 rounded-xl border border-theme-beige">
                     <p>Usuarios demo: admin/admin, cajero/cajero, cocina/cocina, mesero/mesero</p>
                 </div>
             </div>
@@ -205,17 +255,23 @@
         <div id="mainApp" class="hidden h-full flex flex-col">
             <header class="glass border-b border-white px-3 md:px-4 py-3 flex items-center justify-between shrink-0 gap-2">
                 <div class="flex items-center gap-2 md:gap-3">
-                    <span class="text-2xl md:text-3xl">🍕</span>
+                    <img src="rufaza.jpg" alt="Logo Rufaza" class="w-10 h-10 md:w-12 md:h-12 object-contain rounded-lg drop-shadow-sm">
+                    
                     <div>
-                        <h1 class="text-lg md:text-xl font-bold text-theme-greenDark leading-tight">PizzaManager Pro</h1>
+                        <h1 class="text-lg md:text-xl font-bold text-theme-greenDark leading-tight">SISTEMA-POS-RUFAZA-PIZZERIA</h1>
                         <p id="currentDateTime" class="text-[10px] md:text-xs text-theme-textMuted hidden sm:block"></p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2 md:gap-4">
-                    <div id="notificationBell" class="relative cursor-pointer p-1" onclick="toggleNotifications()">
-                        <span class="text-xl md:text-2xl">🔔</span>
-                        <span id="notifCount" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] md:text-xs w-4 h-4 md:w-5 md:h-5 rounded-full flex items-center justify-center hidden shadow-md">0</span>
-                    </div>
+                    <div class="flex items-center gap-2 md:gap-4">
+                        <button onclick="toggleDarkMode()" id="darkModeBtn" class="p-1.5 md:p-2 hover:bg-white/60 rounded-lg transition text-xl md:text-2xl" title="Cambiar Tema">
+                            🌙
+                        </button>
+                        
+                        <div id="notificationBell" class="relative cursor-pointer p-1" onclick="toggleNotifications()">
+                            <span class="text-xl md:text-2xl">🔔</span>
+                            <span id="notifCount" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] md:text-xs w-4 h-4 md:w-5 md:h-5 rounded-full flex items-center justify-center hidden shadow-md">0</span>
+                        </div>
                     <div class="flex items-center gap-2 glass px-2 md:px-3 py-1.5 md:py-2 rounded-xl border border-white">
                         <span class="text-lg md:text-xl" id="userIcon">👤</span>
                         <div class="hidden sm:block">
@@ -236,6 +292,7 @@
             <main id="contentArea" class="flex-1 overflow-auto p-4 scrollbar-thin">
             </main>
         </div>
+        
 
         <div id="notifPanel"
             class="hidden fixed right-4 top-20 w-80 glass rounded-2xl p-4 z-50 animate-slideIn max-h-96 flex flex-col shadow-xl border border-white">
@@ -289,6 +346,28 @@ function clearAllNotifications() {
         firebase.initializeApp(firebaseConfig);
         const analytics = firebase.analytics();
         const db = firebase.firestore();
+
+        // ==================== SOPORTE OFFLINE (FIREBASE) ====================
+        // Activa la caché local. Todo se guarda en el navegador si no hay internet
+        // y se sincroniza mágicamente cuando vuelve la conexión.
+        db.enablePersistence()
+            .catch(function(err) {
+                if (err.code == 'failed-precondition') {
+                    console.warn("Múltiples pestañas abiertas, la persistencia offline solo funciona en una.");
+                } else if (err.code == 'unimplemented') {
+                    console.warn("Tu navegador actual no soporta la persistencia offline.");
+                }
+            });
+
+        // ==================== ALERTAS DE CONEXIÓN ====================
+        // Le avisa visualmente al usuario si se cae o regresa el internet
+        window.addEventListener('offline', () => {
+            showToast('⚠️ Sin internet. Trabajando offline (Los tickets se guardarán)', 'warning');
+        });
+
+        window.addEventListener('online', () => {
+            showToast('✅ Conexión recuperada. Sincronizando con la nube...', 'success');
+        });
 
         // ==================== DATA MODELS ====================
         const DEFAULT_DATA = {
@@ -428,7 +507,50 @@ function clearAllNotifications() {
             state.notifications.unshift(notif);
             if (state.notifications.length > 50) state.notifications.pop();
             saveToStorage();
-            updateNotificationBadge();
+            updateNotificationBadg
+            e();
+        }
+
+        // ==================== MODO OSCURO Y ANIMACIONES ====================
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark');
+            const btn = document.getElementById('darkModeBtn');
+            const isDark = document.body.classList.contains('dark');
+            
+            // Cambia el icono y guarda la preferencia
+            if (btn) btn.innerText = isDark ? '☀️' : '🌙';
+            localStorage.setItem('rufaza_theme', isDark ? 'dark' : 'light');
+        }
+
+        // Cargar el tema guardado al iniciar
+        window.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('rufaza_theme') === 'dark') {
+                document.body.classList.add('dark');
+                const btn = document.getElementById('darkModeBtn');
+                if (btn) btn.innerText = '☀️';
+            }
+        });
+
+        function showSuccessAnimation(total) {
+            const overlay = document.createElement('div');
+            overlay.className = 'fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity';
+            overlay.innerHTML = `
+                <div class="glass bg-white/90 dark:bg-gray-800 p-8 rounded-3xl flex flex-col items-center text-center animate-success-pop shadow-2xl border-2 border-green-400">
+                    <div class="text-7xl mb-4 drop-shadow-lg">🎉</div>
+                    <h2 class="text-3xl font-extrabold text-green-600 dark:text-green-400 mb-2">¡Pago Exitoso!</h2>
+                    <p class="text-theme-text font-bold text-lg">Total cobrado: <span class="text-2xl">$${total.toLocaleString()}</span></p>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            
+            // Sonido opcional sutil (si el navegador lo permite)
+            try { new Audio('https://www.soundjay.com/buttons/sounds/button-09.mp3').play(); } catch(e){}
+
+            // Desaparece después de 2 segundos
+            setTimeout(() => {
+                overlay.style.opacity = '0';
+                setTimeout(() => overlay.remove(), 300);
+            }, 2000);
         }
 
         function showToast(message, type = 'info') {
@@ -1402,28 +1524,39 @@ function clearAllNotifications() {
 
         function updateOrderStatus(orderId, newStatus) {
             const order = state.orders.find(o => o.id === orderId);
-            if (order) {
-                order.status = newStatus;
-                order.statusUpdatedAt = new Date().toISOString();
-                order.statusUpdatedBy = currentUser.id;
+            if (!order) return;
 
-                if (newStatus === 'ready') {
-                    addNotification('success', `✅ Pedido #${orderId.toString().slice(-4)} listo para entregar`, ['cashier', 'waiter']);
-                }
+            // Actualizamos el estado de la orden
+            order.status = newStatus;
 
-                if (newStatus === 'delivered' && order.type === 'table') {
+            // 👇 MAGIA: SI SE ENTREGA O CANCELA, LIBERAMOS LA MESA 👇
+            if (newStatus === 'delivered' || newStatus === 'cancelled') {
+                if (order.tableId) {
                     const table = state.tables.find(t => t.id === order.tableId);
-                    if (table) table.status = 'free';
+                    if (table) {
+                        table.status = 'available'; // La mesa vuelve a estar Verde/Disponible
+                    }
                 }
+            }
 
-                logActivity('ORDER_STATUS', `Pedido #${orderId.toString().slice(-4)} cambió a ${newStatus}`);
-                saveToStorage();
-                showToast(`Pedido actualizado a: ${getStatusLabel(newStatus)}`, 'success');
-                // Al actualizar un estado, hay que redibujar la cocina
-                renderKitchen(document.getElementById('contentArea'), currentKitchenTab);
+            saveToStorage();
+            
+            // Usamos tu función getStatusLabel si existe, sino un texto por defecto
+            const statusText = typeof getStatusLabel === 'function' ? getStatusLabel(newStatus) : newStatus;
+            showToast(`✅ Pedido marcado como: ${statusText}`, 'success');
+
+            // RECARGA INTELIGENTE DE PANTALLAS (Para que se vea el cambio al instante)
+            const contentArea = document.getElementById('contentArea');
+            
+            if (currentUser.role === 'cocina') {
+                if (typeof renderKitchen === 'function') renderKitchen(contentArea);
+            } else {
+                // Si es mesero o admin, recargamos la vista que tengan abierta
+                if (typeof renderWaiter === 'function') renderWaiter(contentArea);
+                else if (typeof renderTables === 'function') renderTables(contentArea);
+                else if (typeof renderWaiterDashboard === 'function') renderWaiterDashboard(contentArea);
             }
         }
-
         function showKitchenReportModal() {
             const today = new Date().toDateString();
             const todayOrders = state.orders.filter(o => new Date(o.createdAt).toDateString() === today && o.status !== 'cancelled');
@@ -1647,58 +1780,107 @@ function clearAllNotifications() {
         }
 
         function sendTableOrder(tableId) {
-            if (currentCart.length === 0) return;
-
-            const table = state.tables.find(t => t.id === tableId);
-            const orderId = Date.now();
-            const total = calculateCartTotal();
-
-            const order = {
-                id: orderId,
-                type: 'table',
-                tableId,
-                items: [...currentCart],
-                total,
-                status: 'pending',
-                paymentStatus: 'pending',
-                createdAt: new Date().toISOString(),
-                createdBy: currentUser.id,
-                waiterName: currentUser.name
-            };
-
-            state.orders.push(order);
-            table.status = 'occupied';
-
-            // Descuento de inventario inmediato basado en receta
-            currentCart.forEach(cartItem => {
-                const product = state.products.find(p => p.id === cartItem.productId);
-                if (product && product.ingredients) {
-                    product.ingredients.forEach(ing => {
-                        const invItem = state.inventory.find(i => i.id === ing.id);
-                        if (invItem) {
-                            invItem.stock -= (ing.qty * cartItem.quantity);
-                            if (invItem.stock <= invItem.minStock) {
-                                addNotification('warning', `⚠️ Stock bajo: ${invItem.name}`, ['admin', 'kitchen']);
-                            }
-                        }
-                    });
+            try {
+                if (currentCart.length === 0) {
+                    showToast('Agrega al menos un producto', 'warning');
+                    return;
                 }
-            });
 
-            // ---> NUEVO: Verificar si los productos se quedaron sin ingredientes <---
-            checkProductAvailability();
+                const table = state.tables.find(t => t.id === tableId);
+                let order = state.orders.find(o => o.tableId === tableId && o.status !== 'delivered' && o.status !== 'cancelled');
 
-            logActivity('ORDER_CREATE', `Pedido #${orderId.toString().slice(-4)} creado para ${table.name}`);
-            addNotification('info', `🍕 Nuevo pedido #${orderId.toString().slice(-4)} de ${table.name}`, ['kitchen']);
+                
+               // Si no hay orden previa, creamos una nueva
+               if (!order) {
+                    order = {
+                        id: Date.now(),
+                        type: 'table', // 👈 Define que es un pedido de mesa
+                        tableId: tableId,
+                        tableName: table.name,
+                        createdBy: currentUser.id, // 👈 ESTO ES LO QUE BUSCA "MIS PEDIDOS"
+                        createdAt: new Date().toISOString(), // 👈 ESTO ES LO QUE USA PARA LA FECHA/HORA
+                        userId: currentUser.id,
+                        userName: currentUser.name,
+                        waiterId: currentUser.id, 
+                        waiterName: currentUser.name,
+                        items: [],
+                        status: 'pending',
+                        total: 0,
+                        timestamp: new Date().toISOString()
+                    };
+                    state.orders.push(order);
+                }
 
-            saveToStorage();
-            showToast('Pedido enviado a cocina', 'success');
+                // Pasamos los items del carrito temporal a la orden real
+                currentCart.forEach(cartItem => {
+                    const existing = order.items.find(i => i.productId === cartItem.productId);
+                    if (existing) {
+                        existing.quantity += cartItem.quantity;
+                    } else {
+                        order.items.push({ ...cartItem });
+                    }
+                });
 
-            currentCart = [];
-            closeModal();
-            renderWaiter(document.getElementById('contentArea'));
+                // Actualizamos el total de la orden y marcamos la mesa como ocupada
+                order.total = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                table.status = 'occupied';
+
+                // Intentamos notificar a cocina de forma segura
+                try {
+                    if (typeof addNotification === 'function') {
+                        addNotification(`Nueva comanda de ${table.name}`, ['cocina', 'admin']);
+                    }
+                } catch(e) { 
+                    console.log("Aviso: No se pudo enviar notificación a cocina", e); 
+                }
+
+                // Vaciamos el carrito temporal y guardamos todo en Firebase/Local
+                currentCart = [];
+                saveToStorage();
+                
+                // Mensaje de éxito al usuario
+                showToast('✅ Orden enviada a cocina', 'success');
+
+                // ==========================================
+                // 1. CIERRE FORZADO Y LIMPIO DE LA VENTANA
+                // ==========================================
+                const modal = document.getElementById('modalContainer');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    modal.innerHTML = ''; // Limpiamos el contenido para que no queden rastros
+                }
+                
+                // ==========================================
+                // 2. RECARGA INTELIGENTE DE LA VISTA
+                // ==========================================
+                const contentArea = document.getElementById('contentArea');
+                
+                if (typeof renderWaiter === 'function') {
+                    renderWaiter(contentArea);
+                } else if (typeof renderTables === 'function') {
+                    renderTables(contentArea);
+                } else if (typeof renderWaiterDashboard === 'function') {
+                    renderWaiterDashboard(contentArea);
+                } else {
+                    // Si el nombre es diferente, pedimos al usuario que recargue tocando el menú
+                    showToast('Orden guardada. Haz clic en el menú para actualizar la vista de mesas.', 'info');
+                }
+
+            } catch (error) {
+                // Si ocurre una falla crítica, mostramos el error sin congelar el sistema
+                console.error("Error al enviar a cocina:", error);
+                showToast('❌ Error al procesar: ' + error.message, 'error');
+                
+                // Aseguramos que la ventana se cierre de todos modos
+                const modal = document.getElementById('modalContainer');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    modal.innerHTML = '';
+                }
+            }
         }
 
+        
         function renderMyOrders(container) {
             const myOrders = state.orders.filter(o => o.createdBy === currentUser.id)
                 .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -2080,60 +2262,58 @@ function clearAllNotifications() {
             }
         }
 
-        // ==================== PRODUCTS MODULE ====================
-       // ==================== PRODUCTS MODULE ====================
-       let currentEditIngredients = []; // Variable para la receta temporal
+       
+       
 
-// Convertidor de imagen simple
+// ==================== PRODUCTS MODULE ====================
+let currentEditIngredients = []; // Variable para la receta temporal
+
 // ==================== CONVERTIDOR DE IMAGEN CON COMPRESIÓN ====================
 function convertImageToBase64(input) {
-            if (input.files && input.files[0]) {
-                const file = input.files[0];
-                const reader = new FileReader();
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
                 
-                reader.onload = function(e) {
-                    const img = new Image();
-                    img.onload = function() {
-                        // 1. Crear un canvas para redimensionar la imagen
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        
-                        // 2. Definir tamaño máximo (400px es perfecto para los cuadritos del sistema)
-                        const MAX_WIDTH = 400;
-                        const MAX_HEIGHT = 400;
-                        let width = img.width;
-                        let height = img.height;
+                const MAX_WIDTH = 400;
+                const MAX_HEIGHT = 400;
+                let width = img.width;
+                let height = img.height;
 
-                        if (width > height) {
-                            if (width > MAX_WIDTH) {
-                                height *= MAX_WIDTH / width;
-                                width = MAX_WIDTH;
-                            }
-                        } else {
-                            if (height > MAX_HEIGHT) {
-                                width *= MAX_HEIGHT / height;
-                                height = MAX_HEIGHT;
-                            }
-                        }
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width *= MAX_HEIGHT / height;
+                        height = MAX_HEIGHT;
+                    }
+                }
 
-                        canvas.width = width;
-                        canvas.height = height;
-                        
-                        // 3. Dibujar la imagen en tamaño pequeño
-                        ctx.drawImage(img, 0, 0, width, height);
+                canvas.width = width;
+                canvas.height = height;
+                
+                ctx.drawImage(img, 0, 0, width, height);
 
-                        // 4. Convertirla a formato Web con 70% de calidad para que no pese casi nada
-                        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-                        
-                        // 5. Guardarla en el input oculto
-                        document.getElementById('hiddenImageBase64').value = compressedBase64;
-                        showToast('✅ Foto cargada y optimizada', 'success');
-                    };
-                    img.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        }
+                // Comprime al 70% de calidad en formato JPEG
+                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                
+                document.getElementById('hiddenImageBase64').value = compressedBase64;
+                showToast('✅ Foto cargada y optimizada', 'success');
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
 
 function renderProducts(container) {
     const categories = ['pizza', 'drink', 'extra', 'promo'];
