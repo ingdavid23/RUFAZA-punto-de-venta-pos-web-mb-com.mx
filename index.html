@@ -480,6 +480,7 @@ function clearAllNotifications() {
         let currentView = 'pos';
         let currentCart = [];
         let selectedTable = null;
+        let currentInventoryFilter = 'all'; // Nueva variable para las pestañas del inventario
         
         // NUEVAS VARIABLES PARA MULTI-SUCURSAL
         let currentBranch = 'sucursal_principal'; 
@@ -2087,24 +2088,110 @@ if (branchLabel) branchLabel.textContent = currentBranch === 'sucursal_principal
 
 
 
-        // ==================== INVENTORY MODULE ====================
-        // ==================== INVENTORY MODULE ====================
+       // ==================== INVENTORY MODULE ====================
+       // ==================== INVENTORY MODULE ====================
+       function filterInventory(category) {
+            currentInventoryFilter = category;
+            renderInventory(document.getElementById('contentArea'));
+        }
+
+        // Función auxiliar para mostrar/ocultar el input de categoría nueva
+        function toggleCustomCategory(value, containerId) {
+            const container = document.getElementById(containerId);
+            if (value === 'custom') {
+                container.classList.remove('hidden');
+                container.querySelector('input').focus();
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+
+        // Función auxiliar para generar las opciones del selector de categorías
+        function getCategoryOptionsHTML(selected = '') {
+            const baseCategories = [
+                { id: 'basicos', name: '🧀 Básicos (Masa, Queso)' },
+                { id: 'carnes', name: '🥩 Carnes y Embutidos' },
+                { id: 'verduras', name: '🍅 Frutas y Verduras' },
+                { id: 'bebidas', name: '🥤 Bebidas' },
+                { id: 'general', name: '🏷️ Empaques y Otros' }
+            ];
+            
+            const baseIds = baseCategories.map(c => c.id);
+            // Busca categorías nuevas que el usuario haya creado antes
+            const customCategories = [...new Set(state.inventory.map(i => i.category))].filter(c => c && !baseIds.includes(c));
+
+            let html = baseCategories.map(c => `<option value="${c.id}" ${selected === c.id ? 'selected' : ''}>${c.name}</option>`).join('');
+            
+            if(customCategories.length > 0) {
+                html += `<optgroup label="Personalizadas">`;
+                html += customCategories.map(c => `<option value="${c}" ${selected === c ? 'selected' : ''}>✨ ${c.charAt(0).toUpperCase() + c.slice(1)}</option>`).join('');
+                html += `</optgroup>`;
+            }
+            
+            html += `<option value="custom">➕ Nueva Categoría Personalizada...</option>`;
+            return html;
+        }
+
         function renderInventory(container) {
+            // Auto-clasificador mágico para datos viejos
+            state.inventory.forEach(i => {
+                if (!i.category) {
+                    const name = i.name.toLowerCase();
+                    if (name.includes('coca') || name.includes('sprite') || name.includes('agua') || name.includes('cerveza')) i.category = 'bebidas';
+                    else if (name.includes('pepperoni') || name.includes('jamón') || name.includes('alitas') || name.includes('pollo') || name.includes('carne')) i.category = 'carnes';
+                    else if (name.includes('piña') || name.includes('champiñon') || name.includes('pimiento') || name.includes('ajo') || name.includes('lechuga') || name.includes('tomate')) i.category = 'verduras';
+                    else if (name.includes('queso') || name.includes('masa') || name.includes('harina') || name.includes('salsa')) i.category = 'basicos';
+                    else i.category = 'general';
+                }
+            });
+
+            const categories = [
+                { id: 'all', name: 'Todos', icon: '📦' },
+                { id: 'basicos', name: 'Básicos', icon: '🧀' },
+                { id: 'carnes', name: 'Carnes', icon: '🥩' },
+                { id: 'verduras', name: 'Verduras', icon: '🍅' },
+                { id: 'bebidas', name: 'Bebidas', icon: '🥤' },
+                { id: 'general', name: 'Otros', icon: '🏷️' }
+            ];
+
+            // Agregar pestañas dinámicas
+            const baseIds = categories.map(c => c.id);
+            const customCategories = [...new Set(state.inventory.map(i => i.category))].filter(c => c && !baseIds.includes(c));
+            
+            customCategories.forEach(cat => {
+                const catName = cat.charAt(0).toUpperCase() + cat.slice(1);
+                categories.push({ id: cat, name: catName, icon: '✨' });
+            });
+
+            const filteredInventory = currentInventoryFilter === 'all' 
+                ? state.inventory 
+                : state.inventory.filter(i => i.category === currentInventoryFilter);
+
             container.innerHTML = `
                 <div class="animate-slideIn">
-                    <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-2xl font-bold flex items-center gap-3 text-theme-greenDark">📦 Inventario</h2>
-                        <button onclick="showAddInventoryModal()" class="btn-primary px-4 py-2 rounded-xl flex items-center gap-2 font-bold shadow-md">
-                            ➕ Agregar Entrada
+                    <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
+                        <h2 class="text-2xl font-bold flex items-center gap-3 text-theme-greenDark">📦 Inventario Clasificado</h2>
+                        <button onclick="showAddInventoryModal()" class="btn-primary px-4 py-2.5 rounded-xl flex items-center gap-2 font-bold shadow-md w-full md:w-auto justify-center">
+                            ➕ Agregar Insumo
                         </button>
                     </div>
 
+                    <div class="flex gap-2 overflow-x-auto scrollbar-thin pb-2 mb-4">
+                        ${categories.map(c => `
+                            <button onclick="filterInventory('${c.id}')" 
+                                class="px-4 py-2 rounded-xl text-sm font-bold shadow-sm whitespace-nowrap transition-all border border-transparent 
+                                ${currentInventoryFilter === c.id ? 'bg-theme-green text-white' : 'bg-white/60 hover:bg-white text-theme-textMuted hover:border-theme-beige'}">
+                                ${c.icon} ${c.name}
+                            </button>
+                        `).join('')}
+                    </div>
+
                     ${state.inventory.filter(i => i.stock <= i.minStock).length > 0 ? `
-                        <div class="mb-6 p-5 rounded-2xl bg-red-50 border border-red-200 shadow-sm">
-                            <h3 class="font-bold text-red-600 mb-3 flex items-center gap-2">⚠️ Alertas de Stock Bajo</h3>
-                            <div class="flex flex-wrap gap-2">
+                        <div class="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 shadow-sm flex items-center gap-4 overflow-x-auto scrollbar-thin">
+                            <h3 class="font-bold text-red-600 flex items-center gap-2 whitespace-nowrap">⚠️ Alertas críticas:</h3>
+                            <div class="flex gap-2">
                                 ${state.inventory.filter(i => i.stock <= i.minStock).map(i => `
-                                    <span class="px-3 py-1.5 rounded-full bg-red-100 text-red-700 text-sm font-bold shadow-sm">${i.name}: ${i.stock} ${i.unit}</span>
+                                    <span class="px-3 py-1.5 rounded-lg bg-red-100 text-red-800 text-xs font-extrabold shadow-sm whitespace-nowrap border border-red-200">${i.name}: ${i.stock} ${i.unit}</span>
                                 `).join('')}
                             </div>
                         </div>
@@ -2116,37 +2203,36 @@ if (branchLabel) branchLabel.textContent = currentBranch === 'sucursal_principal
                                 <thead class="bg-theme-beige/50 border-b border-theme-beige">
                                     <tr>
                                         <th class="px-5 py-4 text-left text-sm font-bold">Insumo</th>
+                                        <th class="px-5 py-4 text-left text-sm font-bold">Categoría</th>
                                         <th class="px-5 py-4 text-left text-sm font-bold">Stock</th>
-                                        <th class="px-5 py-4 text-left text-sm font-bold">Mínimo</th>
                                         <th class="px-5 py-4 text-left text-sm font-bold">Costo</th>
-                                        <th class="px-5 py-4 text-left text-sm font-bold">Proveedor</th>
                                         <th class="px-5 py-4 text-left text-sm font-bold">Estado</th>
-                                        <th class="px-5 py-4 text-left text-sm font-bold">Acciones</th>
+                                        <th class="px-5 py-4 text-left text-sm font-bold text-center">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-theme-beige">
-                                    ${state.inventory.map(item => `
+                                    ${filteredInventory.length === 0 ? `<tr><td colspan="6" class="text-center py-8 text-theme-textMuted font-medium">No hay insumos en esta categoría</td></tr>` : 
+                                    filteredInventory.map(item => `
                                         <tr class="hover:bg-white transition">
-                                            <td class="px-5 py-4 font-bold">${item.name}</td>
-                                            <td class="px-5 py-4 ${item.stock <= item.minStock ? 'text-red-600 font-extrabold' : 'font-medium'}">${item.stock.toFixed(2)} ${item.unit}</td>
-                                            <td class="px-5 py-4 text-theme-textMuted font-medium">${item.minStock} ${item.unit}</td>
-                                            <td class="px-5 py-4 font-bold text-theme-greenDark">$${item.cost}</td>
-                                            <td class="px-5 py-4 text-theme-textMuted text-sm font-medium">${item.supplier}</td>
+                                            <td class="px-5 py-4 font-bold text-theme-text">${item.name}</td>
+                                            <td class="px-5 py-4 text-xs font-bold text-theme-textMuted uppercase tracking-wider">${item.category}</td>
+                                            <td class="px-5 py-4 ${item.stock <= item.minStock ? 'text-red-600 font-extrabold' : 'font-bold text-theme-greenDark'}">${item.stock.toFixed(2)} <span class="text-xs font-medium text-theme-textMuted">${item.unit}</span></td>
+                                            <td class="px-5 py-4 font-bold">$${item.cost}</td>
                                             <td class="px-5 py-4">
-                                                ${item.stock <= item.minStock ?
-                    '<span class="px-3 py-1 rounded-full text-xs bg-red-100 text-red-700 font-bold shadow-sm">Bajo</span>' :
-                    item.stock <= item.minStock * 2 ?
-                        '<span class="px-3 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800 font-bold shadow-sm">Medio</span>' :
-                        '<span class="px-3 py-1 rounded-full text-xs bg-green-100 text-green-700 font-bold shadow-sm">OK</span>'
-                }
+                                                ${item.stock <= item.minStock ? '<span class="px-3 py-1 rounded-md text-xs bg-red-100 text-red-700 font-bold shadow-sm border border-red-200">Bajo</span>' :
+                                                item.stock <= item.minStock * 2 ? '<span class="px-3 py-1 rounded-md text-xs bg-yellow-100 text-yellow-800 font-bold shadow-sm border border-yellow-200">Medio</span>' :
+                                                '<span class="px-3 py-1 rounded-md text-xs bg-green-100 text-green-700 font-bold shadow-sm border border-green-200">Óptimo</span>'}
                                             </td>
                                             <td class="px-5 py-4">
-                                                <div class="flex gap-2">
-                                                    <button onclick="showInventoryEntryModal(${item.id})" class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 text-sm transition font-bold shadow-sm" title="Agregar Stock">
-                                                        ➕ Entrada
+                                                <div class="flex justify-center gap-1 sm:gap-2">
+                                                    <button onclick="showInventoryEntryModal(${item.id})" class="px-2 sm:px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 text-xs transition font-bold shadow-sm" title="Agregar Entrada">
+                                                        ➕<span class="hidden lg:inline ml-1">Entrada</span>
                                                     </button>
-                                                    <button onclick="showEditInventoryItemModal(${item.id})" class="px-3 py-1.5 rounded-lg bg-white border border-theme-beige hover:bg-theme-beige text-theme-textMuted text-sm transition font-bold shadow-sm" title="Editar Detalles">
-                                                        ✏️ Editar
+                                                    <button onclick="showEditInventoryItemModal(${item.id})" class="px-2 sm:px-3 py-1.5 rounded-lg bg-theme-bg border border-theme-beige hover:bg-theme-beige text-theme-text text-xs transition font-bold shadow-sm" title="Editar Insumo">
+                                                        ✏️<span class="hidden lg:inline ml-1">Editar</span>
+                                                    </button>
+                                                    <button onclick="confirmDeleteInventoryItem(${item.id})" class="px-2 sm:px-3 py-1.5 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 text-xs transition font-bold shadow-sm" title="Borrar Insumo">
+                                                        🗑️<span class="hidden lg:inline ml-1">Borrar</span>
                                                     </button>
                                                 </div>
                                             </td>
@@ -2159,128 +2245,58 @@ if (branchLabel) branchLabel.textContent = currentBranch === 'sucursal_principal
                 </div>
             `;
         }
-
-        function showInventoryEntryModal(itemId) {
-            const item = state.inventory.find(i => i.id === itemId);
-            const modal = document.getElementById('modalContainer');
-            modal.innerHTML = `
-                <div class="glass bg-white/90 rounded-3xl p-6 w-full max-w-md animate-slideIn shadow-2xl border-2 border-white">
-                    <h3 class="text-xl font-bold mb-4 text-theme-greenDark">➕ Entrada de Inventario</h3>
-                    <div class="space-y-4">
-                        <div class="p-4 rounded-xl bg-theme-bg border border-theme-beige">
-                            <p class="font-bold text-theme-text">${item.name}</p>
-                            <p class="text-sm text-theme-textMuted font-medium mt-1">Stock actual: <span class="font-bold text-theme-greenDark">${item.stock.toFixed(2)} ${item.unit}</span></p>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-bold mb-2 text-theme-text">Cantidad a agregar (${item.unit})</label>
-                            <input type="number" id="entryQty" step="0.01" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green transition font-bold" placeholder="0">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-bold mb-2 text-theme-text">Notas (opcional)</label>
-                            <input type="text" id="entryNotes" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green transition font-medium text-sm" placeholder="Ej: Compra a proveedor">
-                        </div>
-                        <div class="grid grid-cols-2 gap-3 pt-2">
-                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text">Cancelar</button>
-                            <button onclick="addInventoryEntry(${itemId})" class="btn-primary py-3 rounded-xl font-bold shadow-md">Agregar</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            modal.classList.remove('hidden');
-        }
-
-        function addInventoryEntry(itemId) {
-            const qty = parseFloat(document.getElementById('entryQty').value);
-            const notes = document.getElementById('entryNotes').value;
-
-            if (!qty || qty <= 0) {
-                showToast('Ingresa una cantidad válida', 'warning');
-                return;
-            }
-
-            const item = state.inventory.find(i => i.id === itemId);
-            item.stock += qty;
-
-            state.inventoryMovements.push({
-                id: Date.now(),
-                itemId,
-                itemName: item.name,
-                type: 'entry',
-                quantity: qty,
-                notes,
-                timestamp: new Date().toISOString(),
-                userId: currentUser.id,
-                userName: currentUser.name
-            });
-
-            // ---> NUEVO: Reactivar productos automáticamente <---
-            // Si el insumo que acabamos de agregar pertenece a la receta de algún 
-            // producto que estaba apagado (🔴), revisamos si ya tiene stock para prenderlo (🟢)
-            let reactivatedProducts = [];
-            state.products.forEach(p => {
-                // Solo revisamos productos apagados que usan este insumo específico
-                if (!p.active && p.ingredients && p.ingredients.some(ing => ing.id === itemId)) {
-                    if (hasEnoughStock(p)) {
-                        p.active = true; // Lo prendemos
-                        reactivatedProducts.push(p.name);
-                    }
-                }
-            });
-
-            logActivity('INVENTORY_ENTRY', `Entrada de ${qty} ${item.unit} de ${item.name}`);
-            saveToStorage();
-            
-            showToast(`Entrada registrada: ${qty} ${item.unit} de ${item.name}`, 'success');
-            
-            // Si el sistema revivió productos, te avisa con otra notificación
-            if (reactivatedProducts.length > 0) {
-                setTimeout(() => showToast(`Se reactivaron automáticamente: ${reactivatedProducts.join(', ')}`, 'info'), 1500);
-            }
-
-            closeModal();
-            renderInventory(document.getElementById('contentArea'));
-        }
-
         function showAddInventoryModal() {
             const modal = document.getElementById('modalContainer');
             modal.innerHTML = `
-                <div class="glass bg-white/90 rounded-3xl p-6 w-full max-w-md animate-slideIn shadow-2xl border-2 border-white">
+                <div class="glass bg-white/90 rounded-3xl p-6 w-full max-w-md animate-slideIn shadow-2xl border-2 border-white max-h-[90vh] overflow-y-auto scrollbar-thin">
                     <h3 class="text-xl font-bold mb-4 text-theme-greenDark">➕ Nuevo Insumo</h3>
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-sm font-bold mb-2 text-theme-text">Nombre del insumo</label>
-                            <input type="text" id="newItemName" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm" placeholder="Ej: Queso Parmesano">
+                            <label class="block text-sm font-bold mb-1 text-theme-text">Nombre del insumo</label>
+                            <input type="text" id="newItemName" class="w-full px-4 py-2.5 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm" placeholder="Ej: Queso Parmesano">
                         </div>
+                        
+                        <div>
+                            <label class="block text-sm font-bold mb-1 text-theme-text">Categoría</label>
+                            <select id="newItemCategory" onchange="toggleCustomCategory(this.value, 'newCustomCatContainer')" class="w-full px-4 py-2.5 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm">
+                                ${getCategoryOptionsHTML()}
+                            </select>
+                        </div>
+                        <div id="newCustomCatContainer" class="hidden animate-slideIn">
+                            <label class="block text-xs font-bold mb-1 text-theme-greenDark">Escribe tu nueva categoría:</label>
+                            <input type="text" id="newItemCustomCategory" class="w-full px-4 py-2 bg-theme-bg border border-theme-green rounded-xl focus:outline-none focus:border-theme-green font-bold text-sm" placeholder="Ej: Limpieza, Desechables...">
+                        </div>
+
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-bold mb-2 text-theme-text">Unidad</label>
-                                <select id="newItemUnit" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm">
+                                <label class="block text-sm font-bold mb-1 text-theme-text">Unidad</label>
+                                <select id="newItemUnit" class="w-full px-4 py-2.5 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm">
                                     <option value="kg">Kilogramos (kg)</option>
                                     <option value="lt">Litros (lt)</option>
                                     <option value="pza">Piezas (pza)</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm font-bold mb-2 text-theme-text">Stock inicial</label>
-                                <input type="number" id="newItemStock" step="0.01" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm" placeholder="0">
+                                <label class="block text-sm font-bold mb-1 text-theme-text">Stock inicial</label>
+                                <input type="number" id="newItemStock" step="0.01" class="w-full px-4 py-2.5 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm" placeholder="0">
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-bold mb-2 text-theme-text">Stock mínimo</label>
-                                <input type="number" id="newItemMin" step="0.01" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm" placeholder="0">
+                                <label class="block text-sm font-bold mb-1 text-theme-text">Stock mínimo</label>
+                                <input type="number" id="newItemMin" step="0.01" class="w-full px-4 py-2.5 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm" placeholder="0">
                             </div>
                             <div>
-                                <label class="block text-sm font-bold mb-2 text-theme-text">Costo unitario</label>
-                                <input type="number" id="newItemCost" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm" placeholder="0">
+                                <label class="block text-sm font-bold mb-1 text-theme-text">Costo Unitario</label>
+                                <input type="number" id="newItemCost" class="w-full px-4 py-2.5 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm" placeholder="0">
                             </div>
                         </div>
                         <div>
-                            <label class="block text-sm font-bold mb-2 text-theme-text">Proveedor</label>
-                            <input type="text" id="newItemSupplier" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm" placeholder="Nombre del proveedor">
+                            <label class="block text-sm font-bold mb-1 text-theme-text">Proveedor</label>
+                            <input type="text" id="newItemSupplier" class="w-full px-4 py-2.5 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm" placeholder="Nombre del proveedor">
                         </div>
-                        <div class="grid grid-cols-2 gap-3 pt-2">
-                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text">Cancelar</button>
+                        <div class="grid grid-cols-2 gap-3 pt-3 border-t border-theme-beige mt-2">
+                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text shadow-sm">Cancelar</button>
                             <button onclick="saveNewInventoryItem()" class="btn-primary py-3 rounded-xl font-bold shadow-md">Guardar</button>
                         </div>
                     </div>
@@ -2291,6 +2307,17 @@ if (branchLabel) branchLabel.textContent = currentBranch === 'sucursal_principal
 
         function saveNewInventoryItem() {
             const name = document.getElementById('newItemName').value.trim();
+            let category = document.getElementById('newItemCategory').value;
+            
+            // Si el usuario eligió "Nueva Categoría", tomamos el valor del campo de texto
+            if (category === 'custom') {
+                category = document.getElementById('newItemCustomCategory').value.trim().toLowerCase();
+                if (!category) {
+                    showToast('Por favor escribe el nombre de la nueva categoría', 'warning');
+                    return;
+                }
+            }
+
             const unit = document.getElementById('newItemUnit').value;
             const stock = parseFloat(document.getElementById('newItemStock').value) || 0;
             const minStock = parseFloat(document.getElementById('newItemMin').value) || 0;
@@ -2302,59 +2329,75 @@ if (branchLabel) branchLabel.textContent = currentBranch === 'sucursal_principal
                 return;
             }
 
-            const newItem = {
+            state.inventory.push({
                 id: Date.now(),
                 name,
+                category, 
                 unit,
                 stock,
                 minStock,
                 cost,
                 supplier: supplier || 'Sin proveedor'
-            };
+            });
 
-            state.inventory.push(newItem);
-            logActivity('INVENTORY_ADD', `Nuevo insumo agregado: ${name}`);
+            logActivity('INVENTORY_ADD', `Nuevo insumo agregado: ${name} (${category})`);
             saveToStorage();
             showToast('Insumo agregado correctamente', 'success');
             closeModal();
             renderInventory(document.getElementById('contentArea'));
         }
 
-        // --- Funciones para Editar Insumos del Inventario ---
         function showEditInventoryItemModal(itemId) {
             const item = state.inventory.find(i => i.id === itemId);
             if (!item) return;
 
             const modal = document.getElementById('modalContainer');
             modal.innerHTML = `
-                <div class="glass bg-white/90 rounded-3xl p-6 w-[95%] max-w-md animate-slideIn shadow-2xl border-2 border-white">
+                <div class="glass bg-white/90 rounded-3xl p-6 w-[95%] max-w-md animate-slideIn shadow-2xl border-2 border-white max-h-[90vh] overflow-y-auto scrollbar-thin">
                     <h3 class="text-xl font-bold mb-4 text-theme-greenDark">✏️ Editar Insumo</h3>
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-sm font-bold mb-2 text-theme-text">Nombre del insumo</label>
-                            <input type="text" id="editInvName" value="${item.name}" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm">
+                            <label class="block text-sm font-bold mb-1 text-theme-text">Nombre del insumo</label>
+                            <input type="text" id="editInvName" value="${item.name}" class="w-full px-4 py-2.5 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm">
                         </div>
+                        
+                        <div>
+                            <label class="block text-sm font-bold mb-1 text-theme-text">Categoría</label>
+                            <select id="editInvCategory" onchange="toggleCustomCategory(this.value, 'editCustomCatContainer')" class="w-full px-4 py-2.5 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm">
+                                ${getCategoryOptionsHTML(item.category)}
+                            </select>
+                        </div>
+                        <div id="editCustomCatContainer" class="hidden animate-slideIn">
+                            <label class="block text-xs font-bold mb-1 text-theme-greenDark">Escribe tu nueva categoría:</label>
+                            <input type="text" id="editInvCustomCategory" class="w-full px-4 py-2 bg-theme-bg border border-theme-green rounded-xl focus:outline-none focus:border-theme-green font-bold text-sm" placeholder="Ej: Limpieza, Desechables...">
+                        </div>
+
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-bold mb-2 text-theme-text">Stock Mínimo</label>
-                                <input type="number" id="editInvMin" step="0.01" value="${item.minStock}" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm">
+                                <label class="block text-sm font-bold mb-1 text-theme-text">Stock Mínimo</label>
+                                <input type="number" id="editInvMin" step="0.01" value="${item.minStock}" class="w-full px-4 py-2.5 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm">
                             </div>
                             <div>
-                                <label class="block text-sm font-bold mb-2 text-theme-text">Costo Unitario ($)</label>
-                                <input type="number" id="editInvCost" step="0.01" value="${item.cost}" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm">
+                                <label class="block text-sm font-bold mb-1 text-theme-text">Costo Unitario ($)</label>
+                                <input type="number" id="editInvCost" step="0.01" value="${item.cost}" class="w-full px-4 py-2.5 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm">
                             </div>
                         </div>
                         <div>
-                            <label class="block text-sm font-bold mb-2 text-theme-text">Proveedor</label>
-                            <input type="text" id="editInvSupplier" value="${item.supplier}" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm">
+                            <label class="block text-sm font-bold mb-1 text-theme-text">Proveedor</label>
+                            <input type="text" id="editInvSupplier" value="${item.supplier}" class="w-full px-4 py-2.5 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-sm">
                         </div>
-                        <div class="grid grid-cols-2 gap-3 pt-2 border-t border-theme-beige mt-2">
-                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text">Cancelar</button>
+                        <div class="grid grid-cols-2 gap-3 pt-3 border-t border-theme-beige mt-2">
+                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text shadow-sm">Cancelar</button>
                             <button onclick="updateInventoryItem(${itemId})" class="btn-primary py-3 rounded-xl font-bold shadow-md">Guardar</button>
                         </div>
                     </div>
                 </div>
             `;
+            
+            // Si la categoría actual del item no estaba en la lista y no existe, mostramos el input manual por defecto
+            const selector = document.getElementById('editInvCategory');
+            if (selector.value === 'custom') toggleCustomCategory('custom', 'editCustomCatContainer');
+            
             modal.classList.remove('hidden');
         }
 
@@ -2363,6 +2406,16 @@ if (branchLabel) branchLabel.textContent = currentBranch === 'sucursal_principal
             if (!item) return;
 
             const name = document.getElementById('editInvName').value.trim();
+            let category = document.getElementById('editInvCategory').value;
+            
+            if (category === 'custom') {
+                category = document.getElementById('editInvCustomCategory').value.trim().toLowerCase();
+                if (!category) {
+                    showToast('Por favor escribe el nombre de la nueva categoría', 'warning');
+                    return;
+                }
+            }
+
             const minStock = parseFloat(document.getElementById('editInvMin').value) || 0;
             const cost = parseFloat(document.getElementById('editInvCost').value) || 0;
             const supplier = document.getElementById('editInvSupplier').value.trim();
@@ -2373,14 +2426,54 @@ if (branchLabel) branchLabel.textContent = currentBranch === 'sucursal_principal
             }
 
             item.name = name;
+            item.category = category;
             item.minStock = minStock;
             item.cost = cost;
             item.supplier = supplier || 'Sin proveedor';
 
-            logActivity('INVENTORY_UPDATE', `Insumo actualizado: ${name} (Costo: $${cost})`);
+            logActivity('INVENTORY_UPDATE', `Insumo actualizado: ${name}`);
             saveToStorage();
             
             showToast('Insumo actualizado correctamente', 'success');
+            closeModal();
+            renderInventory(document.getElementById('contentArea'));
+        }
+
+        function confirmDeleteInventoryItem(itemId) {
+            const item = state.inventory.find(i => i.id === itemId);
+            if (!item) return;
+
+            const modal = document.getElementById('modalContainer');
+            modal.innerHTML = `
+                <div class="glass bg-white/90 rounded-3xl p-6 w-[95%] max-w-md animate-slideIn shadow-2xl border-2 border-red-300 text-center">
+                    <div class="text-5xl mb-4 drop-shadow-md">⚠️</div>
+                    <h3 class="text-xl font-extrabold mb-2 text-red-600">¿Eliminar Insumo?</h3>
+                    <p class="text-sm text-theme-text font-medium mb-6">Estás a punto de eliminar <strong>${item.name}</strong> del inventario. Si tienes productos en tu menú que usan este insumo en su receta, se marcarán como agotados automáticamente.</p>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text shadow-sm">Cancelar</button>
+                        <button onclick="deleteInventoryItem(${item.id})" class="bg-red-500 hover:bg-red-600 text-white py-3 rounded-xl font-bold shadow-md transition">Sí, Eliminar</button>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        function deleteInventoryItem(itemId) {
+            const item = state.inventory.find(i => i.id === itemId);
+            if (!item) return;
+
+            // Eliminamos el insumo de la base de datos local
+            state.inventory = state.inventory.filter(i => i.id !== itemId);
+            
+            logActivity('INVENTORY_DELETE', `Insumo eliminado: ${item.name}`);
+            
+            // 🔥 Función inteligente: Avisar al menú de productos que revise sus recetas
+            // Si una pizza necesitaba este insumo, se pondrá "Agotada"
+            checkProductAvailability(); 
+            
+            saveToStorage();
+            showToast(`Insumo ${item.name} eliminado`, 'success');
             closeModal();
             renderInventory(document.getElementById('contentArea'));
         }
@@ -2459,7 +2552,7 @@ function renderProducts(container) {
     container.innerHTML = `
         <div class="animate-slideIn">
             <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-bold flex items-center gap-3 text-theme-greenDark">🍕 Productos</h2>
+                <h2 class="text-2xl font-bold flex items-center gap-3 text-theme-greenDark">Productos</h2>
                 <button onclick="showAddProductModal()" class="btn-primary px-4 py-2 rounded-xl flex items-center gap-2 font-bold shadow-md">
                     ➕ Nuevo Producto
                 </button>
