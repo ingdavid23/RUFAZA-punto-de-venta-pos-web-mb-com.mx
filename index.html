@@ -10,6 +10,7 @@
         rel="stylesheet">
 
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
         
 
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -3779,21 +3780,20 @@ function updateProduct(productId) {
         }
 
         // ==================== REPORTE DE INVENTARIO (PDF) ====================
+        // ==================== REPORTE DE INVENTARIO (PDF) ====================
+        // ==================== REPORTE DE INVENTARIO (PDF) ====================
         function generateInventoryReport() {
             const todayStr = new Date().toDateString();
             
-            // 1. Cálculos Generales de Valoración
             const totalValue = state.inventory.reduce((sum, item) => sum + (item.stock * item.cost), 0);
             const lowStockItems = state.inventory.filter(i => i.stock <= i.minStock);
 
-            // 2. Obtener Entradas de Hoy (Manuales)
             const todayEntries = state.inventoryMovements.filter(m => 
                 m.type === 'entry' && new Date(m.timestamp).toDateString() === todayStr
             );
 
-            // 3. Calcular Salidas de Hoy (Basado en Ventas Reales y Recetas)
             const todaySales = state.sales.filter(s => new Date(s.timestamp).toDateString() === todayStr);
-            const outputsMap = {}; // Mapa para sumar insumos usados
+            const outputsMap = {}; 
             
             todaySales.forEach(sale => {
                 sale.items.forEach(cartItem => {
@@ -3807,7 +3807,6 @@ function updateProduct(productId) {
                 });
             });
 
-            // Formatear las salidas para mostrarlas
             const todayOutputs = Object.keys(outputsMap).map(itemId => {
                 const invItem = state.inventory.find(i => i.id === parseInt(itemId));
                 return {
@@ -3815,106 +3814,136 @@ function updateProduct(productId) {
                     qty: outputsMap[itemId],
                     unit: invItem ? invItem.unit : ''
                 };
-            }).filter(item => item.qty > 0).sort((a, b) => b.qty - a.qty); // Ordenar de mayor a menor uso
+            }).filter(item => item.qty > 0).sort((a, b) => b.qty - a.qty); 
 
-            // 4. Construir la Interfaz del Documento
             const modal = document.getElementById('modalContainer');
             modal.innerHTML = `
-                <div class="bg-white text-black rounded-3xl p-6 md:p-8 w-[95%] max-w-2xl animate-slideIn shadow-2xl max-h-[90vh] overflow-y-auto scrollbar-thin" id="printArea">
+                <div class="bg-white rounded-3xl w-[95%] max-w-2xl animate-slideIn shadow-2xl max-h-[90vh] overflow-y-auto scrollbar-thin">
                     
-                    <div class="text-center border-b-2 border-black pb-4 mb-6">
-                        <h2 class="text-2xl font-extrabold uppercase tracking-widest">Reporte de Inventario</h2>
-                        <p class="text-sm font-bold mt-1 text-gray-600">🍕 PIZZAMANAGER PRO - SUCURSAL ${currentBranch === 'sucursal_principal' ? 'PRINCIPAL' : 'CENTRO'}</p>
-                        <p class="text-xs text-gray-500 mt-1">Generado el: ${new Date().toLocaleString('es-MX')} por ${currentUser.name}</p>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4 mb-6">
-                        <div class="p-4 bg-gray-100 rounded-lg border border-gray-300 text-center">
-                            <p class="text-xs font-bold text-gray-600 uppercase">Capital en Insumos</p>
-                            <p class="text-xl font-extrabold text-black mt-1">$${totalValue.toLocaleString()}</p>
+                    <div id="printArea" class="bg-white text-black p-6 md:p-8 pb-2 w-full">
+                        
+                        <div class="text-center border-b-2 border-black pb-4 mb-6 break-inside-avoid">
+                            <h2 class="text-2xl font-extrabold uppercase tracking-widest">Reporte de Inventario</h2>
+                            <p class="text-sm font-bold mt-1 text-gray-600">🍕 PIZZAMANAGER PRO - SUCURSAL ${currentBranch === 'sucursal_principal' ? 'PRINCIPAL' : 'CENTRO'}</p>
+                            <p class="text-xs text-gray-500 mt-1">Generado el: ${new Date().toLocaleString('es-MX')} por ${currentUser.name}</p>
                         </div>
-                        <div class="p-4 ${lowStockItems.length > 0 ? 'bg-red-50 border-red-200 text-red-700' : 'bg-green-50 border-green-200 text-green-700'} rounded-lg border text-center">
-                            <p class="text-xs font-bold uppercase">Alertas de Stock</p>
-                            <p class="text-xl font-extrabold mt-1">${lowStockItems.length} insumos bajos</p>
-                        </div>
-                    </div>
 
-                    <div class="mb-8">
-                        <h3 class="text-lg font-bold border-b border-gray-300 mb-3 pb-1">🔄 Movimientos de Hoy</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            
-                            <div>
-                                <h4 class="font-bold text-sm text-green-700 mb-2">📥 Entradas Registradas</h4>
-                                ${todayEntries.length > 0 ? `
-                                    <ul class="text-sm space-y-1">
-                                        ${todayEntries.map(e => `
-                                            <li class="flex justify-between border-b border-gray-100 py-1">
-                                                <span>${e.itemName}</span>
-                                                <span class="font-bold text-green-600">+${e.quantity}</span>
-                                            </li>
-                                        `).join('')}
-                                    </ul>
-                                ` : '<p class="text-xs text-gray-500 italic">No hubo compras/entradas hoy.</p>'}
+                        <div class="grid grid-cols-2 gap-4 mb-6 break-inside-avoid">
+                            <div class="p-4 bg-gray-100 rounded-lg border border-gray-300 text-center">
+                                <p class="text-xs font-bold text-gray-600 uppercase">Capital en Insumos</p>
+                                <p class="text-xl font-extrabold text-black mt-1">$${totalValue.toLocaleString()}</p>
                             </div>
-
-                            <div>
-                                <h4 class="font-bold text-sm text-red-700 mb-2">📤 Salidas (Por Ventas)</h4>
-                                ${todayOutputs.length > 0 ? `
-                                    <ul class="text-sm space-y-1">
-                                        ${todayOutputs.map(o => `
-                                            <li class="flex justify-between border-b border-gray-100 py-1">
-                                                <span>${o.name}</span>
-                                                <span class="font-bold text-red-600">-${o.qty.toFixed(2)} ${o.unit}</span>
-                                            </li>
-                                        `).join('')}
-                                    </ul>
-                                ` : '<p class="text-xs text-gray-500 italic">No se ha registrado consumo de recetas hoy.</p>'}
+                            <div class="p-4 ${lowStockItems.length > 0 ? 'bg-red-50 border-red-200 text-red-700' : 'bg-green-50 border-green-200 text-green-700'} rounded-lg border text-center">
+                                <p class="text-xs font-bold uppercase">Alertas de Stock</p>
+                                <p class="text-xl font-extrabold mt-1">${lowStockItems.length} insumos bajos</p>
                             </div>
-
                         </div>
-                    </div>
 
-                    <div>
-                        <h3 class="text-lg font-bold border-b border-gray-300 mb-3 pb-1">📦 Existencias Actuales</h3>
+                        <div class="mb-8 break-inside-avoid">
+                            <h3 class="text-lg font-bold border-b border-gray-300 mb-3 pb-1">🔄 Movimientos de Hoy</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <h4 class="font-bold text-sm text-green-700 mb-2">📥 Entradas Registradas</h4>
+                                    ${todayEntries.length > 0 ? `
+                                        <ul class="text-sm space-y-1">
+                                            ${todayEntries.map(e => `
+                                                <li class="flex justify-between border-b border-gray-100 py-1">
+                                                    <span>${e.itemName}</span>
+                                                    <span class="font-bold text-green-600">+${e.quantity}</span>
+                                                </li>
+                                            `).join('')}
+                                        </ul>
+                                    ` : '<p class="text-xs text-gray-500 italic">No hubo compras/entradas hoy.</p>'}
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-sm text-red-700 mb-2">📤 Salidas (Por Ventas)</h4>
+                                    ${todayOutputs.length > 0 ? `
+                                        <ul class="text-sm space-y-1">
+                                            ${todayOutputs.map(o => `
+                                                <li class="flex justify-between border-b border-gray-100 py-1">
+                                                    <span>${o.name}</span>
+                                                    <span class="font-bold text-red-600">-${o.qty.toFixed(2)} ${o.unit}</span>
+                                                </li>
+                                            `).join('')}
+                                        </ul>
+                                    ` : '<p class="text-xs text-gray-500 italic">No se ha registrado consumo hoy.</p>'}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="break-inside-avoid">
+                            <h3 class="text-lg font-bold border-b border-gray-300 mb-3 pb-1">📦 Existencias Actuales</h3>
+                        </div>
                         <table class="w-full text-sm text-left border-collapse">
                             <thead>
                                 <tr class="bg-gray-100 border-b-2 border-gray-300">
                                     <th class="py-2 px-2 font-bold">Insumo</th>
-                                    <th class="py-2 px-2 font-bold text-right">Stock Actual</th>
+                                    <th class="py-2 px-2 font-bold text-right">Stock</th>
                                     <th class="py-2 px-2 font-bold text-right hidden sm:table-cell">Valuación</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 ${state.inventory.sort((a,b) => a.name.localeCompare(b.name)).map(item => `
-                                    <tr class="border-b border-gray-200 ${item.stock <= item.minStock ? 'bg-red-50 text-red-800' : ''}">
-                                        <td class="py-2 px-2 font-medium">
-                                            ${item.name} ${item.stock <= item.minStock ? '⚠️' : ''}
-                                        </td>
-                                        <td class="py-2 px-2 text-right font-bold">
-                                            ${item.stock.toFixed(2)} <span class="text-xs font-normal">${item.unit}</span>
-                                        </td>
-                                        <td class="py-2 px-2 text-right hidden sm:table-cell">
-                                            $${(item.stock * item.cost).toLocaleString()}
-                                        </td>
+                                    <tr class="border-b border-gray-200 break-inside-avoid ${item.stock <= item.minStock ? 'bg-red-50 text-red-800' : ''}">
+                                        <td class="py-2 px-2 font-medium">${item.name} ${item.stock <= item.minStock ? '⚠️' : ''}</td>
+                                        <td class="py-2 px-2 text-right font-bold">${item.stock.toFixed(2)} <span class="text-xs font-normal">${item.unit}</span></td>
+                                        <td class="py-2 px-2 text-right hidden sm:table-cell">$${(item.stock * item.cost).toLocaleString()}</td>
                                     </tr>
                                 `).join('')}
                             </tbody>
                         </table>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3 mt-8 pt-6 border-t border-gray-200 print:hidden">
-                        <button onclick="closeModal()" class="py-3 bg-gray-200 text-black font-bold rounded-xl hover:bg-gray-300 transition">
-                            Cerrar
-                        </button>
-                        <button onclick="window.print()" class="bg-orange-500 hover:bg-orange-600 text-white py-3 font-bold rounded-xl shadow-md flex items-center justify-center gap-2">
-                            🖨️ Guardar como PDF / Imprimir
-                        </button>
+                    <div class="px-6 md:px-8 pb-6 md:pb-8 pt-4 bg-white rounded-b-3xl">
+                        <div class="flex gap-3 border-t border-gray-200 pt-6">
+                            <button onclick="closeModal()" class="flex-1 py-3 bg-gray-200 text-black font-bold rounded-xl hover:bg-gray-300 transition">
+                                Cerrar
+                            </button>
+                            <button onclick="downloadDirectPDF()" id="pdfDownloadBtn" class="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 font-bold rounded-xl shadow-md flex items-center justify-center gap-2 transition">
+                                📥 Descargar PDF
+                            </button>
+                        </div>
                     </div>
+
                 </div>
             `;
             modal.classList.remove('hidden');
         }
 
+        // ==================== GENERADOR DIRECTO DE PDF ====================
+       // ==================== GENERADOR DIRECTO DE PDF ====================
+       // ==================== GENERADOR DIRECTO DE PDF ====================
+       function downloadDirectPDF() {
+            const btn = document.getElementById('pdfDownloadBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '⏳ Generando PDF...';
+            btn.disabled = true;
+
+            showToast('Procesando el documento...', 'info');
+            
+            const element = document.getElementById('printArea');
+
+            const opt = {
+                margin:       [15, 10, 15, 10], // Márgenes: Arriba, Derecha, Abajo, Izquierda (en milímetros)
+                filename:     `Inventario_Rufaza_${new Date().toISOString().split('T')[0]}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { 
+                    scale: 2, 
+                    useCORS: true,
+                    scrollY: 0 // Evita errores si hiciste scroll antes de imprimir
+                    // 🔥 Eliminamos windowWidth y windowHeight que causaban el recorte izquierdo
+                },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                // 🔥 MAGIA: Evita que el texto o las tablas se corten a la mitad de la hoja
+                pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] } 
+            };
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                showToast('✅ PDF guardado exitosamente', 'success');
+            });
+        }
         // ==================== SETTINGS MODULE ====================
         // ==================== SETTINGS MODULE ====================
         // ==================== SETTINGS MODULE ====================
