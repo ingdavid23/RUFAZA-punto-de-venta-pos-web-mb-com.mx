@@ -550,8 +550,9 @@ function clearAllNotifications() {
        // ==================== ALARMA SONORA DE COCINA ====================
        function playKitchenBell() {
             try {
-                // Utilizamos un 'ping' claro y rápido para no aturdir
-const bellSound = new Audio('https://actions.google.com/sounds/v1/ui/bell_ping.ogg');
+                // Utilizamos un sonido de campana de servicio directamente del banco de sonidos de Google
+                const bellSound = new Audio('https://actions.google.com/sounds/v1/alarms/dinner_bell_triangle.ogg');
+                
                 // Reproduce el sonido
                 const playPromise = bellSound.play();
 
