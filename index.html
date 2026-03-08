@@ -474,55 +474,6 @@ function clearAllNotifications() {
             kitchenReports: []
         };
 
-        // ==================== MOTOR DE AUDIO FORZADO (HACK ANTIBLOQUEO) ====================
-        let isAudioUnlocked = false;
-
-        function initAudioUnlocker() {
-            // 1. Creamos el elemento de audio de forma invisible en el HTML
-            if (!document.getElementById('kitchenAudio')) {
-                const audioEl = document.createElement('audio');
-                audioEl.id = 'kitchenAudio';
-                audioEl.src = 'https://cdn.pixabay.com/audio/2021/08/09/audio_82bfb1a454.mp3'; // Tono moderno
-                audioEl.preload = 'auto'; // Obliga al navegador a descargarlo de inmediato
-                document.body.appendChild(audioEl);
-            }
-
-            // 2. Función fantasma que engaña al navegador
-            const unlockFn = function() {
-                if (isAudioUnlocked) return;
-                const audioEl = document.getElementById('kitchenAudio');
-                if (audioEl) {
-                    // Intenta reproducir e inmediatamente pausa. Esto rompe el candado del navegador.
-                    audioEl.play().then(() => {
-                        audioEl.pause();
-                        audioEl.currentTime = 0;
-                        isAudioUnlocked = true; // Candado roto exitosamente
-                        console.log("🔓 Audio desbloqueado por interacción del usuario.");
-                        
-                        // Quitamos el botón rojo si es que estaba en pantalla
-                        const forceBtn = document.getElementById('forceAudioBtn');
-                        if (forceBtn) forceBtn.remove();
-                    }).catch(e => {
-                        // Si falla, no pasa nada, intentará en el siguiente clic
-                    });
-                }
-                // Una vez desbloqueado, ya no necesitamos escuchar cada clic
-                document.removeEventListener('click', unlockFn);
-                document.removeEventListener('touchstart', unlockFn);
-                document.removeEventListener('keydown', unlockFn);
-            };
-
-            // 3. Escuchamos CUALQUIER cosa que haga el usuario (clic, tocar pantalla, teclear)
-            document.addEventListener('click', unlockFn);
-            document.addEventListener('touchstart', unlockFn);
-            document.addEventListener('keydown', unlockFn);
-        }
-
-        // Llamamos al motor inmediatamente arranque la página
-        window.addEventListener('DOMContentLoaded', initAudioUnlocker);
-
-
-
         // ==================== STATE MANAGEMENT ====================
         // ==================== STATE MANAGEMENT ====================
         let state = {};
@@ -596,49 +547,31 @@ function clearAllNotifications() {
             });
         }
 
-      // ==================== ALARMA SONORA DE COCINA (VERSIÓN FORZADA) ====================
-      function playKitchenBell() {
+       // ==================== ALARMA SONORA DE COCINA ====================
+       function playKitchenBell() {
             try {
-                const audioEl = document.getElementById('kitchenAudio');
+                // Utilizamos un sonido de campana de servicio directamente del banco de sonidos de Google
+                const bellSound = new Audio('https://actions.google.com/sounds/v1/alarms/dinner_bell_triangle.ogg');
                 
-                if (audioEl) {
-                    audioEl.currentTime = 0; // Regresa el sonido al inicio
-                    const playPromise = audioEl.play(); // Dispara el sonido
+                // Reproduce el sonido
+                const playPromise = bellSound.play();
 
-                    // Si el navegador SIGUE de necio bloqueándolo (Mac muy estricto)
-                    if (playPromise !== undefined) {
-                        playPromise.catch(error => {
-                            console.warn("Bloqueo detectado. Forzando botón visual...", error);
-                            showForceAudioButton(); // Aparece el botón de rescate
-                        });
-                    }
-                    
-                    showToast('🚨 ¡NUEVO PEDIDO EN COCINA!', 'info');
+                // Manejo de seguridad por si el navegador bloquea el sonido (políticas de Autoplay)
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.warn("Sonido bloqueado por el navegador. El usuario debe hacer clic en la pantalla al menos una vez para habilitar el audio.", error);
+                    });
                 }
+                
+                // Mostramos un Toast visual por si no tienen el volumen alto
+                showToast('🚨 ¡NUEVO PEDIDO EN COCINA!', 'info');
+                
             } catch (error) {
-                console.error("Falla crítica en audio:", error);
+                console.error("Error al intentar reproducir la campana:", error);
             }
         }
 
-        // Botón de rescate: Aparece si la Mac bloquea el sonido de raíz
-        function showForceAudioButton() {
-            if (document.getElementById('forceAudioBtn')) return; // Evita que se duplique
-            
-            const btn = document.createElement('button');
-            btn.id = 'forceAudioBtn';
-            btn.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 z-[9999] bg-red-600 hover:bg-red-700 text-white font-extrabold px-6 py-3 rounded-full shadow-[0_0_20px_rgba(220,38,38,0.8)] animate-bounce border-2 border-white flex items-center gap-2';
-            btn.innerHTML = '🔇 TOCA AQUÍ PARA ACTIVAR EL TIMBRE';
-            btn.onclick = () => {
-                const audioEl = document.getElementById('kitchenAudio');
-                audioEl.play().then(() => {
-                    isAudioUnlocked = true;
-                    btn.remove(); // Se destruye al tocarlo
-                    showToast('✅ Timbre activado', 'success');
-                });
-            };
-            document.body.appendChild(btn);
-        }
-
+        
         function logActivity(action, details) {
             state.activityLog.push({
                 id: Date.now(),
