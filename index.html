@@ -548,39 +548,28 @@ function clearAllNotifications() {
         }
 
        // ==================== ALARMA SONORA DE COCINA ====================
-       // ==================== ALARMA SONORA DE COCINA ====================
        function playKitchenBell() {
             try {
-                // 🎵 OPCIONES DE SONIDO (Formatos .mp3 para compatibilidad total con Mac/Safari/iOS/Android)
-                
-                // Opción 1: Tono digital moderno (Estilo App de Delivery rápida) - ACTIVADO
-                const audioUrl = 'https://cdn.pixabay.com/audio/2021/08/09/audio_82bfb1a454.mp3';
-                
-                // Opción 2: Campana de servicio clásica (Din-Din de mostrador)
-                // const audioUrl = 'https://cdn.pixabay.com/audio/2021/08/04/audio_0625c1539c.mp3';
-                
-                // Opción 3: Tono suave y corto (Burbuja/Pop)
-                // const audioUrl = 'https://cdn.pixabay.com/audio/2021/08/09/audio_24e52a8706.mp3';
-
-                const bellSound = new Audio(audioUrl);
-                
+                // Utilizamos un 'ping' claro y rápido para no aturdir
+const bellSound = new Audio('https://actions.google.com/sounds/v1/ui/bell_ping.ogg');
                 // Reproduce el sonido
                 const playPromise = bellSound.play();
 
-                // Manejo de seguridad del navegador (Políticas de Autoplay)
+                // Manejo de seguridad por si el navegador bloquea el sonido (políticas de Autoplay)
                 if (playPromise !== undefined) {
                     playPromise.catch(error => {
-                        console.warn("El navegador bloqueó el sonido temporalmente. Debes hacer clic al menos una vez en la pantalla de la Cocina para que te dé permiso de reproducir audio.", error);
+                        console.warn("Sonido bloqueado por el navegador. El usuario debe hacer clic en la pantalla al menos una vez para habilitar el audio.", error);
                     });
                 }
                 
-                // Animación visual para acompañar el sonido
+                // Mostramos un Toast visual por si no tienen el volumen alto
                 showToast('🚨 ¡NUEVO PEDIDO EN COCINA!', 'info');
                 
             } catch (error) {
                 console.error("Error al intentar reproducir la campana:", error);
             }
         }
+
         
         function logActivity(action, details) {
             state.activityLog.push({
