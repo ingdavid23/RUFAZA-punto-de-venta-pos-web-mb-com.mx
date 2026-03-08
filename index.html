@@ -547,13 +547,11 @@ function clearAllNotifications() {
             });
         }
 
-        // ==================== ALARMA SONORA DE COCINA ====================
-        // ==================== ALARMA SONORA DE COCINA ====================
-        // ==================== ALARMA SONORA DE COCINA ====================
-        function playKitchenBell() {
+       // ==================== ALARMA SONORA DE COCINA ====================
+       function playKitchenBell() {
             try {
                 // Utilizamos un sonido de campana de servicio directamente del banco de sonidos de Google
-                const bellSound = new Audio('https://actions.google.com/sounds/v1/ui/positive_notification.ogg');
+                const bellSound = new Audio('https://actions.google.com/sounds/v1/alarms/dinner_bell_triangle.ogg');
                 
                 // Reproduce el sonido
                 const playPromise = bellSound.play();
@@ -572,6 +570,8 @@ function clearAllNotifications() {
                 console.error("Error al intentar reproducir la campana:", error);
             }
         }
+
+        
         function logActivity(action, details) {
             state.activityLog.push({
                 id: Date.now(),
