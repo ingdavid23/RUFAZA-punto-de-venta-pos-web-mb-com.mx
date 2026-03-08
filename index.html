@@ -222,7 +222,7 @@
                 <div class="text-center mb-8">
                     <img src="rufaza.jpg" alt="Logo Rufaza" class="w-32 h-32 mx-auto mb-4 object-contain drop-shadow-md rounded-2xl">
                     
-                    <h1 class="text-3xl font-bold text-theme-greenDark">RUZAFA</h1>
+                    <h1 class="text-3xl font-bold text-theme-greenDark">RUFAZA</h1>
                     <p class="text-theme-textMuted mt-2 leading-tight">
                         Sistema de Gestión Integral <br> 
                         <span class="text-sm">punto de venta y control de inventarios</span>
@@ -257,7 +257,7 @@
                     </button>
                 </div>
                 <div class="mt-8 text-center text-xs font-medium text-theme-textMuted bg-theme-bg p-3 rounded-xl border border-theme-beige">
-                    <p>Usuarios demo: admin/admin, cajero/cajero, cocina/cocina, mesero/mesero</p>
+                    <p> Sistema desarrollado por la empresa DY CodeStudio</p>
                 </div>
             </div>
         </div>
@@ -830,7 +830,7 @@ if (branchLabel) branchLabel.textContent = currentBranch === 'sucursal_principal
                     { id: 'kitchen', icon: '👨‍🍳', label: 'Cocina' },
                     { id: 'waiter', icon: '🍽️', label: 'Meseros' },
                     { id: 'inventory', icon: '📦', label: 'Inventario' },
-                    { id: 'products', icon: '🍕', label: 'Productos' },
+                    { id: 'products', icon: '🍴', label: 'Productos' },
                     { id: 'users', icon: '👥', label: 'Usuarios' },
                     { id: 'reports', icon: '📈', label: 'Estadísticas' }, // <-- CAMBIADO AQUÍ
                     { id: 'settings', icon: '⚙️', label: 'Configuración' }
@@ -1429,7 +1429,7 @@ if (branchLabel) branchLabel.textContent = currentBranch === 'sucursal_principal
             }
 
             logActivity('SALE', `Venta #${orderId.toString().slice(-4)} por $${total} - ${paymentMethod}`);
-            addNotification('info', `🍕 Nuevo pedido #${orderId.toString().slice(-4)}`, ['kitchen']);
+            addNotification('info', `Nuevo pedido #${orderId.toString().slice(-4)}`, ['kitchen']);
 
             saveToStorage();
             showToast(`Venta completada - Ticket #${orderId.toString().slice(-4)}`, 'success');
@@ -1443,52 +1443,66 @@ if (branchLabel) branchLabel.textContent = currentBranch === 'sucursal_principal
         function showReceipt(sale) {
             const modal = document.getElementById('modalContainer');
             modal.innerHTML = `
-                <div class="bg-white text-theme-text rounded-3xl p-5 md:p-8 w-[95%] max-w-sm animate-slideIn shadow-2xl max-h-[90vh] overflow-y-auto scrollbar-thin" id="printArea">
-                    <div class="text-center border-b-2 border-dashed border-theme-beige pb-6 mb-6">
-                        <p class="text-5xl mb-3">🍕</p>
-                        <h3 class="text-2xl font-extrabold text-theme-greenDark">PIZZERÍA</h3>
-                        <p class="text-sm text-theme-textMuted font-medium">Ticket de Venta</p>
-                        <p class="text-xs text-theme-textMuted mt-1">${new Date(sale.timestamp).toLocaleString('es-MX')}</p>
-                    </div>
-                    <div class="space-y-3 mb-6 text-sm font-medium">
-                        ${sale.items.map(item => `
-                            <div class="flex justify-between">
-                                <span>${item.quantity}x ${item.name}</span>
-                                <span class="font-bold">$${(item.price * item.quantity).toLocaleString()}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                    <div class="border-t-2 border-dashed border-theme-beige pt-6 space-y-3">
-                        <div class="flex justify-between font-extrabold text-xl text-theme-greenDark">
-                            <span>TOTAL:</span>
-                            <span>$${sale.total.toLocaleString()}</span>
+                <div class="glass bg-black/60 p-4 md:p-8 w-full h-full md:h-auto md:max-w-md animate-slideIn flex flex-col items-center justify-center md:rounded-3xl overflow-y-auto scrollbar-thin">
+                    
+                    <div class="bg-white text-black p-5 w-full max-w-[300px] font-mono shadow-2xl relative mx-auto" id="printArea">
+                        
+                        <div class="text-center border-b-2 border-dashed border-gray-400 pb-4 mb-4">
+                            <img src="rufaza.jpg" alt="Logo Rufaza" class="w-16 h-16 mx-auto mb-2 object-contain grayscale">
+                            <h3 class="text-2xl font-bold uppercase tracking-widest mb-1">RUFAZA</h3>
+                            <p class="text-[10px] uppercase">Ticket de Venta</p>
+                            <p class="text-[10px] mt-1">${new Date(sale.timestamp).toLocaleString('es-MX')}</p>
+                            <p class="text-[10px] mt-1 font-bold">TICKET #${sale.orderId.toString().slice(-4)}</p>
                         </div>
-                        ${sale.paymentMethod === 'cash' ? `
-                            <div class="flex justify-between text-sm text-theme-textMuted">
-                                <span>Efectivo:</span>
-                                <span>$${sale.cashReceived?.toLocaleString()}</span>
+
+                        <div class="space-y-2 mb-4 text-[11px] leading-tight">
+                            <div class="flex justify-between font-bold border-b border-gray-300 pb-1 mb-2">
+                                <span>CANT DESCRIPCIÓN</span>
+                                <span>IMPORTE</span>
                             </div>
-                            <div class="flex justify-between text-sm text-theme-textMuted">
-                                <span>Cambio:</span>
-                                <span>$${sale.change?.toLocaleString()}</span>
+                            
+                            ${sale.items.map(item => `
+                                <div class="flex justify-between items-start mb-1">
+                                    <span class="flex-1 pr-2">${item.quantity}x ${item.name.toUpperCase()}</span>
+                                    <span class="font-bold whitespace-nowrap">$${(item.price * item.quantity).toLocaleString()}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <div class="border-t-2 border-dashed border-gray-400 pt-3 space-y-1 text-[11px]">
+                            <div class="flex justify-between font-bold text-sm mb-2">
+                                <span>TOTAL:</span>
+                                <span>$${sale.total.toLocaleString()}</span>
                             </div>
-                        ` : `
-                            <div class="flex justify-between text-sm text-theme-textMuted">
-                                <span>Método:</span>
-                                <span class="font-bold">Transferencia</span>
-                            </div>
-                        `}
-                    </div>
-                    <div class="text-center mt-8 pt-6 border-t border-theme-beige">
-                        <p class="text-sm font-bold text-theme-greenDark">¡Gracias por su compra!</p>
-                        <p class="text-xs text-theme-textMuted mt-1">Ticket #${sale.orderId.toString().slice(-4)}</p>
+                            ${sale.paymentMethod === 'cash' ? `
+                                <div class="flex justify-between">
+                                    <span>EFECTIVO:</span>
+                                    <span>$${sale.cashReceived?.toLocaleString()}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>CAMBIO:</span>
+                                    <span>$${sale.change?.toLocaleString()}</span>
+                                </div>
+                            ` : `
+                                <div class="flex justify-between">
+                                    <span>MÉTODO:</span>
+                                    <span>TRANSFERENCIA</span>
+                                </div>
+                            `}
+                        </div>
+
+                        <div class="text-center mt-5 pt-3 border-t-2 border-dashed border-gray-400 text-[10px]">
+                            <p class="font-bold">¡GRACIAS POR SU PREFERENCIA!</p>
+                            <p class="mt-1">Vuelva pronto</p>
+                            <p class="mt-3 text-gray-500">========================</p>
+                        </div>
                     </div>
                     
-                    <div class="grid grid-cols-2 gap-3 mt-6 print:hidden">
-                        <button onclick="closeModal()" class="py-3 bg-theme-bg text-theme-text font-bold rounded-xl border border-theme-beige hover:bg-theme-beige transition">
+                    <div class="w-full max-w-[300px] grid grid-cols-2 gap-3 mt-6 print:hidden shrink-0">
+                        <button onclick="closeModal()" class="py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition shadow-sm border border-gray-300">
                             Cerrar
                         </button>
-                        <button onclick="window.print()" class="btn-primary py-3 font-bold rounded-xl shadow-md flex items-center justify-center gap-2">
+                        <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white py-3 font-bold rounded-xl shadow-md flex items-center justify-center gap-2">
                             🖨️ Imprimir
                         </button>
                     </div>
@@ -1728,7 +1742,7 @@ if (branchLabel) branchLabel.textContent = currentBranch === 'sucursal_principal
 
                         <div>
                             <h4 class="font-bold text-theme-greenDark mb-3 flex items-center gap-2">
-                                🍕 Desglose de Producción
+                                 Desglose de Producción
                             </h4>
                             <div class="space-y-2 max-h-48 overflow-y-auto scrollbar-thin pr-2 bg-white border border-theme-beige p-3 rounded-xl shadow-inner">
                                 ${productsSummary.length > 0 ? productsSummary.map(([name, qty]) => `
@@ -2043,19 +2057,30 @@ if (branchLabel) branchLabel.textContent = currentBranch === 'sucursal_principal
         }
 
         // ==================== TICKET HISTORY MODULE ====================
-        function renderTicketHistory(container) {
-            const sales = state.sales.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+       // ==================== TICKET HISTORY MODULE ====================
+       function renderTicketHistory(container) {
+            // 1. Filtrar solo las ventas de HOY y ordenarlas de la más reciente a la más antigua
+            const todayStr = new Date().toDateString();
+            const todaySales = state.sales
+                .filter(s => new Date(s.timestamp).toDateString() === todayStr)
+                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
             container.innerHTML = `
                 <div class="animate-slideIn h-full flex flex-col">
-                    <h2 class="text-2xl font-bold mb-6 flex items-center gap-3 text-theme-greenDark shrink-0">🧾 Historial de Tickets</h2>
+                    <div class="flex items-center justify-between mb-6 shrink-0 border-b border-theme-beige pb-4">
+                        <h2 class="text-2xl font-bold flex items-center gap-3 text-theme-greenDark">🧾 Historial de Tickets (Hoy)</h2>
+                        <span class="bg-white px-3 py-1 rounded-lg text-sm font-bold text-theme-textMuted border border-theme-beige shadow-sm">
+                            Total: ${todaySales.length} tickets
+                        </span>
+                    </div>
+                    
                     <div class="space-y-4 flex-1 overflow-auto scrollbar-thin pr-2 pb-4">
-                        ${sales.length === 0 ? '<p class="text-theme-textMuted text-center py-12 font-medium text-lg">No hay tickets registrados aún</p>' : 
-                        sales.map(sale => `
+                        ${todaySales.length === 0 ? '<p class="text-theme-textMuted text-center py-12 font-medium text-lg">No hay tickets registrados el día de hoy</p>' : 
+                        todaySales.map(sale => `
                             <div class="glass bg-white/80 border border-white rounded-2xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 transition hover:shadow-md">
                                 <div>
                                     <p class="font-extrabold text-theme-text text-lg">Ticket #${sale.orderId.toString().slice(-4)}</p>
-                                    <p class="text-xs font-bold text-theme-textMuted mt-1">🕒 ${new Date(sale.timestamp).toLocaleString('es-MX')}</p>
+                                    <p class="text-xs font-bold text-theme-textMuted mt-1">🕒 ${new Date(sale.timestamp).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</p>
                                     <p class="text-sm font-medium mt-2 text-theme-text">${sale.items.map(i => `${i.quantity}x ${i.name}`).join(', ')}</p>
                                 </div>
                                 <div class="text-left md:text-right flex flex-col justify-between items-start md:items-end">
@@ -2201,40 +2226,54 @@ if (branchLabel) branchLabel.textContent = currentBranch === 'sucursal_principal
                                     <tr>
                                         <th class="px-5 py-4 text-left text-sm font-bold">Insumo</th>
                                         <th class="px-5 py-4 text-left text-sm font-bold">Categoría</th>
-                                        <th class="px-5 py-4 text-left text-sm font-bold">Stock</th>
+                                        <th class="px-5 py-4 text-left text-sm font-bold">Stock Actual</th>
                                         <th class="px-5 py-4 text-left text-sm font-bold">Costo</th>
                                         <th class="px-5 py-4 text-left text-sm font-bold">Estado</th>
-                                        <th class="px-5 py-4 text-left text-sm font-bold text-center">Acciones</th>
+                                        <th class="px-5 py-4 text-center text-sm font-bold">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-theme-beige">
                                     ${filteredInventory.length === 0 ? `<tr><td colspan="6" class="text-center py-8 text-theme-textMuted font-medium">No hay insumos en esta categoría</td></tr>` : 
-                                    filteredInventory.map(item => `
-                                        <tr class="hover:bg-white transition">
-                                            <td class="px-5 py-4 font-bold text-theme-text">${item.name}</td>
-                                            <td class="px-5 py-4 text-xs font-bold text-theme-textMuted uppercase tracking-wider">${item.category}</td>
-                                            <td class="px-5 py-4 ${item.stock <= item.minStock ? 'text-red-600 font-extrabold' : 'font-bold text-theme-greenDark'}">${item.stock.toFixed(2)} <span class="text-xs font-medium text-theme-textMuted">${item.unit}</span></td>
-                                            <td class="px-5 py-4 font-bold">$${item.cost}</td>
-                                            <td class="px-5 py-4">
-                                                ${item.stock <= item.minStock ? '<span class="px-3 py-1 rounded-md text-xs bg-red-100 text-red-700 font-bold shadow-sm border border-red-200">Bajo</span>' :
-                                                item.stock <= item.minStock * 2 ? '<span class="px-3 py-1 rounded-md text-xs bg-yellow-100 text-yellow-800 font-bold shadow-sm border border-yellow-200">Medio</span>' :
-                                                '<span class="px-3 py-1 rounded-md text-xs bg-green-100 text-green-700 font-bold shadow-sm border border-green-200">Óptimo</span>'}
-                                            </td>
-                                            <td class="px-5 py-4">
-                                                <div class="flex justify-center gap-1 sm:gap-2">
-                                                    <button onclick="showInventoryEntryModal(${item.id})" class="px-2 sm:px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 text-xs transition font-bold shadow-sm" title="Agregar Entrada">
-                                                        ➕<span class="hidden lg:inline ml-1">Entrada</span>
-                                                    </button>
-                                                    <button onclick="showEditInventoryItemModal(${item.id})" class="px-2 sm:px-3 py-1.5 rounded-lg bg-theme-bg border border-theme-beige hover:bg-theme-beige text-theme-text text-xs transition font-bold shadow-sm" title="Editar Insumo">
-                                                        ✏️<span class="hidden lg:inline ml-1">Editar</span>
-                                                    </button>
-                                                    <button onclick="confirmDeleteInventoryItem(${item.id})" class="px-2 sm:px-3 py-1.5 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 text-xs transition font-bold shadow-sm" title="Borrar Insumo">
-                                                        🗑️<span class="hidden lg:inline ml-1">Borrar</span>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    `).join('')}
+                                    filteredInventory.map(item => {
+                                        
+                                        // 💡 NUEVO: Lógica de Conversión a Gramos/Mililitros
+                                        let conversionText = "";
+                                        if (item.unit === 'kg') {
+                                            conversionText = `<span class="block text-[10px] text-theme-textMuted font-bold mt-0.5">(${Number((item.stock * 1000).toFixed(0)).toLocaleString()} g)</span>`;
+                                        } else if (item.unit === 'lt') {
+                                            conversionText = `<span class="block text-[10px] text-theme-textMuted font-bold mt-0.5">(${Number((item.stock * 1000).toFixed(0)).toLocaleString()} ml)</span>`;
+                                        }
+                                        
+                                        return `
+                                            <tr class="hover:bg-white transition">
+                                                <td class="px-5 py-4 font-bold text-theme-text">${item.name}</td>
+                                                <td class="px-5 py-4 text-xs font-bold text-theme-textMuted uppercase tracking-wider">${item.category}</td>
+                                                <td class="px-5 py-3 ${item.stock <= item.minStock ? 'text-red-600 font-extrabold' : 'font-bold text-theme-greenDark'}">
+                                                    <span class="text-base">${item.stock.toFixed(2)} <span class="text-xs font-medium">${item.unit}</span></span>
+                                                    ${conversionText}
+                                                </td>
+                                                <td class="px-5 py-4 font-bold">$${item.cost}</td>
+                                                <td class="px-5 py-4">
+                                                    ${item.stock <= item.minStock ? '<span class="px-3 py-1 rounded-md text-xs bg-red-100 text-red-700 font-bold shadow-sm border border-red-200">Bajo</span>' :
+                                                    item.stock <= item.minStock * 2 ? '<span class="px-3 py-1 rounded-md text-xs bg-yellow-100 text-yellow-800 font-bold shadow-sm border border-yellow-200">Medio</span>' :
+                                                    '<span class="px-3 py-1 rounded-md text-xs bg-green-100 text-green-700 font-bold shadow-sm border border-green-200">Óptimo</span>'}
+                                                </td>
+                                                <td class="px-5 py-4">
+                                                    <div class="flex justify-center gap-1 sm:gap-2">
+                                                        <button onclick="showInventoryEntryModal(${item.id})" class="px-2 sm:px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 text-xs transition font-bold shadow-sm" title="Agregar Entrada">
+                                                            ➕<span class="hidden lg:inline ml-1">Entrada</span>
+                                                        </button>
+                                                        <button onclick="showEditInventoryItemModal(${item.id})" class="px-2 sm:px-3 py-1.5 rounded-lg bg-theme-bg border border-theme-beige hover:bg-theme-beige text-theme-text text-xs transition font-bold shadow-sm" title="Editar Insumo">
+                                                            ✏️<span class="hidden lg:inline ml-1">Editar</span>
+                                                        </button>
+                                                        <button onclick="confirmDeleteInventoryItem(${item.id})" class="px-2 sm:px-3 py-1.5 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 text-xs transition font-bold shadow-sm" title="Borrar Insumo">
+                                                            🗑️<span class="hidden lg:inline ml-1">Borrar</span>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
                                 </tbody>
                             </table>
                         </div>
@@ -2475,6 +2514,81 @@ if (branchLabel) branchLabel.textContent = currentBranch === 'sucursal_principal
             renderInventory(document.getElementById('contentArea'));
         }
 
+        // ==================== ENTRADAS RÁPIDAS DE INVENTARIO ====================
+        // ==================== ENTRADAS RÁPIDAS DE INVENTARIO ====================
+        function showInventoryEntryModal(itemId) {
+            const item = state.inventory.find(i => i.id === itemId);
+            if (!item) return;
+
+            const modal = document.getElementById('modalContainer');
+            modal.innerHTML = `
+                <div class="glass bg-white/90 rounded-3xl p-6 w-[95%] max-w-sm animate-slideIn shadow-2xl border-2 border-blue-300">
+                    <h3 class="text-xl font-bold mb-3 text-blue-700 flex items-center gap-2">📥 Registrar Entrada</h3>
+                    <div class="bg-blue-50 border border-blue-100 p-3 rounded-xl mb-4">
+                        <p class="font-extrabold text-theme-text text-lg leading-tight">${item.name}</p>
+                        <p class="text-sm font-medium text-blue-600 mt-1">Stock actual: <strong>${item.stock.toFixed(2)} ${item.unit}</strong></p>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-bold mb-1 text-theme-text">Cantidad que entra (${item.unit})</label>
+                            <input type="number" id="entryQty" step="0.01" class="w-full px-4 py-3 bg-white border-2 border-blue-200 rounded-xl focus:outline-none focus:border-blue-500 font-extrabold text-theme-text text-2xl text-center shadow-inner" placeholder="0">
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3 pt-2 border-t border-theme-beige mt-2">
+                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text shadow-sm">Cancelar</button>
+                            <button onclick="saveInventoryEntry(${itemId})" class="bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow-md transition flex items-center justify-center gap-2">Guardar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+            setTimeout(() => document.getElementById('entryQty').focus(), 100);
+        }
+
+        function saveInventoryEntry(itemId) {
+            const item = state.inventory.find(i => i.id === itemId);
+            if (!item) return;
+
+            const qty = parseFloat(document.getElementById('entryQty').value);
+
+            if (isNaN(qty) || qty <= 0) {
+                showToast('Ingresa una cantidad mayor a 0', 'warning');
+                return;
+            }
+
+            // 1. Sumamos al stock
+            item.stock += qty;
+
+            // 2. Registramos el movimiento para el PDF de inventario
+            if (!state.inventoryMovements) state.inventoryMovements = [];
+            state.inventoryMovements.push({
+                id: Date.now(),
+                itemId: item.id,
+                itemName: item.name,
+                type: 'entry',
+                quantity: qty,
+                unit: item.unit,
+                timestamp: new Date().toISOString(),
+                userId: currentUser.id,
+                userName: currentUser.name
+            });
+
+            logActivity('INVENTORY_ENTRY', `Entrada: +${qty} ${item.unit} de ${item.name}`);
+            
+            // 3. Función Inteligente: Volver a activar pizzas que estaban "Agotadas"
+            state.products.forEach(p => {
+                if (!p.active && hasEnoughStock(p)) {
+                    p.active = true; // Si ya hay ingredientes, la vuelve a mostrar en el menú
+                }
+            });
+
+            saveToStorage();
+            showToast(`✅ Se agregaron ${qty} ${item.unit} al inventario`, 'success');
+            closeModal();
+            renderInventory(document.getElementById('contentArea'));
+        }
+
         // ==================== CONVERTIDOR DE IMAGEN SIMPLE ====================
         function convertImageToBase64(input) {
             if (input.files && input.files[0]) {
@@ -2645,7 +2759,7 @@ function renderProducts(container) {
             container.innerHTML = `
                 <div class="animate-slideIn">
                     <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
-                        <h2 class="text-2xl font-bold flex items-center gap-3 text-theme-greenDark">🍕 Productos</h2>
+                        <h2 class="text-2xl font-bold flex items-center gap-3 text-theme-greenDark">Productos</h2>
                         <div class="flex flex-wrap gap-2 w-full md:w-auto">
                             <button onclick="showCategoryManagerModal()" class="flex-1 md:flex-none bg-blue-500 hover:bg-blue-600 text-white px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 font-bold shadow-md transition">
                                 🏷️ Categorías
@@ -2843,17 +2957,25 @@ function saveNewProduct() {
                         
                         <div class="mt-4 border-t border-theme-beige pt-4">
                             <h4 class="font-bold text-theme-text mb-3 flex items-center gap-2">📝 Receta / Insumos a descontar</h4>
-                            <div class="flex gap-2 mb-3 bg-theme-bg p-2 rounded-xl border border-theme-beige">
-                                <div class="flex-1">
+                            
+                            <div class="flex gap-2 mb-3 bg-theme-bg p-2 rounded-xl border border-theme-beige flex-wrap sm:flex-nowrap">
+                                <div class="flex-1 min-w-[150px]">
                                     <select id="recipeIngredientSelect" class="w-full px-2 py-2 bg-white border border-theme-beige rounded-lg focus:outline-none focus:border-theme-green text-sm font-medium truncate">
                                         <option value="">Seleccionar insumo...</option>
-                                        ${state.inventory.map(i => `<option value="${i.id}">${i.name} (${i.unit})</option>`).join('')}
+                                        ${state.inventory.map(i => `<option value="${i.id}">${i.name} (Base: ${i.unit})</option>`).join('')}
                                     </select>
                                 </div>
                                 <div class="w-20 md:w-24">
                                     <input type="number" id="recipeIngredientQty" step="0.01" placeholder="Cant." class="w-full px-2 py-2 bg-white border border-theme-beige rounded-lg focus:outline-none focus:border-theme-green text-sm text-center font-bold">
                                 </div>
-                                <button onclick="addIngredientToRecipe()" class="bg-theme-green hover:bg-theme-greenDark text-white px-3 py-2 rounded-lg font-bold transition shadow-sm">➕</button>
+                                <div class="w-24">
+                                    <select id="recipeIngredientUnit" class="w-full px-1 py-2 bg-white border border-theme-beige rounded-lg focus:outline-none focus:border-theme-green text-sm font-bold text-theme-text">
+                                        <option value="auto">kg/lt/pza</option>
+                                        <option value="g">Gramos (g)</option>
+                                        <option value="ml">Milis (ml)</option>
+                                    </select>
+                                </div>
+                                <button onclick="addIngredientToRecipe()" class="bg-theme-green hover:bg-theme-greenDark text-white px-3 py-2 rounded-lg font-bold transition shadow-sm grow sm:grow-0">➕</button>
                             </div>
                             <div id="recipeItemsContainer" class="space-y-2 max-h-32 overflow-y-auto scrollbar-thin pr-1"></div>
                         </div>
@@ -2869,86 +2991,61 @@ function saveNewProduct() {
             renderRecipeItems();
         }
 
-function renderRecipeItems() {
-    const container = document.getElementById('recipeItemsContainer');
-    if (!container) return;
-    if (currentEditIngredients.length === 0) {
-        container.innerHTML = '<p class="text-sm text-theme-textMuted text-center py-4 italic">No hay insumos asignados.</p>';
-        return;
-    }
-    container.innerHTML = currentEditIngredients.map((ing, index) => {
-        const invItem = state.inventory.find(i => i.id === ing.id);
-        const name = invItem ? invItem.name : '<span class="text-red-500">Insumo eliminado</span>';
-        const unit = invItem ? invItem.unit : '';
-        return `
-            <div class="flex items-center justify-between p-2 rounded-lg bg-white border border-theme-beige shadow-sm">
-                <span class="text-sm font-medium text-theme-text truncate flex-1">${name}</span>
-                <div class="flex items-center gap-3 ml-2 shrink-0">
-                    <span class="text-sm font-extrabold text-theme-greenDark bg-green-50 px-2 py-0.5 rounded border border-green-100">${ing.qty} ${unit}</span>
-                    <button onclick="removeIngredientFromRecipe(${index})" class="text-red-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded transition">🗑️</button>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-
-function addIngredientToRecipe() {
-    const select = document.getElementById('recipeIngredientSelect');
-    const qtyInput = document.getElementById('recipeIngredientQty');
-    const invId = parseInt(select.value);
-    const qty = parseFloat(qtyInput.value);
-
-    if (!invId || isNaN(qty) || qty <= 0) {
-        showToast('Selecciona insumo y cantidad', 'warning'); return;
-    }
-
-    const existing = currentEditIngredients.find(i => i.id === invId);
-    if (existing) existing.qty += qty;
-    else currentEditIngredients.push({ id: invId, qty });
-
-    select.value = ''; qtyInput.value = '';
-    renderRecipeItems();
-}
-
-function removeIngredientFromRecipe(index) {
-    currentEditIngredients.splice(index, 1);
-    renderRecipeItems();
-}
-
-function updateProduct(productId) {
-            const id = parseInt(productId);
-            const product = state.products.find(p => p.id === id);
-            if (!product) return;
-
-            product.name = document.getElementById('editProdName').value.trim();
-            product.category = document.getElementById('editProdCategory').value;
-            product.price = parseFloat(document.getElementById('editProdPrice').value) || product.price;
-            
-            const imageBase64 = document.getElementById('hiddenImageBase64').value;
-            const imageUrl = document.getElementById('editProdImageUrl').value.trim();
-            if (imageBase64 || imageUrl) {
-                product.image = imageBase64 || imageUrl;
+        function renderRecipeItems() {
+            const container = document.getElementById('recipeItemsContainer');
+            if (!container) return;
+            if (currentEditIngredients.length === 0) {
+                container.innerHTML = '<p class="text-sm text-theme-textMuted text-center py-4 italic">No hay insumos asignados.</p>';
+                return;
             }
-            
-            product.ingredients = JSON.parse(JSON.stringify(currentEditIngredients));
+            container.innerHTML = currentEditIngredients.map((ing, index) => {
+                const invItem = state.inventory.find(i => i.id === ing.id);
+                const name = invItem ? invItem.name : '<span class="text-red-500">Insumo eliminado</span>';
+                const unit = invItem ? invItem.unit : '';
+                
+                // Mostrar también en gramos/ml si aplica, para facilitar la lectura
+                let displayQty = `${ing.qty} ${unit}`;
+                if (unit === 'kg') displayQty += ` <span class="text-[10px] text-theme-textMuted font-medium block leading-none mt-1">(${Number((ing.qty * 1000).toFixed(0))}g)</span>`;
+                if (unit === 'lt') displayQty += ` <span class="text-[10px] text-theme-textMuted font-medium block leading-none mt-1">(${Number((ing.qty * 1000).toFixed(0))}ml)</span>`;
 
-            saveToStorage(); 
-            currentEditIngredients = []; 
-            showToast('Producto guardado exitosamente', 'success'); 
-            closeModal(); 
-            renderProducts(document.getElementById('contentArea'));
+                return `
+                    <div class="flex items-center justify-between p-2 rounded-lg bg-white border border-theme-beige shadow-sm">
+                        <span class="text-sm font-medium text-theme-text truncate flex-1">${name}</span>
+                        <div class="flex items-center gap-3 ml-2 shrink-0">
+                            <div class="text-sm font-extrabold text-theme-greenDark bg-green-50 px-2 py-1 rounded border border-green-100 text-center">${displayQty}</div>
+                            <button onclick="removeIngredientFromRecipe(${index})" class="text-red-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded transition text-lg">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
         function addIngredientToRecipe() {
             const select = document.getElementById('recipeIngredientSelect');
             const qtyInput = document.getElementById('recipeIngredientQty');
+            const unitSelect = document.getElementById('recipeIngredientUnit');
             
             const invId = parseInt(select.value);
-            const qty = parseFloat(qtyInput.value);
+            let qty = parseFloat(qtyInput.value);
 
             if (!invId || isNaN(qty) || qty <= 0) {
                 showToast('Selecciona un insumo y una cantidad mayor a 0', 'warning');
                 return;
+            }
+
+            const invItem = state.inventory.find(i => i.id === invId);
+            if (!invItem) return;
+
+            // 💡 LÓGICA DE CONVERSIÓN INTELIGENTE
+            const selectedUnit = unitSelect.value;
+            
+            if (selectedUnit === 'g' && invItem.unit === 'kg') {
+                qty = qty / 1000; // Convierte de gramos a kilos
+            } else if (selectedUnit === 'ml' && invItem.unit === 'lt') {
+                qty = qty / 1000; // Convierte de mililitros a litros
+            } else if ((selectedUnit === 'g' && invItem.unit !== 'kg') || (selectedUnit === 'ml' && invItem.unit !== 'lt')) {
+                // Si el usuario intentó poner gramos a una Coca-Cola que se vende por "pza" (pieza)
+                showToast('Unidad incompatible. Se guardó como cantidad base.', 'info');
             }
 
             // Si el insumo ya está en la receta, solo le sumamos la cantidad
@@ -2962,10 +3059,13 @@ function updateProduct(productId) {
             // Limpiamos los inputs
             select.value = '';
             qtyInput.value = '';
+            unitSelect.value = 'auto'; // Reiniciamos el selector a la unidad base
             
             // Actualizamos la vista
             renderRecipeItems();
         }
+
+        
 
         function removeIngredientFromRecipe(index) {
             currentEditIngredients.splice(index, 1);
@@ -3437,7 +3537,7 @@ function updateProduct(productId) {
                 const time = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
                 
                 // Armar el mensaje con formato (Negritas y Emojis)
-                let msg = `*📊 CORTE DE CAJA - RUFAZA* 🍕\n`;
+                let msg = `*📊 CORTE DE CAJA - RUFAZA*\n`;
                 msg += `📍 Sucursal: *${branchName}*\n`;
                 msg += `👤 Cajero: *${currentUser.name}*\n`;
                 msg += `📅 Fecha: ${today} a las ${time}\n\n`;
@@ -3674,6 +3774,7 @@ function updateProduct(productId) {
         // ==================== REPORTS MODULE ====================
         // ==================== REPORTS MODULE ====================
         // ==================== REPORTS MODULE ====================
+        // ==================== REPORTS MODULE ====================
         function renderReports(container) {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
@@ -3723,7 +3824,10 @@ function updateProduct(productId) {
                                 📅 Ventas Semana
                             </button>
                             <button onclick="generateInventoryReport()" class="flex-1 md:flex-none bg-orange-500 hover:bg-orange-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-md flex items-center justify-center gap-2 transition">
-                                📦 Reporte Inventario (PDF)
+                                📦 Inventario
+                            </button>
+                            <button onclick="generateMonthlyReport()" class="flex-1 md:flex-none bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-md flex items-center justify-center gap-2 transition">
+                                📊 Reporte Mensual (PDF)
                             </button>
                         </div>
                     </div>
@@ -3750,7 +3854,6 @@ function updateProduct(productId) {
                 </div>
             `;
 
-            // Inicializar la gráfica después de inyectar el HTML
             setTimeout(() => {
                 const ctx = document.getElementById('salesChart');
                 if(ctx) {
@@ -3765,7 +3868,7 @@ function updateProduct(productId) {
                                 backgroundColor: 'rgba(167, 196, 170, 0.4)',
                                 borderWidth: 3,
                                 fill: true,
-                                tension: 0.3, // Curva suave
+                                tension: 0.3,
                                 pointBackgroundColor: '#4A504A',
                                 pointRadius: 4
                             }]
@@ -3773,22 +3876,9 @@ function updateProduct(productId) {
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
-                            plugins: {
-                                legend: { display: false },
-                                tooltip: {
-                                    callbacks: {
-                                        label: function(context) {
-                                            return '$' + context.parsed.y.toLocaleString();
-                                        }
-                                    }
-                                }
-                            },
+                            plugins: { legend: { display: false } },
                             scales: {
-                                y: { 
-                                    beginAtZero: true, 
-                                    grid: { color: '#EAE5D9' },
-                                    ticks: { callback: function(value) { return '$' + value; } }
-                                },
+                                y: { beginAtZero: true, grid: { color: '#EAE5D9' }, ticks: { callback: function(value) { return '$' + value; } } },
                                 x: { grid: { display: false } }
                             }
                         }
@@ -3827,7 +3917,7 @@ function updateProduct(productId) {
                 <div class="bg-white text-theme-text rounded-3xl p-6 md:p-8 w-[95%] max-w-lg animate-slideIn shadow-2xl max-h-[90vh] overflow-y-auto scrollbar-thin" id="printArea">
                     <div class="text-center border-b-2 border-dashed border-theme-beige pb-6 mb-6">
                         <p class="text-4xl mb-3">📈</p>
-                        <h3 class="text-2xl font-extrabold text-theme-greenDark">PIZZAMANAGER PRO</h3>
+                        <h3 class="text-2xl font-extrabold text-theme-greenDark">SISTEMA POS</h3>
                         <p class="text-lg font-bold text-theme-text mt-2 uppercase">${title}</p>
                         <p class="text-sm text-theme-textMuted mt-1 capitalize">${dateStr}</p>
                     </div>
@@ -3922,7 +4012,7 @@ function updateProduct(productId) {
                         
                         <div class="text-center border-b-2 border-black pb-4 mb-6 break-inside-avoid">
                             <h2 class="text-2xl font-extrabold uppercase tracking-widest">Reporte de Inventario</h2>
-                            <p class="text-sm font-bold mt-1 text-gray-600">🍕 PIZZAMANAGER PRO - SUCURSAL ${currentBranch === 'sucursal_principal' ? 'PRINCIPAL' : 'CENTRO'}</p>
+                            <p class="text-sm font-bold mt-1 text-gray-600">SISTEMA POS - SUCURSAL ${currentBranch === 'sucursal_principal' ? 'PRINCIPAL' : 'CENTRO'}</p>
                             <p class="text-xs text-gray-500 mt-1">Generado el: ${new Date().toLocaleString('es-MX')} por ${currentUser.name}</p>
                         </div>
 
@@ -4043,7 +4133,195 @@ function updateProduct(productId) {
             });
         }
 
-        
+        // ==================== REPORTE MENSUAL COMPLETO (PDF) ====================
+        // ==================== REPORTE MENSUAL COMPLETO (PDF) ====================
+        // ==================== REPORTE MENSUAL COMPLETO (PDF) ====================
+        function generateMonthlyReport() {
+            try {
+                // 1. Escudos de seguridad: Asegurar que existan los arreglos
+                if (!state.sales) state.sales = [];
+                if (!state.inventory) state.inventory = [];
+
+                const now = new Date();
+                const currentMonthName = now.toLocaleString('es-MX', { month: 'long', year: 'numeric' }).toUpperCase();
+                
+                const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+                const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
+                // Filtrar ventas del mes actual
+                const monthlySales = state.sales.filter(s => {
+                    if (!s.timestamp) return false;
+                    const sDate = new Date(s.timestamp);
+                    return sDate >= firstDay && sDate <= lastDay;
+                });
+
+                // 2. Resumen Financiero Seguro
+                const totalIncome = monthlySales.reduce((sum, s) => sum + (s.total || 0), 0);
+                const cashIncome = monthlySales.filter(s => s.paymentMethod === 'cash').reduce((sum, s) => sum + (s.total || 0), 0);
+                const transferIncome = monthlySales.filter(s => s.paymentMethod === 'transfer').reduce((sum, s) => sum + (s.total || 0), 0);
+                const totalTickets = monthlySales.length;
+                const averageTicket = totalTickets > 0 ? (totalIncome / totalTickets).toFixed(2) : "0.00";
+
+                // 3. Ranking de Productos (Ignora items corruptos)
+                const productStats = {};
+                monthlySales.forEach(sale => {
+                    if (sale.items && Array.isArray(sale.items)) {
+                        sale.items.forEach(item => {
+                            if (!item.name) return; // Si el item no tiene nombre, lo salta
+                            if (!productStats[item.name]) {
+                                productStats[item.name] = { qty: 0, revenue: 0 };
+                            }
+                            productStats[item.name].qty += (item.quantity || 1);
+                            productStats[item.name].revenue += ((item.price || 0) * (item.quantity || 1));
+                        });
+                    }
+                });
+                
+                const topProducts = Object.entries(productStats)
+                    .map(([name, stats]) => ({ name, ...stats }))
+                    .sort((a, b) => b.qty - a.qty)
+                    .slice(0, 15);
+
+                // 4. Inventario Seguro
+                const totalValue = state.inventory.reduce((sum, item) => sum + ((item.stock || 0) * (item.cost || 0)), 0);
+                const lowStockItems = state.inventory.filter(i => (i.stock || 0) <= (i.minStock || 0)).length;
+
+                // 5. Interfaz
+                const modal = document.getElementById('modalContainer');
+                modal.innerHTML = `
+                    <div class="bg-white rounded-3xl w-[95%] max-w-4xl animate-slideIn shadow-2xl max-h-[90vh] overflow-y-auto scrollbar-thin">
+                        
+                        <div style="width: 760px; margin: 0 auto; background: white; color: black; padding: 30px;" id="printMonthlyArea">
+                            
+                            <div class="text-center border-b-2 border-black pb-4 mb-6 break-inside-avoid">
+                                <img src="rufaza.jpg" alt="Logo Rufaza" class="w-20 h-20 mx-auto mb-2 object-contain grayscale-0 print:grayscale" onerror="this.style.display='none'">
+                                <h2 class="text-3xl font-extrabold uppercase tracking-widest text-theme-greenDark">Reporte de Resultados</h2>
+                                <p class="text-lg font-bold mt-1 text-gray-600">SUCURSAL PRINCIPAL</p>
+                                <p class="text-sm text-gray-500 mt-1 font-bold">Mes de proceso: ${currentMonthName}</p>
+                                <p class="text-xs text-gray-400 mt-1">Generado el: ${new Date().toLocaleString('es-MX')} por ${currentUser ? currentUser.name : 'Sistema'}</p>
+                            </div>
+
+                            <div class="mb-6 break-inside-avoid">
+                                <h3 class="text-lg font-bold border-b border-gray-300 mb-3 pb-1">💰 Resumen Financiero Mensual</h3>
+                                <div class="grid grid-cols-4 gap-4 text-center">
+                                    <div class="p-4 bg-gray-100 rounded-lg border border-gray-300">
+                                        <p class="text-[10px] font-bold text-gray-600 uppercase">Ingresos Totales</p>
+                                        <p class="text-xl font-extrabold text-green-600 mt-1">$${totalIncome.toLocaleString()}</p>
+                                    </div>
+                                    <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                        <p class="text-[10px] font-bold text-gray-600 uppercase">En Efectivo</p>
+                                        <p class="text-lg font-bold text-black mt-1">$${cashIncome.toLocaleString()}</p>
+                                    </div>
+                                    <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                        <p class="text-[10px] font-bold text-gray-600 uppercase">Transferencias</p>
+                                        <p class="text-lg font-bold text-black mt-1">$${transferIncome.toLocaleString()}</p>
+                                    </div>
+                                    <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                        <p class="text-[10px] font-bold text-gray-600 uppercase">Ticket Promedio</p>
+                                        <p class="text-lg font-bold text-blue-600 mt-1">$${averageTicket}</p>
+                                    </div>
+                                </div>
+                                <p class="text-sm font-medium text-gray-500 mt-2 text-right">Total de tickets procesados: <strong>${totalTickets}</strong></p>
+                            </div>
+
+                            <div class="mb-8 break-inside-avoid">
+                                <h3 class="text-lg font-bold border-b border-gray-300 mb-3 pb-1">Top 15 Productos Más Vendidos</h3>
+                                <table style="width: 100%; text-align: left; border-collapse: collapse; font-size: 14px;">
+                                    <thead>
+                                        <tr style="background-color: #f3f4f6; border-bottom: 2px solid #d1d5db;">
+                                            <th style="padding: 8px;">Producto</th>
+                                            <th style="padding: 8px; text-align: center;">Cantidad Vendida</th>
+                                            <th style="padding: 8px; text-align: right;">Ingresos Brutos</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${topProducts.length === 0 ? '<tr><td colspan="3" style="text-align:center; padding: 15px; font-weight:bold;">No hay ventas registradas este mes.</td></tr>' : 
+                                        topProducts.map((p, index) => `
+                                            <tr style="border-bottom: 1px solid #e5e7eb; page-break-inside: avoid;">
+                                                <td style="padding: 8px; font-weight: 500;">${index + 1}. ${p.name}</td>
+                                                <td style="padding: 8px; text-align: center; font-weight: bold;">${p.qty} u.</td>
+                                                <td style="padding: 8px; text-align: right; color: #16a34a; font-weight:bold;">$${p.revenue.toLocaleString()}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="break-inside-avoid">
+                                <h3 class="text-lg font-bold border-b border-gray-300 mb-3 pb-1">📊 Estado Operativo Actual</h3>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="p-4 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-between">
+                                        <div>
+                                            <p class="text-sm font-bold text-gray-700">Capital en Inventario (Aprox)</p>
+                                            <p class="text-xs text-gray-500">Valor de mercancía en bodega</p>
+                                        </div>
+                                        <p class="text-2xl font-extrabold text-black">$${totalValue.toLocaleString()}</p>
+                                    </div>
+                                    <div class="p-4 ${lowStockItems > 0 ? 'bg-red-50 border-red-200 text-red-700' : 'bg-green-50 border-green-200 text-green-700'} rounded-lg border flex items-center justify-between">
+                                        <div>
+                                            <p class="text-sm font-bold">Alertas de Reabastecimiento</p>
+                                            <p class="text-xs opacity-80">Insumos por debajo del mínimo</p>
+                                        </div>
+                                        <p class="text-2xl font-extrabold">${lowStockItems} insumos</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="px-6 md:px-8 pb-6 pt-4 bg-white rounded-b-3xl">
+                            <div class="flex gap-3 border-t border-gray-200 pt-6">
+                                <button onclick="closeModal()" class="flex-1 py-3 bg-gray-200 text-black font-bold rounded-xl hover:bg-gray-300 transition">
+                                    Cerrar
+                                </button>
+                                <button onclick="downloadMonthlyPDF()" id="pdfMonthlyBtn" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-3 font-bold rounded-xl shadow-md flex items-center justify-center gap-2 transition">
+                                    📥 Descargar Reporte Mensual PDF
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                `;
+                modal.classList.remove('hidden');
+                
+            } catch (error) {
+                console.error("Error al generar reporte mensual:", error);
+                showToast("Ocurrió un error al cargar los datos: " + error.message, "error");
+            }
+        }
+
+        // ==================== GENERADOR DIRECTO PDF (MENSUAL) ====================
+        function downloadMonthlyPDF() {
+            const btn = document.getElementById('pdfMonthlyBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '⏳ Compilando Reporte...';
+            btn.disabled = true;
+
+            showToast('Generando documento...', 'info');
+            
+            const element = document.getElementById('printMonthlyArea');
+
+            const opt = {
+                // Márgenes ajustados ligeramente
+                margin:       [15, 8, 15, 8], 
+                filename:     `Reporte_Mensual_Rufaza_${new Date().toISOString().split('T')[0]}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                // Escala reducida de 2 a 1.8 para un mejor ajuste
+                html2canvas:  { scale: 1.8, useCORS: true, scrollY: 0 }, 
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] } 
+            };
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                showToast('✅ Reporte descargado exitosamente', 'success');
+            }).catch(err => {
+                console.error("Error al exportar PDF:", err);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                showToast('Error al exportar el archivo PDF', 'error');
+            });
+        }
         // ==================== SETTINGS MODULE ====================
         // ==================== SETTINGS MODULE ====================
         // ==================== SETTINGS MODULE ====================
@@ -4407,47 +4685,93 @@ function updateProduct(productId) {
         }
 
         // ==================== GLOBAL DASHBOARD (MULTI-SUCURSAL) ====================
-        async function renderGlobalDashboard(container) {
-            // 1. Mostrar pantalla de carga
+       // ==================== GLOBAL DASHBOARD (MULTI-SUCURSAL) ====================
+       async function renderGlobalDashboard(container) {
             container.innerHTML = `
                 <div class="h-full flex flex-col items-center justify-center animate-pulse">
-                    <div class="text-5xl mb-4">🌍</div>
-                    <p class="text-theme-greenDark font-bold text-lg">Recolectando información de las sucursales...</p>
+                    <div class="text-5xl mb-4 drop-shadow-md">🌍</div>
+                    <p class="text-theme-greenDark font-bold text-lg">Recolectando información de las sucursales en vivo...</p>
                 </div>
             `;
 
             try {
-                // 2. Extraer datos en vivo de la Sucursal Centro desde Firebase
-                const centroDoc = await db.collection('pizzaManager').doc('sucursal_centro').get();
-                const centroState = centroDoc.exists ? centroDoc.data() : null;
-
                 const todayStr = new Date().toDateString();
-
-                // 3. Cálculos Sucursal Principal (Local)
+                
+                // 1. Cálculos de la Sucursal Principal (La tuya, en local)
                 const prinSalesToday = state.sales.filter(s => new Date(s.timestamp).toDateString() === todayStr).reduce((sum, s) => sum + s.total, 0);
                 const prinOrdersActive = state.orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled').length;
                 const prinLowStock = state.inventory.filter(i => i.stock <= i.minStock).length;
 
-                // 4. Cálculos Sucursal Centro (Remota)
-                let centroSalesToday = 0;
-                let centroOrdersActive = 0;
-                let centroLowStock = 0;
+                let totalGlobal = prinSalesToday;
+                
+                // 2. Extraer todas las sucursales creadas
+                const branchesToSync = state.franchiseBranches || ['sucursal_centro'];
+                let branchesHTML = '';
 
-                if (centroState) {
-                    centroSalesToday = (centroState.sales || []).filter(s => new Date(s.timestamp).toDateString() === todayStr).reduce((sum, s) => sum + s.total, 0);
-                    centroOrdersActive = (centroState.orders || []).filter(o => o.status !== 'delivered' && o.status !== 'cancelled').length;
-                    centroLowStock = (centroState.inventory || []).filter(i => i.stock <= i.minStock).length;
+                // 3. Bucle para conectarse a cada sucursal y generar su tarjeta
+                for (let branchId of branchesToSync) {
+                    if (branchId === 'sucursal_principal') continue; // Saltamos la principal porque ya la calculamos
+
+                    const branchDoc = await db.collection('pizzaManager').doc(branchId).get();
+                    const branchState = branchDoc.exists ? branchDoc.data() : null;
+
+                    let bSalesToday = 0;
+                    let bOrdersActive = 0;
+                    let bLowStock = 0;
+
+                    if (branchState) {
+                        bSalesToday = (branchState.sales || []).filter(s => new Date(s.timestamp).toDateString() === todayStr).reduce((sum, s) => sum + s.total, 0);
+                        bOrdersActive = (branchState.orders || []).filter(o => o.status !== 'delivered' && o.status !== 'cancelled').length;
+                        bLowStock = (branchState.inventory || []).filter(i => i.stock <= (i.minStock || 0)).length;
+                        totalGlobal += bSalesToday;
+                    }
+
+                    const branchNameFormat = branchId.replace('sucursal_', '').toUpperCase();
+
+                    branchesHTML += `
+                        <div class="glass bg-white/60 border border-white rounded-3xl p-6 shadow-md relative overflow-hidden mt-4">
+                            <div class="absolute top-0 left-0 w-full h-2 bg-blue-400"></div>
+                            
+                            <div class="flex justify-between items-start mb-6 gap-2">
+                                <h3 class="text-xl font-extrabold text-theme-text flex items-center gap-2">
+                                    🏪 SUCURSAL ${branchNameFormat} 
+                                    ${!branchState ? '<span class="text-red-500 text-sm ml-2 font-medium">Sin datos</span>' : ''}
+                                </h3>
+                                ${branchState ? `
+                                    <button onclick="showBranchAdminModal('${branchId}')" class="bg-gray-800 hover:bg-black text-white px-3 py-2 rounded-xl text-xs font-bold transition shadow-md flex items-center gap-1.5 shrink-0">
+                                        🔑 Accesos
+                                    </button>
+                                ` : ''}
+                            </div>
+                            
+                            <div class="space-y-4 ${!branchState ? 'opacity-50 grayscale' : ''}">
+                                <div class="flex justify-between items-center p-4 bg-white rounded-xl shadow-sm border border-theme-beige">
+                                    <span class="font-bold text-theme-textMuted flex items-center gap-2">💰 Ventas Hoy</span>
+                                    <span class="text-2xl font-extrabold text-blue-600">$${bSalesToday.toLocaleString()}</span>
+                                </div>
+                                <div class="flex justify-between items-center p-4 bg-white rounded-xl shadow-sm border border-theme-beige">
+                                    <span class="font-bold text-theme-textMuted flex items-center gap-2">🔥 Pedidos Activos</span>
+                                    <span class="text-xl font-bold text-blue-600">${bOrdersActive} en curso</span>
+                                </div>
+                                <div class="flex justify-between items-center p-4 ${bLowStock > 0 ? 'bg-red-50 border-red-200' : 'bg-white border-theme-beige'} rounded-xl shadow-sm border">
+                                    <span class="font-bold ${bLowStock > 0 ? 'text-red-600' : 'text-theme-textMuted'} flex items-center gap-2">⚠️ Alertas Inventario</span>
+                                    <span class="text-lg font-bold ${bLowStock > 0 ? 'text-red-600' : 'text-theme-text'}">${bLowStock} insumos bajos</span>
+                                </div>
+                            </div>
+                            <div class="mt-4 text-right">
+                                <button onclick="handleLogout(); setTimeout(() => { document.getElementById('loginBranch').value = '${branchId}'; }, 100);" class="text-xs text-blue-500 font-bold hover:underline">Ir a esta sucursal ➡️</button>
+                            </div>
+                        </div>
+                    `;
                 }
 
-                const totalGlobal = prinSalesToday + centroSalesToday;
-
-                // 5. Dibujar la Interfaz Comparativa
+                // 4. Dibujar toda la interfaz global
                 container.innerHTML = `
                     <div class="animate-slideIn">
                         <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4 border-b border-theme-beige pb-4">
                             <div>
                                 <h2 class="text-2xl font-bold flex items-center gap-3 text-theme-greenDark">🌍 Control Global de Franquicia</h2>
-                                <p class="text-theme-textMuted text-sm font-medium mt-1">Monitoreo en tiempo real de todas las sucursales activas</p>
+                                <p class="text-theme-textMuted text-sm font-medium mt-1">Monitoreo en tiempo real de todas las sucursales</p>
                             </div>
                             <div class="bg-theme-green text-white px-5 py-3 rounded-2xl shadow-md text-right">
                                 <p class="text-xs font-bold opacity-80 uppercase tracking-wider">Ingresos Globales Hoy</p>
@@ -4456,9 +4780,9 @@ function updateProduct(productId) {
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="glass bg-white/80 border-2 border-theme-green rounded-3xl p-6 shadow-lg relative overflow-hidden">
+                            <div class="glass bg-white/80 border-2 border-theme-green rounded-3xl p-6 shadow-lg relative overflow-hidden mt-4">
                                 <div class="absolute top-0 left-0 w-full h-2 bg-theme-green"></div>
-                                <h3 class="text-xl font-extrabold text-theme-text mb-6 flex items-center gap-2">📍 Sucursal Principal <span class="bg-green-100 text-green-700 text-[10px] px-2 py-1 rounded-md ml-auto">ESTA SUCURSAL</span></h3>
+                                <h3 class="text-xl font-extrabold text-theme-text mb-6 flex items-center gap-2">📍 Sucursal Principal <span class="bg-green-100 text-green-700 text-[10px] px-2 py-1 rounded-md ml-auto">ACTUAL</span></h3>
                                 
                                 <div class="space-y-4">
                                     <div class="flex justify-between items-center p-4 bg-theme-bg rounded-xl border border-theme-beige">
@@ -4476,27 +4800,8 @@ function updateProduct(productId) {
                                 </div>
                             </div>
 
-                            <div class="glass bg-white/60 border border-white rounded-3xl p-6 shadow-md relative overflow-hidden">
-                                <div class="absolute top-0 left-0 w-full h-2 bg-blue-400"></div>
-                                <h3 class="text-xl font-extrabold text-theme-text mb-6 flex items-center gap-2">🏪 Sucursal Centro ${!centroState ? '<span class="text-red-500 text-sm ml-auto font-medium">Sin datos</span>' : ''}</h3>
-                                
-                                <div class="space-y-4 ${!centroState ? 'opacity-50 grayscale' : ''}">
-                                    <div class="flex justify-between items-center p-4 bg-white rounded-xl shadow-sm border border-theme-beige">
-                                        <span class="font-bold text-theme-textMuted flex items-center gap-2">💰 Ventas Hoy</span>
-                                        <span class="text-2xl font-extrabold text-blue-600">$${centroSalesToday.toLocaleString()}</span>
-                                    </div>
-                                    <div class="flex justify-between items-center p-4 bg-white rounded-xl shadow-sm border border-theme-beige">
-                                        <span class="font-bold text-theme-textMuted flex items-center gap-2">🔥 Pedidos Activos</span>
-                                        <span class="text-xl font-bold text-blue-600">${centroOrdersActive} en curso</span>
-                                    </div>
-                                    <div class="flex justify-between items-center p-4 ${centroLowStock > 0 ? 'bg-red-50 border-red-200' : 'bg-white border-theme-beige'} rounded-xl shadow-sm border">
-                                        <span class="font-bold ${centroLowStock > 0 ? 'text-red-600' : 'text-theme-textMuted'} flex items-center gap-2">⚠️ Alertas Inventario</span>
-                                        <span class="text-lg font-bold ${centroLowStock > 0 ? 'text-red-600' : 'text-theme-text'}">${centroLowStock} insumos bajos</span>
-                                    </div>
-                                </div>
-                                <div class="mt-4 text-right">
-                                    <button onclick="handleLogout(); setTimeout(() => { document.getElementById('loginBranch').value = 'sucursal_centro'; }, 100);" class="text-xs text-blue-500 font-bold hover:underline">Cambiar a esta sucursal ➡️</button>
-                                </div>
+                            <div class="flex flex-col">
+                                ${branchesHTML || '<p class="text-theme-textMuted mt-4">No hay otras sucursales registradas.</p>'}
                             </div>
                         </div>
                     </div>
@@ -4505,14 +4810,114 @@ function updateProduct(productId) {
                 console.error("Error cargando Dashboard Global:", error);
                 container.innerHTML = `
                     <div class="p-8 text-center">
-                        <div class="text-4xl mb-4">❌</div>
-                        <h2 class="text-xl font-bold text-red-600">No se pudo contactar con las demás sucursales.</h2>
+                        <div class="text-4xl mb-4 drop-shadow-md">❌</div>
+                        <h2 class="text-xl font-bold text-red-600">Falla de conexión con las sucursales.</h2>
                         <p class="text-theme-textMuted mt-2">${error.message}</p>
                     </div>
                 `;
             }
         }
 
+        // ==================== GESTIÓN DE ACCESOS POR SUCURSAL ====================
+        async function showBranchAdminModal(branchId) {
+            try {
+                showToast('Conectando a la sucursal...', 'info');
+                
+                // Conectarse a Firebase y obtener los datos de la sucursal solicitada
+                const branchDoc = await db.collection('pizzaManager').doc(branchId).get();
+                if (!branchDoc.exists) {
+                    showToast('La sucursal no existe.', 'error');
+                    return;
+                }
+                const branchState = branchDoc.data();
+                
+                // Buscar al usuario que es 'admin'
+                const adminUser = branchState.users.find(u => u.role === 'admin');
+                if (!adminUser) {
+                    showToast('No hay un administrador en esta sucursal.', 'warning');
+                    return;
+                }
+
+                const branchName = branchId.replace('sucursal_', '').toUpperCase();
+
+                const modal = document.getElementById('modalContainer');
+                modal.innerHTML = `
+                    <div class="glass bg-white/90 rounded-3xl p-6 w-[95%] max-w-md animate-slideIn shadow-2xl border-2 border-gray-800">
+                        <h3 class="text-xl font-bold mb-2 text-gray-800 flex items-center gap-2">🔑 Accesos de Administrador</h3>
+                        <p class="text-sm font-medium text-theme-textMuted mb-6">Modifica las credenciales del encargado de la <strong>Sucursal ${branchName}</strong>.</p>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-bold mb-1 text-theme-text">Usuario (Login)</label>
+                                <input type="text" id="branchAdminUsername" value="${adminUser.username}" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-blue-500 font-bold text-theme-text">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold mb-1 text-theme-text">Nueva Contraseña</label>
+                                <input type="password" id="branchAdminPassword" placeholder="Escribe para cambiarla..." class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-blue-500 font-bold text-theme-text">
+                                <p class="text-[11px] font-bold text-blue-600 mt-1">Déjalo en blanco si no quieres cambiar la contraseña actual.</p>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3 pt-4 border-t border-theme-beige mt-2">
+                                <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text shadow-sm">Cancelar</button>
+                                <button onclick="updateBranchAdmin('${branchId}', ${adminUser.id})" class="bg-gray-800 hover:bg-black text-white py-3 rounded-xl font-bold shadow-md transition flex justify-center items-center gap-2">Guardar</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                modal.classList.remove('hidden');
+
+            } catch (error) {
+                console.error("Error obteniendo accesos:", error);
+                showToast('Error al conectar con la sucursal.', 'error');
+            }
+        }
+
+        async function updateBranchAdmin(branchId, adminUserId) {
+            try {
+                const newUsername = document.getElementById('branchAdminUsername').value.trim().toLowerCase();
+                const newPassword = document.getElementById('branchAdminPassword').value;
+
+                if (!newUsername) {
+                    showToast('El usuario no puede estar vacío.', 'warning');
+                    return;
+                }
+
+                // Obtener documento actual
+                const branchRef = db.collection('pizzaManager').doc(branchId);
+                const doc = await branchRef.get();
+                if (!doc.exists) return;
+
+                const branchState = doc.data();
+                
+                // Comprobar si el nombre de usuario ya está ocupado por un cajero/mesero en esa misma sucursal
+                const isTaken = branchState.users.some(u => u.username === newUsername && u.id !== adminUserId);
+                if (isTaken) {
+                    showToast('Ese nombre de usuario ya está en uso en esta sucursal.', 'error');
+                    return;
+                }
+
+                // Actualizar la lista de usuarios en vivo (sobreescribiendo sin descargar la base completa)
+                const updatedUsers = branchState.users.map(u => {
+                    if (u.id === adminUserId) {
+                        return {
+                            ...u,
+                            username: newUsername,
+                            password: newPassword ? newPassword : u.password // Actualiza la clave solo si se escribió algo
+                        };
+                    }
+                    return u;
+                });
+
+                // Guardar la actualización directamente en Firebase
+                await branchRef.update({ users: updatedUsers });
+
+                showToast('✅ Credenciales actualizadas exitosamente', 'success');
+                closeModal();
+
+            } catch (error) {
+                console.error("Error al actualizar credenciales:", error);
+                showToast('Error al guardar los datos en la nube.', 'error');
+            }
+        }
         // ==================== CONFIGURACIÓN WHATSAPP ====================
         function saveWhatsappSettings() {
             // Elimina espacios o signos de + para dejar solo los números limpios
