@@ -3653,8 +3653,8 @@ function saveNewProduct() {
         }
 
         // ==================== ORDERS MODULE ====================
-        // ==================== ORDERS MODULE ====================
-        function renderOrders(container) {
+       // ==================== ORDERS MODULE ====================
+       function renderOrders(container) {
             const activeOrders = state.orders.filter(o => o.status !== 'cancelled')
                 .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
@@ -3686,21 +3686,101 @@ function saveNewProduct() {
                                     ${order.items.map(i => `<span class="px-3 py-1 rounded-lg bg-theme-bg border border-theme-beige text-theme-text"><strong class="text-theme-greenDark">${i.quantity}x</strong> ${i.name}</span>`).join('')}
                                 </div>
                                 
-                                ${order.status === 'delivered' && order.paymentStatus !== 'paid' ? `
-                                    <div class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-theme-beige w-full justify-end">
+                                <div class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-theme-beige w-full justify-end">
+                                    ${order.status === 'delivered' && order.paymentStatus !== 'paid' ? `
                                         <button onclick="payExistingOrder(${order.id}, 'cash')" class="px-4 py-2.5 rounded-xl text-sm font-bold bg-green-500 text-white hover:bg-green-600 transition shadow-sm flex items-center gap-2">
                                             💵 Cobrar Efectivo
                                         </button>
                                         <button onclick="payExistingOrder(${order.id}, 'transfer')" class="px-4 py-2.5 rounded-xl text-sm font-bold bg-blue-500 text-white hover:bg-blue-600 transition shadow-sm flex items-center gap-2">
                                             📱 Cobrar Transferencia
                                         </button>
-                                    </div>
-                                ` : ''}
+                                    ` : ''}
+                                    
+                                    <button onclick="showDeleteOrderAuthModal(${order.id})" class="px-4 py-2.5 rounded-xl text-sm font-bold bg-red-500 text-white hover:bg-red-600 transition shadow-sm flex items-center gap-2 ml-auto">
+                                        🗑️ Eliminar
+                                    </button>
+                                </div>
                             </div>
                         `).join('') || '<p class="text-theme-textMuted text-center py-12 font-medium text-lg">Sin pedidos registrados</p>'}
                     </div>
                 </div>
             `;
+        }
+
+        // ==================== ELIMINACIÓN SEGURA DE PEDIDOS (ADMIN) ====================
+        function showDeleteOrderAuthModal(orderId) {
+            const modal = document.getElementById('modalContainer');
+            modal.innerHTML = `
+                <div class="glass bg-white/90 rounded-3xl p-6 w-[95%] max-w-md animate-slideIn shadow-2xl border-2 border-red-400 text-center">
+                    <div class="text-5xl mb-4 drop-shadow-md">🛡️</div>
+                    <h3 class="text-xl font-extrabold mb-2 text-red-600">Autorización Requerida</h3>
+                    <p class="text-sm text-theme-text font-medium mb-6">Para eliminar este pedido por completo de Cocina, Ventas y Reportes, ingresa la clave de administrador.</p>
+                    
+                    <div class="mb-6">
+                        <input type="password" id="adminAuthPassword" class="w-full px-4 py-3 bg-white border-2 border-red-200 rounded-xl text-center text-2xl tracking-widest focus:outline-none focus:border-red-500 font-bold" placeholder="******">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text shadow-sm">Cancelar</button>
+                        <button onclick="executeDeleteOrder(${orderId})" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl shadow-md transition">Destruir Pedido</button>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+            setTimeout(() => document.getElementById('adminAuthPassword').focus(), 100);
+        }
+
+        function executeDeleteOrder(orderId) {
+            const pwdInput = document.getElementById('adminAuthPassword').value;
+            
+            // Verificación de la clave maestra solicitada
+            if (pwdInput !== '726188') {
+                showToast('Contraseña incorrecta', 'error');
+                const inputEl = document.getElementById('adminAuthPassword');
+                inputEl.classList.add('animate-shake', 'border-red-500');
+                setTimeout(() => inputEl.classList.remove('animate-shake'), 500);
+                return;
+            }
+
+            // 1. Restaurar Inventario y Liberar Mesa para que no quede basura operativa
+            const orderToRest = state.orders.find(o => o.id === orderId);
+            if (orderToRest) {
+                // Liberar la mesa
+                if (orderToRest.tableId && orderToRest.status !== 'delivered' && orderToRest.status !== 'cancelled') {
+                    const table = state.tables.find(t => t.id === orderToRest.tableId);
+                    if (table) table.status = 'available';
+                }
+                
+                // Devolver insumos al stock general
+                orderToRest.items.forEach(cartItem => {
+                    const product = state.products.find(p => p.id === cartItem.productId);
+                    if (product && product.ingredients) {
+                        product.ingredients.forEach(ing => {
+                            const invItem = state.inventory.find(i => i.id === ing.id);
+                            if (invItem) invItem.stock += (ing.qty * cartItem.quantity);
+                        });
+                    }
+                });
+            }
+
+            // 2. Erradicar de la lista de Pedidos (Lo desaparece de Cocina y Meseros)
+            state.orders = state.orders.filter(o => o.id !== orderId);
+
+            // 3. Erradicar de la matriz de Ventas (Lo desaparece de las Estadísticas y Reportes)
+            state.sales = state.sales.filter(s => s.orderId !== orderId);
+
+            // 4. Erradicar movimientos de caja asociados a este ticket
+            if (state.cashRegister && state.cashRegister.movements) {
+                state.cashRegister.movements = state.cashRegister.movements.filter(m => m.orderId !== orderId);
+            }
+
+            // 5. Guardar y Notificar
+            logActivity('ORDER_DELETED', `Pedido #${orderId.toString().slice(-4)} eliminado totalmente con clave Admin`);
+            saveToStorage();
+            
+            showToast('✅ Pedido erradicado de todas las bases de datos', 'success');
+            closeModal();
+            renderOrders(document.getElementById('contentArea')); // Refresca la pantalla
         }
 
         // ==================== EXISTING ORDER PAYMENT LOGIC ====================
