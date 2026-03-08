@@ -2073,12 +2073,18 @@ if (branchLabel) branchLabel.textContent = currentBranch === 'sucursal_principal
 
         
         function renderMyOrders(container) {
-            const myOrders = state.orders.filter(o => o.createdBy === currentUser.id)
+            // Filtramos por usuario y que NO estén marcados como ocultos
+            const myOrders = state.orders.filter(o => o.createdBy === currentUser.id && !o.hiddenFromWaiter)
                 .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
             container.innerHTML = `
                 <div class="animate-slideIn">
-                    <h2 class="text-2xl font-bold mb-6 flex items-center gap-3 text-theme-greenDark">📋 Mis Pedidos</h2>
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4 border-b border-theme-beige pb-4">
+                        <h2 class="text-2xl font-bold flex items-center gap-3 text-theme-greenDark">📋 Mis Pedidos</h2>
+                        <button onclick="confirmClearMyOrders()" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition flex items-center gap-2">
+                            🧹 Limpiar Historial
+                        </button>
+                    </div>
                     
                     <div class="space-y-4">
                         ${myOrders.slice(0, 20).map(order => `
@@ -2093,12 +2099,54 @@ if (branchLabel) branchLabel.textContent = currentBranch === 'sucursal_principal
                                     <span class="px-3 py-1 rounded-full text-xs font-bold shadow-sm ${getStatusClass(order.status)}">${getStatusLabel(order.status)}</span>
                                 </div>
                             </div>
-                        `).join('') || '<p class="text-theme-textMuted text-center py-8 font-medium">No has creado pedidos aún</p>'}
+                        `).join('') || '<p class="text-theme-textMuted text-center py-8 font-medium">No tienes pedidos activos en tu lista</p>'}
                     </div>
                 </div>
             `;
         }
 
+        // ==================== LIMPIEZA DE HISTORIAL DE MESERO ====================
+        function confirmClearMyOrders() {
+            const modal = document.getElementById('modalContainer');
+            modal.innerHTML = `
+                <div class="glass bg-white/90 rounded-3xl p-6 w-[95%] max-w-md animate-slideIn shadow-2xl border-2 border-red-200">
+                    <h3 class="text-xl font-extrabold mb-4 text-red-600 flex items-center gap-2">🧹 Limpiar mi Historial</h3>
+                    <p class="text-theme-text font-medium mb-4">Se ocultarán de tu lista todos los pedidos que ya estén <strong>Entregados, Cobrados o Cancelados</strong>.</p>
+                    <p class="text-xs text-theme-textMuted mb-6 p-3 bg-theme-bg rounded-lg border border-theme-beige">Nota: Los pedidos pendientes o en cocina seguirán visibles para que no los pierdas de vista. La caja y los reportes no se verán afectados.</p>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text shadow-sm">Cancelar</button>
+                        <button onclick="clearMyOrders()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl shadow-md transition">Sí, Limpiar</button>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        function clearMyOrders() {
+            let cleanedCount = 0;
+
+            state.orders.forEach(o => {
+                // Solo revisamos los de este mesero
+                if (o.createdBy === currentUser.id && !o.hiddenFromWaiter) {
+                    // Condición de seguridad: Solo limpiar los que ya terminaron su ciclo
+                    if (o.status === 'delivered' || o.status === 'cancelled' || o.paymentStatus === 'paid') {
+                        o.hiddenFromWaiter = true; // Se marca como oculto
+                        cleanedCount++;
+                    }
+                }
+            });
+            
+            saveToStorage();
+            closeModal();
+            renderMyOrders(document.getElementById('contentArea')); // Recargamos la vista
+            
+            if (cleanedCount > 0) {
+                showToast(`✅ Se limpiaron ${cleanedCount} pedidos terminados`, 'success');
+            } else {
+                showToast('ℹ️ Solo se pueden limpiar pedidos ya entregados o pagados', 'info');
+            }
+        }
         // ==================== TICKET HISTORY MODULE ====================
        // ==================== TICKET HISTORY MODULE ====================
        function renderTicketHistory(container) {
