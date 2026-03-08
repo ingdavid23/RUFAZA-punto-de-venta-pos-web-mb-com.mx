@@ -504,11 +504,26 @@ function clearAllNotifications() {
                 }
                 
                 currentBranch = branchId;
+                let isFirstLoad = true; // 🔥 Bandera para evitar que suene al iniciar sesión
                 
                 // Conecta en tiempo real con la base de datos de ESA sucursal
                 stateUnsubscribe = db.collection('pizzaManager').doc(currentBranch).onSnapshot((doc) => {
                     if (doc.exists) {
-                        state = { ...DEFAULT_DATA, ...doc.data() };
+                        const incomingData = doc.data();
+
+                        // 🔔 LÓGICA DE ALERTA SONORA PARA COCINA
+                        // Solo suena si NO es la primera carga, si hay usuario activo y si es de cocina.
+                        if (!isFirstLoad && currentUser && currentUser.role === 'kitchen') {
+                            const oldOrdersCount = state.orders ? state.orders.length : 0;
+                            const newOrdersCount = incomingData.orders ? incomingData.orders.length : 0;
+                            
+                            // Compara si la cantidad de pedidos subió
+                            if (newOrdersCount > oldOrdersCount) {
+                                playKitchenBell();
+                            }
+                        }
+
+                        state = { ...DEFAULT_DATA, ...incomingData };
 
                         if (currentUser) {
                             renderView(currentView); // Actualiza la vista completa siempre
@@ -519,6 +534,8 @@ function clearAllNotifications() {
                         state = JSON.parse(JSON.stringify(DEFAULT_DATA));
                         saveToStorage();
                     }
+                    
+                    isFirstLoad = false; // Desactivamos la bandera después de cargar los datos iniciales
                     resolve();
                 }, (error) => {
                     console.error("Error de Firebase:", error);
@@ -528,6 +545,30 @@ function clearAllNotifications() {
                     resolve();
                 });
             });
+        }
+
+        // ==================== ALARMA SONORA DE COCINA ====================
+        function playKitchenBell() {
+            try {
+                // Utilizamos un sonido de campana de servicio directamente del banco de sonidos de Google
+                const bellSound = new Audio('https://actions.google.com/sounds/v1/alarms/dinner_bell_triangle.ogg');
+                
+                // Reproduce el sonido
+                const playPromise = bellSound.play();
+
+                // Manejo de seguridad por si el navegador bloquea el sonido (políticas de Autoplay)
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.warn("Sonido bloqueado por el navegador. El usuario debe hacer clic en la pantalla al menos una vez para habilitar el audio.", error);
+                    });
+                }
+                
+                // Mostramos un Toast visual por si no tienen el volumen alto
+                showToast('🚨 ¡NUEVO PEDIDO EN COCINA!', 'info');
+                
+            } catch (error) {
+                console.error("Error al intentar reproducir la campana:", error);
+            }
         }
         function logActivity(action, details) {
             state.activityLog.push({
