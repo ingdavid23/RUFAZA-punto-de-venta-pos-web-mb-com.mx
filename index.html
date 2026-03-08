@@ -549,30 +549,29 @@ function clearAllNotifications() {
 
         // ==================== ALARMA SONORA DE COCINA ====================
         // ==================== ALARMA SONORA DE COCINA ====================
+        // ==================== ALARMA SONORA DE COCINA ====================
         function playKitchenBell() {
             try {
-                // 🎵 OPCIONES DE SONIDO 
-                // El que no tiene las dos barras (//) es el que está activado. 
-                // Si quieres probar otro, ponle // al actual y quítaselas al que quieras usar.
-
-                // Opción 1: Tono digital moderno y suave (Estilo app de delivery) - ACTIVADO AHORA
-                // const audioUrl = 'https://actions.google.com/sounds/v1/ui/positive_notification.ogg';
+                // 🎵 OPCIONES DE SONIDO (Formatos .mp3 para compatibilidad total con Mac/Safari/iOS/Android)
                 
-                // Opción 2: Campana clásica de recepción (Timbre metálico de mostrador)
-                 const audioUrl = 'https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3';
+                // Opción 1: Tono digital moderno (Estilo App de Delivery rápida) - ACTIVADO
+                const audioUrl = 'https://cdn.pixabay.com/audio/2021/08/09/audio_82bfb1a454.mp3';
                 
-                // Opción 3: Pitido de alerta fuerte (Beep digital de máquina)
-                // const audioUrl = 'https://www.soundjay.com/buttons/beep-07.mp3';
+                // Opción 2: Campana de servicio clásica (Din-Din de mostrador)
+                // const audioUrl = 'https://cdn.pixabay.com/audio/2021/08/04/audio_0625c1539c.mp3';
+                
+                // Opción 3: Tono suave y corto (Burbuja/Pop)
+                // const audioUrl = 'https://cdn.pixabay.com/audio/2021/08/09/audio_24e52a8706.mp3';
 
                 const bellSound = new Audio(audioUrl);
                 
                 // Reproduce el sonido
                 const playPromise = bellSound.play();
 
-                // Manejo de seguridad del navegador
+                // Manejo de seguridad del navegador (Políticas de Autoplay)
                 if (playPromise !== undefined) {
                     playPromise.catch(error => {
-                        console.warn("Sonido bloqueado por el navegador. Haz clic en la pantalla al menos una vez.", error);
+                        console.warn("El navegador bloqueó el sonido temporalmente. Debes hacer clic al menos una vez en la pantalla de la Cocina para que te dé permiso de reproducir audio.", error);
                     });
                 }
                 
