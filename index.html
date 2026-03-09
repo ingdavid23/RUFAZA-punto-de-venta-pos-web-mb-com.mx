@@ -2154,14 +2154,36 @@ function processPayment(method) {
                 }
 
                 currentCart.forEach(cartItem => {
+                    // 1. Agregar el producto a la cuenta de la mesa
                     const existing = order.items.find(i => i.productId === cartItem.productId && i.note === cartItem.note); 
                     if (existing) {
                         existing.quantity += cartItem.quantity;
                     } else {
                         order.items.push({ ...cartItem });
                     }
+
+                    // 2. MAGIA: Descontar del inventario real en este momento
+                    const product = state.products.find(p => p.id === cartItem.productId);
+                    if (product && product.ingredients) {
+                        product.ingredients.forEach(ing => {
+                            const invItem = state.inventory.find(i => i.id === ing.id);
+                            if (invItem) {
+                                // Resta la cantidad de la receta multiplicada por los items que pidió el cliente
+                                invItem.stock -= (ing.qty * cartItem.quantity);
+                                
+                                // Si al restar se queda sin stock mínimo, lanza alerta
+                                if (invItem.stock <= invItem.minStock) {
+                                    try { addNotification('warning', `⚠️ Stock bajo: ${invItem.name}`, ['admin', 'cashier']); } catch(e){}
+                                }
+                            }
+                        });
+                    }
                 });
 
+                // 3. Revisar si algún producto se quedó sin ingredientes para ocultarlo del menú
+                checkProductAvailability();
+
+                // Actualizar total de la mesa y bloquearla
                 order.total = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
                 table.status = 'occupied';
 
@@ -2172,7 +2194,7 @@ function processPayment(method) {
                 currentCart = [];
                 window.isMobileCartOpen = false; // Cerramos el carrito en el celular después de enviar
                 saveToStorage();
-                showToast('✅ Orden enviada a cocina', 'success');
+                showToast('✅ Orden enviada a cocina e Inventario actualizado', 'success');
 
                 const modal = document.getElementById('modalContainer');
                 if (modal) {
@@ -2188,7 +2210,6 @@ function processPayment(method) {
                 showToast('❌ Error al procesar: ' + error.message, 'error');
             }
         }
-
         
         function renderMyOrders(container) {
             // Filtramos por usuario y que NO estén marcados como ocultos
