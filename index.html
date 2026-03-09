@@ -1895,10 +1895,17 @@ function processPayment(method) {
         function toggleMobileCart() {
             window.isMobileCartOpen = !window.isMobileCartOpen;
             const panel = document.getElementById('tableCartPanel');
-            if (window.isMobileCartOpen) {
-                panel.classList.remove('translate-y-full');
-            } else {
-                panel.classList.add('translate-y-full');
+            
+            if (panel) {
+                if (window.isMobileCartOpen) {
+                    // Si se abre, quitamos el estado "oculto" y forzamos el estado "visible"
+                    panel.classList.remove('translate-y-full');
+                    panel.classList.add('translate-y-0');
+                } else {
+                    // Si se oculta, quitamos el estado "visible" y forzamos el estado "oculto"
+                    panel.classList.remove('translate-y-0');
+                    panel.classList.add('translate-y-full');
+                }
             }
         }
 
