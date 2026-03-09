@@ -506,41 +506,41 @@ function clearAllNotifications() {
                 }
                 
                 currentBranch = branchId;
-                let isFirstLoad = true; // 🔥 Bandera para evitar que suene al iniciar sesión
+                let isFirstLoad = true; 
                 
                 // Conecta en tiempo real con la base de datos de ESA sucursal
                 stateUnsubscribe = db.collection('pizzaManager').doc(currentBranch).onSnapshot((doc) => {
                     if (doc.exists) {
                         const incomingData = doc.data();
 
-                        // 🔔 LÓGICA DE ALERTA SONORA PARA COCINA
-                        // Solo suena si NO es la primera carga, si hay usuario activo y si es de cocina.
+                        // Lógica de campana para cocina
                         if (!isFirstLoad && currentUser && currentUser.role === 'kitchen') {
                             const oldOrdersCount = state.orders ? state.orders.length : 0;
                             const newOrdersCount = incomingData.orders ? incomingData.orders.length : 0;
-                            
-                            // Compara si la cantidad de pedidos subió
-                            if (newOrdersCount > oldOrdersCount) {
-                                playKitchenBell();
-                            }
+                            if (newOrdersCount > oldOrdersCount) playKitchenBell();
                         }
 
                         state = { ...DEFAULT_DATA, ...incomingData };
 
                         if (currentUser) {
-                            renderView(currentView); // Actualiza la vista completa siempre
+                            renderView(currentView); 
                             updateNotificationBadge();
                         }
                     } else {
-                        // Si la sucursal es nueva (Ej. Sucursal Centro), la crea automáticamente con los datos por defecto
+                        // 🛑 PARCHE DE SEGURIDAD: Solo carga los datos por defecto EN PANTALLA, 
+                        // pero YA NO LOS GUARDA automáticamente en Firebase para evitar borrar tus datos reales si fue un error de red.
+                        console.warn("No se encontró el documento de la sucursal. Cargando entorno de prueba...");
                         state = JSON.parse(JSON.stringify(DEFAULT_DATA));
-                        saveToStorage();
+                        if (currentUser) renderView(currentView);
                     }
                     
-                    isFirstLoad = false; // Desactivamos la bandera después de cargar los datos iniciales
+                    isFirstLoad = false;
                     resolve();
                 }, (error) => {
-                    console.error("Error de Firebase:", error);
+                    console.error("Error crítico de Firebase (Posible cuota excedida o sin permisos):", error);
+                    showToast('Error al conectar con la base de datos', 'error');
+                    
+                    // Si falla, al menos dejamos que el sistema corra offline con lo último que tenga
                     if (Object.keys(state).length === 0) {
                         state = JSON.parse(JSON.stringify(DEFAULT_DATA));
                     }
