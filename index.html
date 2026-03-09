@@ -480,6 +480,8 @@ function clearAllNotifications() {
         let currentUser = null;
         let currentView = 'pos';
         let currentCart = [];
+        let currentTableCategory = 'all'; // Rastrea la categoría abierta en la mesa
+        let currentPOSCategory = 'all'; // Rastrea la categoría en el Punto de Venta
         let selectedTable = null;
         let currentInventoryFilter = 'all'; // Nueva variable para las pestañas del inventario
         
@@ -1108,7 +1110,6 @@ if (branchLabel) branchLabel.textContent = currentBranch === 'sucursal_principal
 
         // ==================== POS (Point of Sale) ====================
 
-      
         function renderPOS(container) {
             initProductCategories();
             const categories = [
@@ -1123,27 +1124,32 @@ if (branchLabel) branchLabel.textContent = currentBranch === 'sucursal_principal
                             <h2 class="text-lg md:text-xl font-bold flex items-center gap-2 text-theme-greenDark">🛒 Punto de Venta</h2>
                             <div class="flex gap-2 overflow-x-auto scrollbar-thin pb-1 w-full sm:w-auto">
                                 ${categories.map(c => `
-                                    <button onclick="filterPOSProducts('${c.id}')" id="cat-${c.id}" 
-                                        class="px-3 py-2 rounded-xl text-xs md:text-sm transition font-medium border border-white whitespace-nowrap shrink-0 ${c.id === 'all' ? 'bg-theme-green text-white shadow-md' : 'bg-white/60 hover:bg-white/90 text-theme-textMuted'}">
+                                    <button onclick="filterPOSProducts('${c.id}')" id="pos-cat-${c.id}" 
+                                        class="px-3 py-2 rounded-xl text-xs md:text-sm transition font-medium border border-white whitespace-nowrap shrink-0 ${c.id === currentPOSCategory ? 'bg-theme-green text-white shadow-md hover:bg-theme-greenDark' : 'bg-white/60 hover:bg-white/90 text-theme-textMuted'}">
                                         ${c.icon} ${c.name}
                                     </button>
                                 `).join('')}
                             </div>
                         </div>
-                        <div id="posProducts" class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-3 overflow-auto flex-1 scrollbar-thin pb-4 pr-1 md:pr-2">
-                            ${renderPOSProducts('all')}
+                        <div id="posProducts" class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-3 overflow-y-auto overflow-x-hidden flex-1 scrollbar-thin pb-4 pr-1 md:pr-2 content-start">
+                            ${renderPOSProducts(currentPOSCategory)}
                         </div>
                     </div>
 
                     <div class="w-full lg:w-96 glass bg-white/50 rounded-2xl p-3 md:p-4 flex flex-col shrink-0 lg:h-full h-auto">
                         <div class="flex items-center justify-between mb-3 md:mb-4">
                             <h3 class="font-bold flex items-center gap-2 text-theme-greenDark text-sm md:text-base">🧾 Cuenta</h3>
-                            <button onclick="clearCart()" class="text-xs font-bold text-red-500 hover:text-red-600 bg-white/60 px-2 py-1 rounded-lg transition">Limpiar</button>
+                            <button onclick="clearCart()" class="text-xs font-bold text-red-500 hover:text-red-600 bg-white/60 px-2 py-1 rounded-lg transition shadow-sm border border-transparent hover:border-red-200">Limpiar</button>
                         </div>
                         <div id="cartItems" class="flex-1 overflow-auto scrollbar-thin space-y-2 mb-3 md:mb-4 pr-1 min-h-[150px] lg:min-h-0">
                             ${renderCartItems()}
                         </div>
                         <div class="border-t border-theme-beige pt-3 md:pt-4 space-y-2 md:space-y-3 shrink-0">
+                            ${currentUser && (currentUser.canDiscount || currentUser.role === 'admin') ? `
+                                <button onclick="promptDiscount()" class="w-full py-2 mb-1 rounded-lg bg-yellow-50 hover:bg-yellow-100 text-yellow-800 text-xs font-bold border border-yellow-200 transition shadow-sm flex items-center justify-center gap-1">
+                                    🏷️ Aplicar Descuento
+                                </button>
+                            ` : ''}
                             <div class="flex justify-between text-base md:text-lg font-medium">
                                 <span>Subtotal:</span>
                                 <span id="cartSubtotal">$${calculateCartTotal().toLocaleString()}</span>
@@ -1167,6 +1173,7 @@ if (branchLabel) branchLabel.textContent = currentBranch === 'sucursal_principal
             `;
         }
 
+        // Esta es la función hermana que NO debes borrar (solo asegúrate de que no la hayas eliminado accidentalmente antes)
         function renderPOSProducts(category) {
             const filtered = category === 'all'
                 ? state.products.filter(p => p.active)
@@ -1198,14 +1205,20 @@ if (branchLabel) branchLabel.textContent = currentBranch === 'sucursal_principal
             }).join('') || '<p class="col-span-full text-center text-theme-textMuted py-8">No hay productos en esta categoría</p>';
         }
 
+        // AQUÍ ESTÁ LA NUEVA FUNCIÓN CORREGIDA
         function filterPOSProducts(category) {
-            document.querySelectorAll('[id^="cat-"]').forEach(btn => {
-                btn.classList.remove('bg-theme-green', 'text-white', 'shadow-md');
-                btn.classList.add('bg-white/60', 'text-theme-textMuted');
+            currentPOSCategory = category;
+            
+            // Limitamos la búsqueda SOLO a botones y agregamos "pos-" para que no choque con modales
+            document.querySelectorAll('button[id^="pos-cat-"]').forEach(btn => {
+                btn.className = 'px-3 py-2 rounded-xl text-xs md:text-sm transition font-medium border border-white whitespace-nowrap shrink-0 bg-white/60 hover:bg-white/90 text-theme-textMuted';
             });
-            const activeBtn = document.getElementById(`cat-${category}`);
-            activeBtn.classList.remove('bg-white/60', 'text-theme-textMuted');
-            activeBtn.classList.add('bg-theme-green', 'text-white', 'shadow-md');
+            
+            const activeBtn = document.getElementById(`pos-cat-${category}`);
+            if (activeBtn) {
+                activeBtn.className = 'px-3 py-2 rounded-xl text-xs md:text-sm transition font-medium border border-white whitespace-nowrap shrink-0 bg-theme-green text-white shadow-md hover:bg-theme-greenDark';
+            }
+            
             document.getElementById('posProducts').innerHTML = renderPOSProducts(category);
         }
 
@@ -1294,19 +1307,81 @@ if (branchLabel) branchLabel.textContent = currentBranch === 'sucursal_principal
             if (currentCart.length === 0) {
                 return '<p class="text-theme-textMuted text-center py-8">El carrito está vacío</p>';
             }
-            return currentCart.map(item => `
-                <div class="flex items-center justify-between p-3 rounded-xl bg-white shadow-sm border border-theme-beige">
-                    <div class="flex-1 pr-2">
-                        <p class="font-bold text-sm text-theme-text line-clamp-1">${item.name}</p>
-                        <p class="text-theme-greenDark font-bold text-sm">$${item.price} c/u</p>
+            // Agregamos un identificador único (índice) a cada item para poder editar sus notas correctamente
+            return currentCart.map((item, index) => `
+                <div class="flex flex-col p-3 rounded-xl bg-white shadow-sm border border-theme-beige gap-2">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1 pr-2">
+                            <p class="font-bold text-sm text-theme-text line-clamp-1">${item.name}</p>
+                            <p class="text-theme-greenDark font-bold text-sm">$${item.price} c/u</p>
+                        </div>
+                        <div class="flex items-center gap-2 bg-theme-bg p-1 rounded-lg border border-theme-beige">
+                            <button onclick="updateCartItemQty(${item.productId}, -1)" class="w-7 h-7 rounded-md bg-white hover:bg-theme-beige transition text-theme-text font-bold">-</button>
+                            <span class="w-6 text-center font-bold">${item.quantity}</span>
+                            <button onclick="updateCartItemQty(${item.productId}, 1)" class="w-7 h-7 rounded-md bg-white hover:bg-theme-beige transition text-theme-text font-bold">+</button>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-2 bg-theme-bg p-1 rounded-lg border border-theme-beige">
-                        <button onclick="updateCartItemQty(${item.productId}, -1)" class="w-7 h-7 rounded-md bg-white hover:bg-theme-beige transition text-theme-text font-bold">-</button>
-                        <span class="w-6 text-center font-bold">${item.quantity}</span>
-                        <button onclick="updateCartItemQty(${item.productId}, 1)" class="w-7 h-7 rounded-md bg-white hover:bg-theme-beige transition text-theme-text font-bold">+</button>
+                    
+                    <div class="flex items-center gap-2 mt-1">
+                        <button onclick="addNoteToCartItem(${index})" class="text-xs bg-yellow-50 text-yellow-700 border border-yellow-200 px-2 py-1 rounded hover:bg-yellow-100 transition shadow-sm whitespace-nowrap">
+                            ✏️ Nota
+                        </button>
+                        ${item.note ? `<p class="text-xs text-red-600 font-medium italic line-clamp-1 flex-1">"${item.note}"</p>` : ''}
                     </div>
                 </div>
             `).join('');
+        }
+
+        function addNoteToCartItem(cartIndex) {
+            const item = currentCart[cartIndex];
+            const currentNote = item.note || '';
+
+            // Si ya existe una nota, creamos el botón rojo para eliminarla
+            const deleteBtnHtml = currentNote ? `
+                <button onclick="deleteNoteFromCartItem(${cartIndex})" class="w-full py-2.5 mt-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 transition font-bold text-sm shadow-sm flex justify-center items-center gap-2">
+                    🗑️ Eliminar Nota
+                </button>
+            ` : '';
+
+            const modal = document.getElementById('modalContainer');
+            modal.innerHTML = `
+                <div class="glass bg-white/90 rounded-3xl p-6 w-[95%] max-w-sm animate-slideIn shadow-2xl border-2 border-white">
+                    <h3 class="text-xl font-bold mb-2 text-theme-greenDark flex items-center gap-2">✏️ ${currentNote ? 'Editar Nota' : 'Nota Especial'}</h3>
+                    <p class="text-sm font-medium text-theme-textMuted mb-4">Instrucciones para: <strong class="text-theme-text">${item.name}</strong></p>
+
+                    <input type="text" id="customNoteInput" value="${currentNote}" class="w-full px-4 py-3 bg-white border-2 border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-theme-text shadow-inner" placeholder="Ej: Sin cebolla, extra queso...">
+                    
+                    ${deleteBtnHtml}
+
+                    <div class="grid grid-cols-2 gap-3 pt-4 mt-2 border-t border-theme-beige">
+                        <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text shadow-sm">Cancelar</button>
+                        <button onclick="saveNoteToCartItem(${cartIndex})" class="btn-primary py-3 rounded-xl font-bold shadow-md">Guardar</button>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                const input = document.getElementById('customNoteInput');
+                input.focus();
+                // Si ya había nota, selecciona el texto para sobreescribirlo rápido si lo desean
+                if(currentNote) input.select(); 
+            }, 100);
+        }
+
+        function saveNoteToCartItem(cartIndex) {
+            const item = currentCart[cartIndex];
+            const newNote = document.getElementById('customNoteInput').value.trim();
+            item.note = newNote;
+            updateCartDisplay();
+            closeModal();
+        }
+
+        function deleteNoteFromCartItem(cartIndex) {
+            const item = currentCart[cartIndex];
+            item.note = ''; // Limpiamos la nota
+            updateCartDisplay();
+            closeModal();
+            showToast('Nota eliminada', 'info');
         }
 
         function calculateCartTotal() {
@@ -1448,7 +1523,10 @@ function processPayment(method) {
                             </div>
                             ${sale.items.map(item => `
                                 <div class="flex justify-between items-start mb-1">
-                                    <span class="flex-1 pr-2">${item.quantity}x ${item.name.toUpperCase()}</span>
+                                    <span class="flex-1 pr-2">
+                                        ${item.quantity}x ${item.name.toUpperCase()}
+                                        ${item.note ? `<br><span style="font-size:9px; font-style:italic; font-weight:normal;">* ${item.note.toUpperCase()}</span>` : ''}
+                                    </span>
                                     <span class="font-bold whitespace-nowrap">$${(item.price * item.quantity).toLocaleString()}</span>
                                 </div>
                             `).join('')}
@@ -1614,10 +1692,11 @@ function processPayment(method) {
                             ⏱️ ${waitTime} min
                         </span>
                     </div>
-                    <div class="space-y-2 mb-4 flex-1">
+                   <div class="space-y-2 mb-4 flex-1">
                         ${order.items.map(item => `
-                            <div class="flex justify-between text-sm p-2 rounded-lg bg-theme-bg border border-theme-beige text-theme-text font-medium">
-                                <span><strong class="text-theme-greenDark mr-1">${item.quantity}x</strong> ${item.name}</span>
+                            <div class="flex flex-col text-sm p-2 rounded-lg bg-theme-bg border border-theme-beige text-theme-text font-medium">
+                                <div><strong class="text-theme-greenDark mr-1">${item.quantity}x</strong> ${item.name}</div>
+                                ${item.note ? `<div class="text-xs text-red-600 font-bold mt-1 bg-red-50 p-1 rounded border border-red-100 flex gap-1"><span>⚠️</span> <span>${item.note}</span></div>` : ''}
                             </div>
                         `).join('')}
                     </div>
@@ -1815,93 +1894,208 @@ function processPayment(method) {
             const table = state.tables.find(t => t.id === tableId);
             const activeOrder = state.orders.find(o => o.tableId === tableId && o.status !== 'delivered' && o.status !== 'cancelled');
 
+            initProductCategories();
+            const categories = [
+                { id: 'all', name: 'Todo', icon: '🍽️' },
+                ...state.productCategories
+            ];
+
             const modal = document.getElementById('modalContainer');
             modal.innerHTML = `
-                <div class="glass bg-white/90 rounded-3xl p-6 w-[95%] max-w-4xl animate-slideIn max-h-[90vh] overflow-auto shadow-2xl border-2 border-white scrollbar-thin">
-                    <div class="flex items-center justify-between mb-6 border-b border-theme-beige pb-4">
+                <div class="glass bg-white/90 rounded-3xl p-4 md:p-6 w-[98%] max-w-6xl animate-slideIn h-[95vh] md:h-[90vh] flex flex-col shadow-2xl border-2 border-white overflow-hidden">
+                    <div class="flex items-center justify-between mb-4 border-b border-theme-beige pb-3 shrink-0">
                         <h3 class="text-xl font-bold flex items-center gap-2 text-theme-greenDark">🍽️ ${table.name}</h3>
-                        <button onclick="closeModal()" class="p-2 bg-white rounded-lg transition text-theme-textMuted hover:bg-theme-beige border border-theme-beige font-bold">✕</button>
+                        <button onclick="closeModal()" class="p-2 bg-white rounded-lg transition text-theme-textMuted hover:bg-theme-beige border border-theme-beige font-bold shadow-sm">✕</button>
                     </div>
 
                     ${activeOrder ? `
-                        <div class="mb-6 p-4 rounded-2xl bg-theme-bg border border-theme-beige shadow-inner">
-                            <h4 class="font-bold mb-3 text-theme-text">Pedido Actual #${activeOrder.id.toString().slice(-4)}</h4>
-                            <div class="space-y-2 mb-3">
-                                ${activeOrder.items.map(item => `
-                                    <div class="flex justify-between text-sm font-medium">
-                                        <span><strong class="text-theme-greenDark">${item.quantity}x</strong> ${item.name}</span>
-                                        <span class="font-bold">$${(item.price * item.quantity).toLocaleString()}</span>
-                                    </div>
-                                `).join('')}
+                        <div class="mb-4 p-3 rounded-xl bg-theme-bg border border-theme-beige shadow-inner shrink-0">
+                            <div class="flex justify-between items-center cursor-pointer" onclick="document.getElementById('activeOrderDetails').classList.toggle('hidden')">
+                                <h4 class="font-bold text-theme-text flex items-center gap-2">🛒 Pedido Actual #${activeOrder.id.toString().slice(-4)} <span class="text-[10px] text-blue-500 bg-blue-100 px-2 py-0.5 rounded">(Toca para expandir)</span></h4>
+                                <span class="px-3 py-1 rounded-full text-[10px] md:text-xs font-bold shadow-sm ${getStatusClass(activeOrder.status)}">${getStatusLabel(activeOrder.status)}</span>
                             </div>
-                            <div class="flex justify-between font-extrabold border-t border-theme-beige pt-3 text-lg text-theme-greenDark">
-                                <span>Total:</span>
-                                <span>$${activeOrder.total.toLocaleString()}</span>
-                            </div>
-                            <div class="flex gap-2 mt-4">
-                                <span class="px-3 py-1.5 rounded-full text-xs font-bold shadow-sm ${getStatusClass(activeOrder.status)}">${getStatusLabel(activeOrder.status)}</span>
+                            <div id="activeOrderDetails" class="hidden mt-3 pt-3 border-t border-theme-beige">
+                                <div class="space-y-2 mb-2 max-h-32 overflow-y-auto scrollbar-thin pr-2">
+                                    ${activeOrder.items.map(item => `
+                                        <div class="flex flex-col text-sm font-medium border-b border-white pb-1">
+                                            <div class="flex justify-between">
+                                                <span><strong class="text-theme-greenDark">${item.quantity}x</strong> ${item.name}</span>
+                                                <span class="font-bold">$${(item.price * item.quantity).toLocaleString()}</span>
+                                            </div>
+                                            ${item.note ? `<span class="text-xs text-red-500 italic mt-0.5">Nota: ${item.note}</span>` : ''}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                <div class="flex justify-between font-extrabold border-t border-theme-beige pt-2 text-theme-greenDark">
+                                    <span>Total consumido:</span>
+                                    <span>$${activeOrder.total.toLocaleString()}</span>
+                                </div>
                             </div>
                         </div>
                     ` : ''}
 
-                    <div class="flex gap-4 flex-col lg:flex-row">
-                        <div class="flex-1">
-                            <h4 class="font-bold mb-3 text-theme-text">Agregar Productos</h4>
-                            <div class="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-60 overflow-auto scrollbar-thin pr-2">
-                                ${state.products.filter(p => p.active).map(p => {
-                                    const categoryIcons = { pizza: '🍕', drink: '🥤', extra: '🍟', promo: '🎉' };
-                                    const available = hasEnoughStock(p);
-                                    
-                                    const imageHtml = p.image 
-                                        ? `<img src="${p.image}" class="w-12 h-12 md:w-16 md:h-16 object-cover rounded-xl mb-1 shadow-sm ${!available ? 'grayscale opacity-50' : ''}">` 
-                                        : `<span class="text-3xl drop-shadow-sm ${!available ? 'grayscale opacity-50' : ''}">${p.icon || categoryIcons[p.category] || '🍽️'}</span>`;
-                                    
-                                    return `
-                                        <div ${available ? `onclick="addToTableOrder(${p.id})"` : ''} 
-                                            class="p-2 md:p-3 rounded-xl ${available ? 'bg-white border-theme-beige hover:border-theme-green cursor-pointer' : 'bg-red-50 border-red-300 opacity-70 cursor-not-allowed'} border-2 shadow-sm transition text-center flex flex-col items-center justify-center gap-1 relative overflow-hidden">
-                                            
-                                            ${!available ? '<div class="absolute top-0 w-full bg-red-500 text-white text-[9px] font-extrabold py-0.5 tracking-wider z-10">AGOTADO</div>' : ''}
-                                            
-                                            ${imageHtml}
-                                            <p class="text-xs md:text-sm font-bold ${!available ? 'text-red-800' : 'text-theme-text'} line-clamp-1">${p.name}</p>
-                                            <p class="${!available ? 'text-red-600' : 'text-theme-greenDark'} font-extrabold text-sm">$${p.price}</p>
-                                        </div>
-                                    `;
-                                }).join('')}
+                    <div class="flex gap-4 flex-col lg:flex-row flex-1 min-h-0 min-w-0 pb-1 w-full overflow-hidden">
+                        
+                        <div class="flex-1 flex flex-col min-h-[300px] lg:min-h-0 min-w-0 bg-white/50 rounded-2xl p-3 md:p-4 border border-white shadow-sm overflow-hidden">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-3 shrink-0">
+                                <h4 class="font-bold text-theme-text">Menú de Productos</h4>
+                                <div class="flex gap-2 overflow-x-auto scrollbar-thin pb-1 w-full sm:w-auto">
+                                    ${categories.map(c => `
+                                        <button onclick="filterTableProducts(${table.id}, '${c.id}')" id="table-cat-${c.id}" 
+                                            class="px-3 py-2 rounded-xl text-[11px] md:text-xs transition font-medium border border-white whitespace-nowrap shrink-0 ${c.id === currentTableCategory ? 'bg-theme-green text-white shadow-md' : 'bg-white/60 hover:bg-white/90 text-theme-textMuted'}">
+                                            ${c.icon} ${c.name}
+                                        </button>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            <div id="tableProductsContainer" class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2 overflow-y-auto overflow-x-hidden flex-1 scrollbar-thin pr-1 pb-2 content-start w-full">
+                                ${renderTableProductsHTML(table.id, currentTableCategory)}
                             </div>
                         </div>
 
-                        <div class="w-full lg:w-72 p-5 rounded-2xl bg-white border border-theme-beige shadow-sm">
-                            <h4 class="font-bold mb-3 text-theme-text">Nueva Orden</h4>
-                            <div id="tableCart" class="space-y-3 max-h-40 overflow-auto scrollbar-thin pr-2 mb-4">
-                                ${currentCart.length === 0 ? '<p class="text-theme-textMuted text-sm text-center py-4 font-medium">Sin productos</p>' :
-                                    currentCart.map(item => `
-                                        <div class="flex justify-between text-sm font-medium border-b border-theme-bg pb-2 last:border-0">
-                                            <span><strong class="text-theme-greenDark">${item.quantity}x</strong> ${item.name}</span>
-                                            <span class="font-bold">$${(item.price * item.quantity).toLocaleString()}</span>
+                        <div class="w-full lg:w-[320px] flex flex-col shrink-0 h-64 lg:h-full bg-white/80 rounded-2xl p-4 border border-theme-beige shadow-sm overflow-hidden">
+                            <h4 class="font-bold mb-3 text-theme-text shrink-0">Nueva Comanda</h4>
+                            <div id="tableCart" class="space-y-3 flex-1 overflow-y-auto scrollbar-thin pr-2 mb-3 min-h-0">
+                                ${currentCart.length === 0 ? '<div class="h-full flex items-center justify-center"><p class="text-theme-textMuted text-sm font-medium">No hay productos seleccionados</p></div>' :
+                                    currentCart.map((item, index) => `
+                                        <div class="flex flex-col text-sm font-medium border-b border-theme-bg pb-2 last:border-0 gap-1">
+                                            <div class="flex justify-between">
+                                                <span class="line-clamp-1 flex-1 pr-2"><strong class="text-theme-greenDark">${item.quantity}x</strong> ${item.name}</span>
+                                                <span class="font-bold shrink-0">$${(item.price * item.quantity).toLocaleString()}</span>
+                                            </div>
+                                            <div class="flex items-center justify-between mt-1">
+                                                <button onclick="addNoteToTableCartItem(${index}, ${tableId})" class="text-[10px] bg-yellow-50 text-yellow-700 border border-yellow-200 px-2 py-0.5 rounded hover:bg-yellow-100 transition shadow-sm">✏️ ${item.note ? 'Editar Nota' : 'Nota'}</button>
+                                                <div class="flex gap-1 bg-theme-bg rounded-md border border-theme-beige p-0.5">
+                                                    <button onclick="updateCartItemQty(${item.productId}, -1); selectTable(${tableId});" class="w-6 h-5 rounded hover:bg-white font-bold text-theme-text">-</button>
+                                                    <button onclick="updateCartItemQty(${item.productId}, 1); selectTable(${tableId});" class="w-6 h-5 rounded hover:bg-white font-bold text-theme-text">+</button>
+                                                </div>
+                                            </div>
+                                            ${item.note ? `<span class="text-[11px] text-red-500 italic mt-1 leading-tight bg-red-50 p-1 rounded border border-red-100">" ${item.note} "</span>` : ''}
                                         </div>
                                     `).join('')
                                 }
                             </div>
-                            <div class="border-t border-theme-beige pt-3 mb-4">
-                                <div class="flex justify-between font-extrabold text-lg text-theme-greenDark">
-                                    <span>Total:</span>
+                            <div class="border-t border-theme-beige pt-3 shrink-0">
+                                <div class="flex justify-between font-extrabold text-lg text-theme-greenDark mb-3">
+                                    <span>Total Nuevo:</span>
                                     <span id="tableCartTotal">$${calculateCartTotal().toLocaleString()}</span>
                                 </div>
-                            </div>
-                            <div class="space-y-2">
-                                <button onclick="sendTableOrder(${tableId})" class="w-full btn-primary py-3 rounded-xl text-sm font-bold shadow-md" ${currentCart.length === 0 ? 'disabled' : ''}>
-                                    📤 Enviar a Cocina
-                                </button>
-                                <button onclick="clearCart(); selectTable(${tableId})" class="w-full py-3 rounded-xl bg-theme-bg hover:bg-theme-beige border border-theme-beige text-sm transition font-bold text-theme-text">
-                                    🗑️ Limpiar
-                                </button>
+                                <div class="space-y-2">
+                                    <button onclick="sendTableOrder(${tableId})" class="w-full btn-primary py-3 rounded-xl text-sm font-bold shadow-md" ${currentCart.length === 0 ? 'disabled' : ''}>
+                                        📤 Enviar a Cocina
+                                    </button>
+                                    <button onclick="clearCart(); selectTable(${tableId})" class="w-full py-2.5 rounded-xl bg-theme-bg hover:bg-theme-beige border border-theme-beige text-xs transition font-bold text-theme-text shadow-sm" ${currentCart.length === 0 ? 'hidden' : ''}>
+                                        🗑️ Cancelar / Limpiar Orden
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             `;
             modal.classList.remove('hidden');
+        }
+
+        // ==================== MOTORES DE RENDERIZADO DEL MENÚ DE MESAS ====================
+        function renderTableProductsHTML(tableId, category) {
+            const filtered = category === 'all'
+                ? state.products.filter(p => p.active)
+                : state.products.filter(p => p.active && p.category === category);
+
+            return filtered.map(p => {
+                const categoryIcons = { pizza: '🍕', drink: '🥤', extra: '🍟', promo: '🎉' };
+                const available = hasEnoughStock(p);
+                
+                const imageHtml = p.image 
+                    ? `<img src="${p.image}" class="w-12 h-12 md:w-16 md:h-16 object-cover rounded-xl mb-1 shadow-sm ${!available ? 'grayscale opacity-50' : ''}">` 
+                    : `<span class="text-3xl drop-shadow-sm ${!available ? 'grayscale opacity-50' : ''}">${p.icon || categoryIcons[p.category] || '🍽️'}</span>`;
+                
+                return `
+                    <div ${available ? `onclick="addToTableOrder(${p.id}, ${tableId})"` : ''} 
+                        class="p-2 md:p-3 rounded-xl ${available ? 'bg-white border-theme-beige hover:border-theme-green cursor-pointer' : 'bg-red-50 border-red-300 opacity-70 cursor-not-allowed'} border-2 shadow-sm transition text-center flex flex-col items-center justify-between gap-1 relative overflow-hidden min-h-[120px]">
+                        
+                        ${!available ? '<div class="absolute top-0 w-full bg-red-500 text-white text-[9px] font-extrabold py-0.5 tracking-wider z-10">AGOTADO</div>' : ''}
+                        
+                        ${imageHtml}
+                        <div class="w-full">
+                            <p class="text-[11px] md:text-xs font-bold ${!available ? 'text-red-800' : 'text-theme-text'} leading-tight line-clamp-2">${p.name}</p>
+                            <p class="${!available ? 'text-red-600' : 'text-theme-greenDark'} font-extrabold text-sm mt-0.5">$${p.price}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('') || '<p class="col-span-full text-center text-theme-textMuted py-8 text-sm">No hay productos en esta categoría</p>';
+        }
+
+        function filterTableProducts(tableId, category) {
+            currentTableCategory = category;
+            
+            // Actualizar diseño de botones
+            document.querySelectorAll('[id^="table-cat-"]').forEach(btn => {
+                btn.classList.remove('bg-theme-green', 'text-white', 'shadow-md');
+                btn.classList.add('bg-white/60', 'text-theme-textMuted');
+            });
+            const activeBtn = document.getElementById(`table-cat-${category}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-white/60', 'text-theme-textMuted');
+                activeBtn.classList.add('bg-theme-green', 'text-white', 'shadow-md');
+            }
+            
+            // Recargar solo los productos de esa categoría
+            document.getElementById('tableProductsContainer').innerHTML = renderTableProductsHTML(tableId, category);
+        }
+
+        function addToTableOrder(productId, tableId) {
+            addToCart(productId);
+            selectTable(tableId); // Recarga la mesa para actualizar totales e inventario
+        }
+
+        function addNoteToTableCartItem(index, tableId) {
+            const item = currentCart[index];
+            const currentNote = item.note || '';
+
+            // Si ya existe una nota, creamos el botón rojo para eliminarla
+            const deleteBtnHtml = currentNote ? `
+                <button onclick="deleteNoteFromTableCartItem(${index}, ${tableId})" class="w-full py-2.5 mt-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 transition font-bold text-sm shadow-sm flex justify-center items-center gap-2">
+                    🗑️ Eliminar Nota
+                </button>
+            ` : '';
+
+            const modal = document.getElementById('modalContainer');
+            modal.innerHTML = `
+                <div class="glass bg-white/90 rounded-3xl p-6 w-[95%] max-w-sm animate-slideIn shadow-2xl border-2 border-white">
+                    <h3 class="text-xl font-bold mb-2 text-theme-greenDark flex items-center gap-2">✏️ ${currentNote ? 'Editar Nota' : 'Nota Especial'}</h3>
+                    <p class="text-sm font-medium text-theme-textMuted mb-4">Instrucciones para: <strong class="text-theme-text">${item.name}</strong></p>
+
+                    <input type="text" id="customTableNoteInput" value="${currentNote}" class="w-full px-4 py-3 bg-white border-2 border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-theme-text shadow-inner" placeholder="Ej: Sin cebolla, extra queso...">
+
+                    ${deleteBtnHtml}
+
+                    <div class="grid grid-cols-2 gap-3 pt-4 mt-2 border-t border-theme-beige">
+                        <button onclick="selectTable(${tableId})" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text shadow-sm">Volver</button>
+                        <button onclick="saveNoteToTableCartItem(${index}, ${tableId})" class="btn-primary py-3 rounded-xl font-bold shadow-md">Guardar</button>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                const input = document.getElementById('customTableNoteInput');
+                input.focus();
+                if(currentNote) input.select();
+            }, 100);
+        }
+
+        function saveNoteToTableCartItem(index, tableId) {
+            const item = currentCart[index];
+            const newNote = document.getElementById('customTableNoteInput').value.trim();
+            item.note = newNote;
+            selectTable(tableId); // Vuelve a cargar el modal principal de la mesa
+        }
+
+        function deleteNoteFromTableCartItem(index, tableId) {
+            const item = currentCart[index];
+            item.note = ''; // Limpiamos la nota
+            selectTable(tableId); // Refresca la mesa al instante
+            showToast('Nota eliminada', 'info');
         }
 
         function addToTableOrder(productId) {
@@ -2030,7 +2224,7 @@ function processPayment(method) {
                             <div class="bg-white/80 rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between shadow-sm border border-white">
                                 <div class="mb-3 md:mb-0">
                                     <p class="font-extrabold text-theme-text text-lg">#${order.id.toString().slice(-4)} - <span class="text-theme-greenDark">${order.type === 'table' ? `Mesa ${order.tableId}` : 'Mostrador'}</span></p>
-                                    <p class="text-sm text-theme-textMuted font-medium mt-1">${order.items.map(i => `<strong>${i.quantity}x</strong> ${i.name}`).join(', ')}</p>
+                                    <p class="text-sm text-theme-textMuted font-medium mt-1">${order.items.map(i => `<strong>${i.quantity}x</strong> ${i.name} ${i.note ? `<span class="text-red-400 italic text-xs">(${i.note})</span>` : ''}`).join(', ')}</p>
                                     <p class="text-xs text-theme-textMuted mt-1">🕒 ${new Date(order.createdAt).toLocaleString('es-MX')}</p>
                                 </div>
                                 <div class="text-left md:text-right flex flex-col justify-between items-start md:items-end h-full">
