@@ -1332,8 +1332,8 @@ if (branchLabel) branchLabel.textContent = currentBranch === 'sucursal_principal
     if (btnCash) btnCash.disabled = !hasItems;
     if (btnTransfer) btnTransfer.disabled = !hasItems;
 }
-
-        function processPayment(method) {
+// ==================== PROCESAMIENTO DE PAGOS (MOSTRADOR Y MESAS) ====================
+function processPayment(method) {
             if (currentCart.length === 0) {
                 showToast('El carrito está vacío', 'warning');
                 return;
@@ -1346,110 +1346,31 @@ if (branchLabel) branchLabel.textContent = currentBranch === 'sucursal_principal
 
             const total = calculateCartTotal();
 
-            if (method === 'cash') {
-                showCashPaymentModal(total);
-            } else {
-                completeSale(method, total, 0);
-            }
-        }
-
-        function showCashPaymentModal(total) {
-            const modal = document.getElementById('modalContainer');
-            modal.innerHTML = `
-                <div class="glass bg-white/90 rounded-3xl p-6 w-full max-w-md animate-slideIn border-2 border-white shadow-2xl">
-                    <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-theme-greenDark">💵 Pago en Efectivo</h3>
-                    <div class="space-y-4">
-                        <div class="text-center p-4 rounded-xl bg-theme-bg border border-theme-beige">
-                            <p class="text-sm text-theme-textMuted font-medium">Total a pagar</p>
-                            <p class="text-4xl font-extrabold text-theme-greenDark mt-1">$${total.toLocaleString()}</p>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium mb-2 text-theme-text">Cantidad recibida</label>
-                            <input type="number" id="cashReceived" class="w-full px-4 py-3 bg-white border-2 border-theme-beige rounded-xl text-2xl text-center focus:outline-none focus:border-theme-green font-bold text-theme-text" 
-                                placeholder="0" oninput="calculateChange(${total})">
-                        </div>
-                        <div id="changeDisplay" class="text-center p-4 rounded-xl bg-green-50 border border-green-200 hidden">
-                            <p class="text-sm text-green-700 font-medium">Su Cambio</p>
-                            <p class="text-3xl font-extrabold text-green-600 mt-1">$<span id="changeAmount">0</span></p>
-                        </div>
-                        <div class="grid grid-cols-2 gap-3 pt-2">
-                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-medium">Cancelar</button>
-                            <button onclick="completeCashPayment(${total})" id="confirmPaymentBtn" class="btn-primary py-3 rounded-xl font-bold shadow-md" disabled>Confirmar Pago</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            modal.classList.remove('hidden');
-            // Auto focus for faster typing
-            setTimeout(() => document.getElementById('cashReceived').focus(), 100);
-        }
-
-        function calculateChange(total) {
-            const received = parseFloat(document.getElementById('cashReceived').value) || 0;
-            const change = received - total;
-            const changeDisplay = document.getElementById('changeDisplay');
-            const changeAmount = document.getElementById('changeAmount');
-            const confirmBtn = document.getElementById('confirmPaymentBtn');
-
-            if (received >= total) {
-                changeDisplay.classList.remove('hidden');
-                changeAmount.textContent = change.toLocaleString();
-                confirmBtn.disabled = false;
-            } else {
-                changeDisplay.classList.add('hidden');
-                confirmBtn.disabled = true;
-            }
-        }
-
-        
-        function completeCashPayment(total) {
-            const received = parseFloat(document.getElementById('cashReceived').value) || 0;
-            const change = received - total;
-            completeSale('cash', total, change);
-            // Ya no llamamos a closeModal() aquí porque completeSale llamará a showReceipt()
-        }
-
-        function completeSale(paymentMethod, total, change) {
+            // CREAR LA ORDEN PRIMERO EN ESTADO PENDIENTE (Para unificar el flujo con las Mesas)
             const orderId = Date.now();
             const order = {
                 id: orderId,
                 type: 'counter',
                 items: [...currentCart],
-                total,
-                status: 'pending',
-                paymentMethod,
-                paymentStatus: 'paid',
+                total: total,
+                status: 'pending', // Va a cocina
+                paymentMethod: null,
+                paymentStatus: 'pending',
+                paidAmount: 0,
+                payments: [],
                 createdAt: new Date().toISOString(),
                 createdBy: currentUser.id,
                 tableId: null
             };
 
-            state.orders.push(order);
-
-            const sale = {
-                id: Date.now(),
-                orderId,
-                items: [...currentCart],
-                subtotal: total,
-                total,
-                paymentMethod,
-                cashReceived: paymentMethod === 'cash' ? total + change : null,
-                change: paymentMethod === 'cash' ? change : null,
-                timestamp: new Date().toISOString(),
-                cashierId: currentUser.id,
-                cashierName: currentUser.name
-            };
-
-            state.sales.push(sale);
-
-            // Descontar inventario
+            // Descontar inventario al momento de crear la orden
             currentCart.forEach(cartItem => {
                 const product = state.products.find(p => p.id === cartItem.productId);
                 if (product && product.ingredients) {
                     product.ingredients.forEach(ing => {
                         const invItem = state.inventory.find(i => i.id === ing.id);
                         if (invItem) {
-                            invItem.stock -= ing.qty * cartItem.quantity;
+                            invItem.stock -= (ing.qty * cartItem.quantity);
                             if (invItem.stock <= invItem.minStock) {
                                 addNotification('warning', `⚠️ Stock bajo: ${invItem.name}`, ['admin', 'cashier']);
                             }
@@ -1457,41 +1378,63 @@ if (branchLabel) branchLabel.textContent = currentBranch === 'sucursal_principal
                     });
                 }
             });
-
-            // ---> NUEVO: Verificar si los productos se quedaron sin ingredientes <---
             checkProductAvailability();
 
-            if (state.cashRegister.isOpen) {
-                state.cashRegister.movements.push({
-                    type: 'sale',
-                    amount: total,
-                    paymentMethod,
-                    orderId,
-                    timestamp: new Date().toISOString()
-                });
-            }
+            state.orders.push(order);
+            addNotification('info', `Nuevo pedido en mostrador #${orderId.toString().slice(-4)}`, ['kitchen']);
+            logActivity('ORDER_CREATE', `Pedido de mostrador #${orderId.toString().slice(-4)} creado por $${total}`);
 
-            logActivity('SALE', `Venta #${orderId.toString().slice(-4)} por $${total} - ${paymentMethod}`);
-            addNotification('info', `Nuevo pedido #${orderId.toString().slice(-4)}`, ['kitchen']);
-
-            saveToStorage();
-            showToast(`Venta completada - Ticket #${orderId.toString().slice(-4)}`, 'success');
-            showReceipt(sale);
-
+            // Limpiar el carrito visual y redirigir al Motor de Pagos Parciales
             currentCart = [];
             updateCartDisplay();
-        }
+            saveToStorage();
 
+            payExistingOrder(orderId, method);
+        }
 
         function showReceipt(sale) {
             const modal = document.getElementById('modalContainer');
+            
+            // Generar el bloque del desglose de pagos y cálculos de cambio
+            let paymentsHtml = '';
+            let changeHtml = '';
+
+            if (sale.paymentsBreakdown && sale.paymentsBreakdown.length > 0) {
+                // Listar todos los abonos realizados
+                paymentsHtml = sale.paymentsBreakdown.map(p => {
+                    const methodLabel = p.method === 'cash' ? 'EFECTIVO' : 'TRANSF.';
+                    return `
+                        <div class="flex justify-between">
+                            <span>${methodLabel} <span class="text-[9px]">(${new Date(p.timestamp).toLocaleTimeString('es-MX', {hour: '2-digit', minute:'2-digit'})})</span>:</span>
+                            <span>$${p.amount.toLocaleString()}</span>
+                        </div>
+                    `;
+                }).join('');
+
+                // Si el ÚLTIMO pago fue en efectivo y hubo cambio, lo mostramos
+                const lastPayment = sale.paymentsBreakdown[sale.paymentsBreakdown.length - 1];
+                if (lastPayment.method === 'cash' && lastPayment.change > 0) {
+                    changeHtml = `
+                        <div class="flex justify-between font-bold border-t border-gray-200 mt-1 pt-1">
+                            <span>SU CAMBIO:</span>
+                            <span>$${lastPayment.change.toLocaleString()}</span>
+                        </div>
+                    `;
+                }
+            } else {
+                // Soporte para tickets antiguos
+                if (sale.paymentMethod === 'cash') {
+                    paymentsHtml = `<div class="flex justify-between"><span>EFECTIVO:</span><span>$${(sale.total + (sale.change || 0)).toLocaleString()}</span></div>`;
+                    changeHtml = `<div class="flex justify-between font-bold"><span>SU CAMBIO:</span><span>$${sale.change?.toLocaleString() || '0'}</span></div>`;
+                } else {
+                    paymentsHtml = `<div class="flex justify-between"><span>MÉTODO:</span><span>TRANSFERENCIA</span></div>`;
+                }
+            }
+
             modal.innerHTML = `
                 <div class="glass bg-black/60 p-4 md:p-8 w-full h-full md:h-auto md:max-w-md animate-slideIn flex flex-col items-center justify-center md:rounded-3xl overflow-y-auto scrollbar-thin">
-                    
                     <div class="bg-white text-black p-5 w-full max-w-[300px] font-mono shadow-2xl relative mx-auto" id="printArea">
-                        
                         <div class="text-center border-b-2 border-dashed border-gray-400 pb-4 mb-4">
-                            <img src="rufaza.jpg" alt="Logo Rufaza" class="w-16 h-16 mx-auto mb-2 object-contain grayscale">
                             <h3 class="text-2xl font-bold uppercase tracking-widest mb-1">RUFAZA</h3>
                             <p class="text-[10px] uppercase">Ticket de Venta</p>
                             <p class="text-[10px] mt-1">${new Date(sale.timestamp).toLocaleString('es-MX')}</p>
@@ -1503,7 +1446,6 @@ if (branchLabel) branchLabel.textContent = currentBranch === 'sucursal_principal
                                 <span>CANT DESCRIPCIÓN</span>
                                 <span>IMPORTE</span>
                             </div>
-                            
                             ${sale.items.map(item => `
                                 <div class="flex justify-between items-start mb-1">
                                     <span class="flex-1 pr-2">${item.quantity}x ${item.name.toUpperCase()}</span>
@@ -1513,31 +1455,29 @@ if (branchLabel) branchLabel.textContent = currentBranch === 'sucursal_principal
                         </div>
 
                         <div class="border-t-2 border-dashed border-gray-400 pt-3 space-y-1 text-[11px]">
+                            ${sale.discount > 0 ? `
+                                <div class="flex justify-between text-gray-500 mb-1">
+                                    <span>SUBTOTAL:</span><span>$${(sale.total + sale.discount).toLocaleString()}</span>
+                                </div>
+                                <div class="flex justify-between text-red-600 mb-1">
+                                    <span>DESCUENTO:</span><span>-$${sale.discount.toLocaleString()}</span>
+                                </div>
+                            ` : ''}
                             <div class="flex justify-between font-bold text-sm mb-2">
-                                <span>TOTAL:</span>
+                                <span>TOTAL A PAGAR:</span>
                                 <span>$${sale.total.toLocaleString()}</span>
                             </div>
-                            ${sale.paymentMethod === 'cash' ? `
-                                <div class="flex justify-between">
-                                    <span>EFECTIVO:</span>
-                                    <span>$${sale.cashReceived?.toLocaleString()}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span>CAMBIO:</span>
-                                    <span>$${sale.change?.toLocaleString()}</span>
-                                </div>
-                            ` : `
-                                <div class="flex justify-between">
-                                    <span>MÉTODO:</span>
-                                    <span>TRANSFERENCIA</span>
-                                </div>
-                            `}
+                            
+                            <div class="border-t border-gray-100 pt-2 mt-2">
+                                <p class="text-[9px] font-bold text-gray-400 mb-1 uppercase">Detalle de pago:</p>
+                                ${paymentsHtml}
+                                ${changeHtml}
+                            </div>
                         </div>
 
                         <div class="text-center mt-5 pt-3 border-t-2 border-dashed border-gray-400 text-[10px]">
                             <p class="font-bold">¡GRACIAS POR SU PREFERENCIA!</p>
                             <p class="mt-1">Vuelva pronto</p>
-                            <p class="mt-3 text-gray-500">========================</p>
                         </div>
                     </div>
                     
@@ -1553,7 +1493,6 @@ if (branchLabel) branchLabel.textContent = currentBranch === 'sucursal_principal
             `;
             modal.classList.remove('hidden');
         }
-
         
         function closeModal() {
             document.getElementById('modalContainer').classList.add('hidden');
@@ -3509,6 +3448,52 @@ function saveNewProduct() {
             `;
         }
 
+        // ==================== FUNCIONES PARA ABRIR CAJA ====================
+        function showOpenCashModal() {
+            const modal = document.getElementById('modalContainer');
+            modal.innerHTML = `
+                <div class="glass bg-white/90 rounded-3xl p-6 w-full max-w-md animate-slideIn shadow-2xl border-2 border-white">
+                    <h3 class="text-xl font-bold mb-4 text-theme-greenDark flex items-center gap-2">🔓 Abrir Caja</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-bold mb-2 text-theme-text">Monto Inicial (Fondo de caja)</label>
+                            <input type="number" id="initialAmount" class="w-full px-4 py-3 bg-white border-2 border-theme-beige rounded-xl text-2xl text-center focus:outline-none focus:border-theme-green font-bold text-theme-text shadow-inner" 
+                                placeholder="0.00" value="0">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 pt-2">
+                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text shadow-sm">Cancelar</button>
+                            <button onclick="openCashRegister()" class="btn-primary py-3 rounded-xl font-bold shadow-md transition">Abrir Caja</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+            setTimeout(() => document.getElementById('initialAmount').focus(), 100);
+        }
+
+        function openCashRegister() {
+            const amount = parseFloat(document.getElementById('initialAmount').value) || 0;
+            
+            state.cashRegister = {
+                isOpen: true,
+                openedBy: currentUser.id,
+                openedAt: new Date().toISOString(),
+                initialAmount: amount,
+                movements: [{
+                    type: 'open',
+                    amount: amount,
+                    timestamp: new Date().toISOString(),
+                    description: 'Apertura de caja'
+                }]
+            };
+
+            logActivity('CASH_OPEN', `Caja abierta con fondo de $${amount}`);
+            saveToStorage();
+            showToast('✅ Caja abierta correctamente', 'success');
+            closeModal();
+            renderCashRegister(document.getElementById('contentArea'));
+        }
+
         function showCloseCashModal() {
             const cr = state.cashRegister;
             const cashSales = cr.movements.filter(m => m.type === 'sale' && m.paymentMethod === 'cash').reduce((sum, m) => sum + m.amount, 0);
@@ -3828,7 +3813,8 @@ function saveNewProduct() {
         }
 
         // ==================== EXISTING ORDER PAYMENT LOGIC ====================
-        function payExistingOrder(orderId, method) {
+// ==================== MOTOR DE PAGOS PARCIALES Y MIXTOS ====================
+function payExistingOrder(orderId, method) {
             if (!state.cashRegister.isOpen && currentUser.role !== 'admin') {
                 showToast('La caja no está abierta', 'error');
                 return;
@@ -3837,111 +3823,193 @@ function saveNewProduct() {
             const order = state.orders.find(o => o.id === orderId);
             if (!order) return;
 
-            if (method === 'cash') {
-                showOrderCashModal(order);
-            } else {
-                processOrderPayment(order, 'transfer', order.total, 0);
-            }
+            showOrderPaymentModal(order, method);
         }
 
-        function showOrderCashModal(order) {
+        function showOrderPaymentModal(order, method) {
+            const paidAmount = order.paidAmount || 0;
+            const remaining = order.total - paidAmount;
+            const methodLabel = method === 'cash' ? 'Efectivo 💵' : 'Transferencia 📱';
+
             const modal = document.getElementById('modalContainer');
             modal.innerHTML = `
                 <div class="glass bg-white/90 rounded-3xl p-5 md:p-6 w-[95%] max-w-md animate-slideIn border-2 border-white shadow-2xl max-h-[90vh] overflow-y-auto scrollbar-thin">
-                    <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-theme-greenDark">💵 Cobrar Pedido #${order.id.toString().slice(-4)}</h3>
+                    <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-theme-greenDark">💳 Cobrar Pedido #${order.id.toString().slice(-4)}</h3>
+                    
                     <div class="space-y-4">
-                        <div class="text-center p-4 rounded-xl bg-theme-bg border border-theme-beige">
-                            <p class="text-sm text-theme-textMuted font-medium">Total a cobrar</p>
-                            <p class="text-4xl font-extrabold text-theme-greenDark mt-1">$${order.total.toLocaleString()}</p>
+                        <div class="grid grid-cols-2 gap-3 text-center">
+                            <div class="p-3 rounded-xl bg-theme-bg border border-theme-beige shadow-inner">
+                                <p class="text-[10px] text-theme-textMuted font-bold uppercase tracking-wider">Total Cuenta</p>
+                                <p class="text-xl font-extrabold text-theme-text mt-1">$${order.total.toLocaleString()}</p>
+                            </div>
+                            <div class="p-3 rounded-xl bg-blue-50 border border-blue-200 shadow-inner">
+                                <p class="text-[10px] text-blue-700 font-bold uppercase tracking-wider">Ya Abonado</p>
+                                <p class="text-xl font-extrabold text-blue-600 mt-1">$${paidAmount.toLocaleString()}</p>
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium mb-2 text-theme-text">Cantidad recibida</label>
-                            <input type="number" id="orderCashReceived" class="w-full px-4 py-3 bg-white border-2 border-theme-beige rounded-xl text-2xl text-center focus:outline-none focus:border-theme-green font-bold text-theme-text" 
-                                placeholder="0" oninput="calculateOrderChange(${order.total})">
+
+                        <div class="text-center p-5 rounded-2xl bg-white border-2 border-theme-green shadow-sm">
+                            <p class="text-sm text-theme-text font-bold mb-1">Restante por pagar:</p>
+                            <p class="text-4xl font-extrabold text-theme-greenDark">$${remaining.toLocaleString()}</p>
                         </div>
-                        <div id="orderChangeDisplay" class="text-center p-4 rounded-xl bg-green-50 border border-green-200 hidden">
-                            <p class="text-sm text-green-700 font-medium">Su Cambio</p>
+                        
+                        <div class="p-4 bg-theme-bg rounded-xl border border-theme-beige mt-2">
+                            <p class="text-sm font-bold mb-3 text-theme-text text-center border-b border-theme-beige pb-2">Método de abono: <span class="text-theme-greenDark">${methodLabel}</span></p>
+                            
+                            <label class="block text-xs font-bold mb-1 text-theme-text">¿Cuánto va a pagar en este momento?</label>
+                            <input type="number" id="partialPaymentAmount" class="w-full px-4 py-3 mb-3 bg-white border-2 border-theme-beige rounded-xl text-2xl text-center focus:outline-none focus:border-theme-green font-extrabold text-theme-text shadow-inner" 
+                                value="${remaining}" max="${remaining}" oninput="calculatePartialChange(${remaining}, '${method}')">
+                                
+                            ${method === 'cash' ? `
+                                <label class="block text-xs font-bold mb-1 text-theme-text mt-2">¿Con cuánto billete paga el cliente?</label>
+                                <input type="number" id="orderCashReceived" class="w-full px-4 py-3 bg-white border-2 border-green-200 rounded-xl text-xl text-center focus:outline-none focus:border-green-500 font-bold text-green-700 shadow-inner" 
+                                    placeholder="0" oninput="calculatePartialChange(${remaining}, 'cash')">
+                            ` : ''}
+                        </div>
+
+                        <div id="orderChangeDisplay" class="text-center p-4 rounded-xl bg-green-50 border border-green-200 hidden shadow-sm">
+                            <p class="text-sm text-green-700 font-bold">Cambio a entregar</p>
                             <p class="text-3xl font-extrabold text-green-600 mt-1">$<span id="orderChangeAmount">0</span></p>
                         </div>
+
                         <div class="grid grid-cols-2 gap-3 pt-2">
-                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-medium">Cancelar</button>
-                            <button onclick="completeOrderCashPayment(${order.id})" id="confirmOrderPaymentBtn" class="btn-primary py-3 rounded-xl font-bold shadow-md" disabled>Confirmar Cobro</button>
+                            <button onclick="closeModal()" class="py-3.5 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text shadow-sm">Cancelar</button>
+                            <button onclick="processPartialPayment(${order.id}, '${method}')" id="confirmOrderPaymentBtn" class="btn-primary py-3.5 rounded-xl font-bold shadow-md" ${method === 'cash' ? 'disabled' : ''}>Abonar</button>
                         </div>
                     </div>
                 </div>
             `;
             modal.classList.remove('hidden');
-            setTimeout(() => document.getElementById('orderCashReceived').focus(), 100);
-        }
-
-        function calculateOrderChange(total) {
-            const received = parseFloat(document.getElementById('orderCashReceived').value) || 0;
-            const change = received - total;
-            const changeDisplay = document.getElementById('orderChangeDisplay');
-            const changeAmount = document.getElementById('orderChangeAmount');
-            const confirmBtn = document.getElementById('confirmOrderPaymentBtn');
-
-            if (received >= total) {
-                changeDisplay.classList.remove('hidden');
-                changeAmount.textContent = change.toLocaleString();
-                confirmBtn.disabled = false;
+            if(method === 'cash') {
+                setTimeout(() => document.getElementById('orderCashReceived').focus(), 100);
             } else {
-                changeDisplay.classList.add('hidden');
-                confirmBtn.disabled = true;
+                setTimeout(() => document.getElementById('partialPaymentAmount').focus(), 100);
             }
         }
 
-        function completeOrderCashPayment(orderId) {
-            const order = state.orders.find(o => o.id === orderId);
-            const received = parseFloat(document.getElementById('orderCashReceived').value) || 0;
-            const change = received - order.total;
-            processOrderPayment(order, 'cash', received, change);
-            // Eliminamos el closeModal() que estaba aquí para que te permita ver e imprimir el ticket
+        function calculatePartialChange(remaining, method) {
+            const paymentInputEl = document.getElementById('partialPaymentAmount');
+            let amountToPay = parseFloat(paymentInputEl.value) || 0;
+            const confirmBtn = document.getElementById('confirmOrderPaymentBtn');
+
+            // Seguridad: No permitir que anote un pago mayor al restante
+            if (amountToPay > remaining) {
+                paymentInputEl.value = remaining;
+                amountToPay = remaining;
+            }
+
+            if (method === 'cash') {
+                const received = parseFloat(document.getElementById('orderCashReceived').value) || 0;
+                const change = received - amountToPay;
+                const changeDisplay = document.getElementById('orderChangeDisplay');
+                const changeAmount = document.getElementById('orderChangeAmount');
+
+                if (received >= amountToPay && amountToPay > 0) {
+                    changeDisplay.classList.remove('hidden');
+                    changeAmount.textContent = change.toLocaleString();
+                    confirmBtn.disabled = false;
+                } else {
+                    changeDisplay.classList.add('hidden');
+                    confirmBtn.disabled = true;
+                }
+            } else {
+                // En transferencia, solo asegurar que ponga un monto válido
+                confirmBtn.disabled = amountToPay <= 0;
+            }
         }
-        
-        function processOrderPayment(order, paymentMethod, cashReceived, change) {
-            order.paymentStatus = 'paid';
-            order.paymentMethod = paymentMethod;
 
-            const sale = {
-                id: Date.now(),
-                orderId: order.id,
-                items: [...order.items],
-                subtotal: order.total,
-                total: order.total,
-                paymentMethod,
-                cashReceived: paymentMethod === 'cash' ? cashReceived : null,
-                change: paymentMethod === 'cash' ? change : null,
+        function processPartialPayment(orderId, method) {
+            const order = state.orders.find(o => o.id === orderId);
+            if (!order) return;
+
+            const amountToPay = parseFloat(document.getElementById('partialPaymentAmount').value) || 0;
+            let received = amountToPay;
+            let change = 0;
+
+            if (method === 'cash') {
+                received = parseFloat(document.getElementById('orderCashReceived').value) || 0;
+                change = received - amountToPay;
+            }
+
+            // Inicializar estructuras de pagos
+            if (!order.paidAmount) order.paidAmount = 0;
+            if (!order.payments) order.payments = [];
+
+            // 1. Guardar el abono individual en la orden
+            order.payments.push({
+                method: method,
+                amount: amountToPay,
+                received: received,
+                change: change,
                 timestamp: new Date().toISOString(),
-                cashierId: currentUser.id,
                 cashierName: currentUser.name
-            };
+            });
 
-            state.sales.push(sale);
+            order.paidAmount += amountToPay;
 
-            // Nota: Aquí se eliminó el ciclo que descontaba el inventario, 
-            // porque ahora se descuenta desde que el mesero manda la orden.
-
+            // 2. Guardar el movimiento físico en la Caja
             if (state.cashRegister.isOpen) {
                 state.cashRegister.movements.push({
                     type: 'sale',
-                    amount: order.total,
-                    paymentMethod,
+                    amount: amountToPay,
+                    paymentMethod: method,
                     orderId: order.id,
-                    timestamp: new Date().toISOString()
+                    timestamp: new Date().toISOString(),
+                    description: `Abono a Ticket #${order.id.toString().slice(-4)}`
                 });
             }
 
-            logActivity('SALE_TABLE', `Cobro de pedido de mesa #${order.id.toString().slice(-4)} por $${order.total} - ${paymentMethod}`);
-            
-            saveToStorage();
-            showToast(`Cobro completado exitosamente`, 'success');
-            
-            // Recargar la vista actual (para que desaparezcan los botones)
-            renderView(currentView);
-            
-            // Mostrar ticket con opción de imprimir
-            showReceipt(sale);
+            logActivity('SALE_PARTIAL', `Abono a pedido #${order.id.toString().slice(-4)} por $${amountToPay} - ${method}`);
+
+            // 3. Evaluar si la cuenta quedó saldada a $0
+            if (order.paidAmount >= order.total) {
+                order.paymentStatus = 'paid';
+                // Etiquetamos como mixto si combinaron pagos
+                order.paymentMethod = order.payments.length > 1 ? 'mixed' : method; 
+
+                // Liberar la mesa inteligentemente
+                if (order.tableId) {
+                    const table = state.tables.find(t => t.id === order.tableId);
+                    // Solo la liberamos de inmediato si ya se entregó la comida, de lo contrario se queda amarilla (Preparando)
+                    if (table && (order.status === 'delivered' || order.status === 'ready')) {
+                        table.status = 'available';
+                    }
+                }
+
+                // Convertirlo en Venta Oficial
+                const sale = {
+                    id: Date.now(),
+                    orderId: order.id,
+                    items: [...order.items],
+                    subtotal: order.total,
+                    total: order.total,
+                    paymentMethod: order.paymentMethod,
+                    paymentsBreakdown: order.payments, // Guardamos la prueba de los abonos para el ticket
+                    timestamp: new Date().toISOString(),
+                    cashierId: currentUser.id,
+                    cashierName: currentUser.name
+                };
+                state.sales.push(sale);
+
+                saveToStorage();
+                showToast('✅ Cuenta liquidada por completo', 'success');
+                closeModal();
+                renderView(currentView);
+                showReceipt(sale);
+
+            } else {
+                // Aún debe dinero (Abono Parcial Exitoso)
+                const remaining = order.total - order.paidAmount;
+                saveToStorage();
+                showToast(`✅ Abono guardado. Restan por pagar: $${remaining}`, 'info');
+                closeModal();
+                renderView(currentView);
+                
+                // Si el mesero está viendo la mesa, le refrescamos el modal de la mesa automáticamente
+                if (currentView === 'waiter' && selectedTable) {
+                    selectTable(selectedTable);
+                }
+            }
         }
 
        // ==================== TICKET HISTORY MODULE ====================
