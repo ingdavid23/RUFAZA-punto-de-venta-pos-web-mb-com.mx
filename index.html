@@ -1889,33 +1889,49 @@ function processPayment(method) {
             `;
         }
 
-        function selectTable(tableId) {
+        // ==================== VARIABLE GLOBAL PARA EL CARRITO MÓVIL ====================
+        window.isMobileCartOpen = false;
+
+        function toggleMobileCart() {
+            window.isMobileCartOpen = !window.isMobileCartOpen;
+            const panel = document.getElementById('tableCartPanel');
+            if (window.isMobileCartOpen) {
+                panel.classList.remove('translate-y-full');
+            } else {
+                panel.classList.add('translate-y-full');
+            }
+        }
+
+        // ==================== MÓDULO DE MESAS Y COMANDAS (ADAPTADO A MÓVILES) ====================
+        function selectTable(tableId, keepCartOpen = false) {
+            window.isMobileCartOpen = keepCartOpen; // Recuerda si el carrito estaba abierto (útil al sumar/restar items)
             selectedTable = tableId;
             const table = state.tables.find(t => t.id === tableId);
             const activeOrder = state.orders.find(o => o.tableId === tableId && o.status !== 'delivered' && o.status !== 'cancelled');
 
             initProductCategories();
-            const categories = [
-                { id: 'all', name: 'Todo', icon: '🍽️' },
-                ...state.productCategories
-            ];
+            const categories = [{ id: 'all', name: 'Todo', icon: '🍽️' }, ...state.productCategories];
+
+            const totalCartAmount = calculateCartTotal();
+            const totalItemsInCart = currentCart.reduce((sum, item) => sum + item.quantity, 0);
 
             const modal = document.getElementById('modalContainer');
             modal.innerHTML = `
-                <div class="glass bg-white/90 rounded-3xl p-4 md:p-6 w-[98%] max-w-6xl animate-slideIn h-[95vh] md:h-[90vh] flex flex-col shadow-2xl border-2 border-white overflow-hidden">
-                    <div class="flex items-center justify-between mb-4 border-b border-theme-beige pb-3 shrink-0">
+                <div class="glass bg-white/90 rounded-3xl p-3 md:p-6 w-[98%] max-w-6xl animate-slideIn h-[95vh] md:h-[90vh] flex flex-col shadow-2xl border-2 border-white overflow-hidden relative">
+                    
+                    <div class="flex items-center justify-between mb-3 border-b border-theme-beige pb-2 shrink-0 px-1">
                         <h3 class="text-xl font-bold flex items-center gap-2 text-theme-greenDark">🍽️ ${table.name}</h3>
-                        <button onclick="closeModal()" class="p-2 bg-white rounded-lg transition text-theme-textMuted hover:bg-theme-beige border border-theme-beige font-bold shadow-sm">✕</button>
+                        <button onclick="window.isMobileCartOpen=false; closeModal()" class="p-2 bg-white rounded-lg transition text-theme-textMuted hover:bg-theme-beige border border-theme-beige font-bold shadow-sm">✕</button>
                     </div>
 
                     ${activeOrder ? `
-                        <div class="mb-4 p-3 rounded-xl bg-theme-bg border border-theme-beige shadow-inner shrink-0">
+                        <div class="mb-3 p-3 rounded-xl bg-theme-bg border border-theme-beige shadow-inner shrink-0">
                             <div class="flex justify-between items-center cursor-pointer" onclick="document.getElementById('activeOrderDetails').classList.toggle('hidden')">
-                                <h4 class="font-bold text-theme-text flex items-center gap-2">🛒 Pedido Actual #${activeOrder.id.toString().slice(-4)} <span class="text-[10px] text-blue-500 bg-blue-100 px-2 py-0.5 rounded">(Toca para expandir)</span></h4>
-                                <span class="px-3 py-1 rounded-full text-[10px] md:text-xs font-bold shadow-sm ${getStatusClass(activeOrder.status)}">${getStatusLabel(activeOrder.status)}</span>
+                                <h4 class="font-bold text-theme-text flex items-center gap-2 text-sm md:text-base">🛒 Pedido Actual #${activeOrder.id.toString().slice(-4)} <span class="text-[10px] text-blue-500 bg-blue-100 px-2 py-0.5 rounded">(Toca para expandir)</span></h4>
+                                <span class="px-2 py-1 rounded-full text-[10px] font-bold shadow-sm ${getStatusClass(activeOrder.status)}">${getStatusLabel(activeOrder.status)}</span>
                             </div>
                             <div id="activeOrderDetails" class="hidden mt-3 pt-3 border-t border-theme-beige">
-                                <div class="space-y-2 mb-2 max-h-32 overflow-y-auto scrollbar-thin pr-2">
+                                <div class="space-y-2 mb-2 max-h-24 overflow-y-auto scrollbar-thin pr-2">
                                     ${activeOrder.items.map(item => `
                                         <div class="flex flex-col text-sm font-medium border-b border-white pb-1">
                                             <div class="flex justify-between">
@@ -1926,7 +1942,7 @@ function processPayment(method) {
                                         </div>
                                     `).join('')}
                                 </div>
-                                <div class="flex justify-between font-extrabold border-t border-theme-beige pt-2 text-theme-greenDark">
+                                <div class="flex justify-between font-extrabold border-t border-theme-beige pt-2 text-theme-greenDark text-sm">
                                     <span>Total consumido:</span>
                                     <span>$${activeOrder.total.toLocaleString()}</span>
                                 </div>
@@ -1936,60 +1952,72 @@ function processPayment(method) {
 
                     <div class="flex gap-4 flex-col lg:flex-row flex-1 min-h-0 min-w-0 pb-1 w-full overflow-hidden">
                         
-                        <div class="flex-1 flex flex-col min-h-[300px] lg:min-h-0 min-w-0 bg-white/50 rounded-2xl p-3 md:p-4 border border-white shadow-sm overflow-hidden">
-                            <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-3 shrink-0">
-                                <h4 class="font-bold text-theme-text">Menú de Productos</h4>
+                        <div class="flex-1 flex flex-col min-h-0 min-w-0 bg-white/50 rounded-2xl p-2 md:p-4 border border-white shadow-sm overflow-hidden">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-2 shrink-0">
+                                <h4 class="font-bold text-theme-text text-sm md:text-base">Menú de Productos</h4>
                                 <div class="flex gap-2 overflow-x-auto scrollbar-thin pb-1 w-full sm:w-auto">
                                     ${categories.map(c => `
                                         <button onclick="filterTableProducts(${table.id}, '${c.id}')" id="table-cat-${c.id}" 
-                                            class="px-3 py-2 rounded-xl text-[11px] md:text-xs transition font-medium border border-white whitespace-nowrap shrink-0 ${c.id === currentTableCategory ? 'bg-theme-green text-white shadow-md' : 'bg-white/60 hover:bg-white/90 text-theme-textMuted'}">
+                                            class="px-3 py-1.5 md:py-2 rounded-xl text-[11px] md:text-xs transition font-bold border border-white whitespace-nowrap shrink-0 ${c.id === currentTableCategory ? 'bg-theme-green text-white shadow-md hover:bg-theme-greenDark' : 'bg-white/60 hover:bg-white/90 text-theme-textMuted'}">
                                             ${c.icon} ${c.name}
                                         </button>
                                     `).join('')}
                                 </div>
                             </div>
-                            <div id="tableProductsContainer" class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2 overflow-y-auto overflow-x-hidden flex-1 scrollbar-thin pr-1 pb-2 content-start w-full">
+                            <div id="tableProductsContainer" class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-3 overflow-y-auto overflow-x-hidden flex-1 scrollbar-thin pr-1 pb-2 content-start w-full">
                                 ${renderTableProductsHTML(table.id, currentTableCategory)}
                             </div>
                         </div>
 
-                        <div class="w-full lg:w-[320px] flex flex-col shrink-0 h-64 lg:h-full bg-white/80 rounded-2xl p-4 border border-theme-beige shadow-sm overflow-hidden">
-                            <h4 class="font-bold mb-3 text-theme-text shrink-0">Nueva Comanda</h4>
+                        <div id="tableCartPanel" class="fixed lg:static inset-x-0 bottom-0 h-[80vh] lg:h-full w-full lg:w-[320px] bg-white lg:bg-white/80 rounded-t-3xl lg:rounded-2xl p-5 lg:p-4 border border-theme-beige shadow-[0_-20px_50px_rgba(0,0,0,0.25)] lg:shadow-sm flex flex-col shrink-0 transition-transform duration-300 ${window.isMobileCartOpen ? 'translate-y-0' : 'translate-y-full'} lg:translate-y-0 z-50 lg:z-auto">
+                            
+                            <div class="flex justify-between items-center mb-4 lg:mb-3 shrink-0">
+                                <h4 class="font-extrabold text-theme-text text-lg lg:text-base">📝 Nueva Comanda</h4>
+                                <button onclick="toggleMobileCart()" class="lg:hidden p-2 bg-theme-bg text-theme-textMuted rounded-full font-bold text-xs border border-theme-beige">⬇️ Ocultar</button>
+                            </div>
+
                             <div id="tableCart" class="space-y-3 flex-1 overflow-y-auto scrollbar-thin pr-2 mb-3 min-h-0">
                                 ${currentCart.length === 0 ? '<div class="h-full flex items-center justify-center"><p class="text-theme-textMuted text-sm font-medium">No hay productos seleccionados</p></div>' :
                                     currentCart.map((item, index) => `
-                                        <div class="flex flex-col text-sm font-medium border-b border-theme-bg pb-2 last:border-0 gap-1">
+                                        <div class="flex flex-col text-sm font-medium border-b border-theme-bg pb-3 last:border-0 gap-1.5">
                                             <div class="flex justify-between">
-                                                <span class="line-clamp-1 flex-1 pr-2"><strong class="text-theme-greenDark">${item.quantity}x</strong> ${item.name}</span>
+                                                <span class="line-clamp-2 flex-1 pr-2 leading-tight"><strong class="text-theme-greenDark">${item.quantity}x</strong> ${item.name}</span>
                                                 <span class="font-bold shrink-0">$${(item.price * item.quantity).toLocaleString()}</span>
                                             </div>
                                             <div class="flex items-center justify-between mt-1">
-                                                <button onclick="addNoteToTableCartItem(${index}, ${tableId})" class="text-[10px] bg-yellow-50 text-yellow-700 border border-yellow-200 px-2 py-0.5 rounded hover:bg-yellow-100 transition shadow-sm">✏️ ${item.note ? 'Editar Nota' : 'Nota'}</button>
-                                                <div class="flex gap-1 bg-theme-bg rounded-md border border-theme-beige p-0.5">
-                                                    <button onclick="updateCartItemQty(${item.productId}, -1); selectTable(${tableId});" class="w-6 h-5 rounded hover:bg-white font-bold text-theme-text">-</button>
-                                                    <button onclick="updateCartItemQty(${item.productId}, 1); selectTable(${tableId});" class="w-6 h-5 rounded hover:bg-white font-bold text-theme-text">+</button>
+                                                <button onclick="addNoteToTableCartItem(${index}, ${tableId})" class="text-[10px] bg-yellow-50 text-yellow-700 border border-yellow-200 px-2 py-1 rounded-md hover:bg-yellow-100 transition shadow-sm font-bold">✏️ ${item.note ? 'Editar Nota' : 'Agregar Nota'}</button>
+                                                <div class="flex gap-1 bg-theme-bg rounded-lg border border-theme-beige p-1">
+                                                    <button onclick="updateCartItemQty(${item.productId}, -1); selectTable(${tableId}, true);" class="w-6 h-5 rounded hover:bg-white font-extrabold text-theme-text flex items-center justify-center">-</button>
+                                                    <button onclick="updateCartItemQty(${item.productId}, 1); selectTable(${tableId}, true);" class="w-6 h-5 rounded hover:bg-white font-extrabold text-theme-text flex items-center justify-center">+</button>
                                                 </div>
                                             </div>
-                                            ${item.note ? `<span class="text-[11px] text-red-500 italic mt-1 leading-tight bg-red-50 p-1 rounded border border-red-100">" ${item.note} "</span>` : ''}
+                                            ${item.note ? `<span class="text-[11px] text-red-500 italic mt-1 leading-tight bg-red-50 p-1.5 rounded-md border border-red-100">" ${item.note} "</span>` : ''}
                                         </div>
                                     `).join('')
                                 }
                             </div>
-                            <div class="border-t border-theme-beige pt-3 shrink-0">
-                                <div class="flex justify-between font-extrabold text-lg text-theme-greenDark mb-3">
-                                    <span>Total Nuevo:</span>
-                                    <span id="tableCartTotal">$${calculateCartTotal().toLocaleString()}</span>
+                            <div class="border-t border-theme-beige pt-4 shrink-0">
+                                <div class="flex justify-between font-black text-xl text-theme-greenDark mb-4">
+                                    <span>Total:</span>
+                                    <span id="tableCartTotal">$${totalCartAmount.toLocaleString()}</span>
                                 </div>
                                 <div class="space-y-2">
-                                    <button onclick="sendTableOrder(${tableId})" class="w-full btn-primary py-3 rounded-xl text-sm font-bold shadow-md" ${currentCart.length === 0 ? 'disabled' : ''}>
+                                    <button onclick="sendTableOrder(${tableId})" class="w-full btn-primary py-3.5 rounded-xl text-sm font-bold shadow-md" ${currentCart.length === 0 ? 'disabled' : ''}>
                                         📤 Enviar a Cocina
                                     </button>
-                                    <button onclick="clearCart(); selectTable(${tableId})" class="w-full py-2.5 rounded-xl bg-theme-bg hover:bg-theme-beige border border-theme-beige text-xs transition font-bold text-theme-text shadow-sm" ${currentCart.length === 0 ? 'hidden' : ''}>
-                                        🗑️ Cancelar / Limpiar Orden
+                                    <button onclick="clearCart(); window.isMobileCartOpen=false; selectTable(${tableId})" class="w-full py-3 rounded-xl bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 text-xs transition font-bold shadow-sm" ${currentCart.length === 0 ? 'hidden' : ''}>
+                                        🗑️ Vaciar Comanda
                                     </button>
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="lg:hidden shrink-0 pt-2 border-t border-theme-beige mt-1 px-1">
+                        <button onclick="toggleMobileCart()" class="w-full btn-primary py-3.5 rounded-xl font-bold shadow-lg flex justify-between items-center px-5 border border-white">
+                            <span class="flex items-center gap-2 text-base">🛒 <span class="bg-white/20 px-2 py-0.5 rounded-md">${totalItemsInCart} items</span></span>
+                            <span class="bg-white text-theme-greenDark px-3 py-1 rounded-lg text-sm font-black shadow-sm flex items-center gap-1">Ver Comanda ⬆️</span>
+                        </button>
                     </div>
                 </div>
             `;
@@ -2028,32 +2056,27 @@ function processPayment(method) {
 
         function filterTableProducts(tableId, category) {
             currentTableCategory = category;
-            
-            // Actualizar diseño de botones
             document.querySelectorAll('[id^="table-cat-"]').forEach(btn => {
-                btn.classList.remove('bg-theme-green', 'text-white', 'shadow-md');
-                btn.classList.add('bg-white/60', 'text-theme-textMuted');
+                btn.className = 'px-3 py-1.5 md:py-2 rounded-xl text-[11px] md:text-xs transition font-bold border border-white whitespace-nowrap shrink-0 bg-white/60 hover:bg-white/90 text-theme-textMuted';
             });
             const activeBtn = document.getElementById(`table-cat-${category}`);
             if (activeBtn) {
-                activeBtn.classList.remove('bg-white/60', 'text-theme-textMuted');
-                activeBtn.classList.add('bg-theme-green', 'text-white', 'shadow-md');
+                activeBtn.className = 'px-3 py-1.5 md:py-2 rounded-xl text-[11px] md:text-xs transition font-bold border border-white whitespace-nowrap shrink-0 bg-theme-green text-white shadow-md hover:bg-theme-greenDark';
             }
-            
-            // Recargar solo los productos de esa categoría
             document.getElementById('tableProductsContainer').innerHTML = renderTableProductsHTML(tableId, category);
         }
 
         function addToTableOrder(productId, tableId) {
             addToCart(productId);
-            selectTable(tableId); // Recarga la mesa para actualizar totales e inventario
+            // El false hace que si añades un producto en móvil, el carrito NO suba automáticamente, permitiéndote seguir pidiendo
+            selectTable(tableId, window.isMobileCartOpen); 
         }
 
+        // --- VENTANAS MODALES PARA NOTAS DE MESAS ---
         function addNoteToTableCartItem(index, tableId) {
             const item = currentCart[index];
             const currentNote = item.note || '';
 
-            // Si ya existe una nota, creamos el botón rojo para eliminarla
             const deleteBtnHtml = currentNote ? `
                 <button onclick="deleteNoteFromTableCartItem(${index}, ${tableId})" class="w-full py-2.5 mt-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 transition font-bold text-sm shadow-sm flex justify-center items-center gap-2">
                     🗑️ Eliminar Nota
@@ -2065,42 +2088,32 @@ function processPayment(method) {
                 <div class="glass bg-white/90 rounded-3xl p-6 w-[95%] max-w-sm animate-slideIn shadow-2xl border-2 border-white">
                     <h3 class="text-xl font-bold mb-2 text-theme-greenDark flex items-center gap-2">✏️ ${currentNote ? 'Editar Nota' : 'Nota Especial'}</h3>
                     <p class="text-sm font-medium text-theme-textMuted mb-4">Instrucciones para: <strong class="text-theme-text">${item.name}</strong></p>
-
                     <input type="text" id="customTableNoteInput" value="${currentNote}" class="w-full px-4 py-3 bg-white border-2 border-theme-beige rounded-xl focus:outline-none focus:border-theme-green font-medium text-theme-text shadow-inner" placeholder="Ej: Sin cebolla, extra queso...">
-
                     ${deleteBtnHtml}
-
                     <div class="grid grid-cols-2 gap-3 pt-4 mt-2 border-t border-theme-beige">
-                        <button onclick="selectTable(${tableId})" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text shadow-sm">Volver</button>
+                        <button onclick="selectTable(${tableId}, true)" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text shadow-sm">Volver</button>
                         <button onclick="saveNoteToTableCartItem(${index}, ${tableId})" class="btn-primary py-3 rounded-xl font-bold shadow-md">Guardar</button>
                     </div>
                 </div>
             `;
             modal.classList.remove('hidden');
-            setTimeout(() => {
+            setTimeout(() => { 
                 const input = document.getElementById('customTableNoteInput');
-                input.focus();
+                input.focus(); 
                 if(currentNote) input.select();
             }, 100);
         }
 
         function saveNoteToTableCartItem(index, tableId) {
             const item = currentCart[index];
-            const newNote = document.getElementById('customTableNoteInput').value.trim();
-            item.note = newNote;
-            selectTable(tableId); // Vuelve a cargar el modal principal de la mesa
+            item.note = document.getElementById('customTableNoteInput').value.trim();
+            selectTable(tableId, true); // El "true" obliga a que el carrito siga abierto al regresar en celulares
         }
 
         function deleteNoteFromTableCartItem(index, tableId) {
-            const item = currentCart[index];
-            item.note = ''; // Limpiamos la nota
-            selectTable(tableId); // Refresca la mesa al instante
+            currentCart[index].note = ''; 
+            selectTable(tableId, true); 
             showToast('Nota eliminada', 'info');
-        }
-
-        function addToTableOrder(productId) {
-            addToCart(productId);
-            selectTable(selectedTable);
         }
 
         function sendTableOrder(tableId) {
@@ -2109,20 +2122,17 @@ function processPayment(method) {
                     showToast('Agrega al menos un producto', 'warning');
                     return;
                 }
-
                 const table = state.tables.find(t => t.id === tableId);
                 let order = state.orders.find(o => o.tableId === tableId && o.status !== 'delivered' && o.status !== 'cancelled');
-
                 
-               // Si no hay orden previa, creamos una nueva
                if (!order) {
                     order = {
                         id: Date.now(),
-                        type: 'table', // 👈 Define que es un pedido de mesa
+                        type: 'table',
                         tableId: tableId,
                         tableName: table.name,
-                        createdBy: currentUser.id, // 👈 ESTO ES LO QUE BUSCA "MIS PEDIDOS"
-                        createdAt: new Date().toISOString(), // 👈 ESTO ES LO QUE USA PARA LA FECHA/HORA
+                        createdBy: currentUser.id,
+                        createdAt: new Date().toISOString(),
                         userId: currentUser.id,
                         userName: currentUser.name,
                         waiterId: currentUser.id, 
@@ -2135,9 +2145,8 @@ function processPayment(method) {
                     state.orders.push(order);
                 }
 
-                // Pasamos los items del carrito temporal a la orden real
                 currentCart.forEach(cartItem => {
-                    const existing = order.items.find(i => i.productId === cartItem.productId);
+                    const existing = order.items.find(i => i.productId === cartItem.productId && i.note === cartItem.note); 
                     if (existing) {
                         existing.quantity += cartItem.quantity;
                     } else {
@@ -2145,62 +2154,30 @@ function processPayment(method) {
                     }
                 });
 
-                // Actualizamos el total de la orden y marcamos la mesa como ocupada
                 order.total = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
                 table.status = 'occupied';
 
-                // Intentamos notificar a cocina de forma segura
                 try {
-                    if (typeof addNotification === 'function') {
-                        addNotification(`Nueva comanda de ${table.name}`, ['cocina', 'admin']);
-                    }
-                } catch(e) { 
-                    console.log("Aviso: No se pudo enviar notificación a cocina", e); 
-                }
+                    if (typeof addNotification === 'function') addNotification(`Nueva comanda de ${table.name}`, ['cocina', 'admin']);
+                } catch(e) {}
 
-                // Vaciamos el carrito temporal y guardamos todo en Firebase/Local
                 currentCart = [];
+                window.isMobileCartOpen = false; // Cerramos el carrito en el celular después de enviar
                 saveToStorage();
-                
-                // Mensaje de éxito al usuario
                 showToast('✅ Orden enviada a cocina', 'success');
 
-                // ==========================================
-                // 1. CIERRE FORZADO Y LIMPIO DE LA VENTANA
-                // ==========================================
                 const modal = document.getElementById('modalContainer');
                 if (modal) {
                     modal.classList.add('hidden');
-                    modal.innerHTML = ''; // Limpiamos el contenido para que no queden rastros
+                    modal.innerHTML = ''; 
                 }
                 
-                // ==========================================
-                // 2. RECARGA INTELIGENTE DE LA VISTA
-                // ==========================================
                 const contentArea = document.getElementById('contentArea');
+                if (typeof renderWaiter === 'function') renderWaiter(contentArea);
                 
-                if (typeof renderWaiter === 'function') {
-                    renderWaiter(contentArea);
-                } else if (typeof renderTables === 'function') {
-                    renderTables(contentArea);
-                } else if (typeof renderWaiterDashboard === 'function') {
-                    renderWaiterDashboard(contentArea);
-                } else {
-                    // Si el nombre es diferente, pedimos al usuario que recargue tocando el menú
-                    showToast('Orden guardada. Haz clic en el menú para actualizar la vista de mesas.', 'info');
-                }
-
             } catch (error) {
-                // Si ocurre una falla crítica, mostramos el error sin congelar el sistema
                 console.error("Error al enviar a cocina:", error);
                 showToast('❌ Error al procesar: ' + error.message, 'error');
-                
-                // Aseguramos que la ventana se cierre de todos modos
-                const modal = document.getElementById('modalContainer');
-                if (modal) {
-                    modal.classList.add('hidden');
-                    modal.innerHTML = '';
-                }
             }
         }
 
@@ -4257,33 +4234,22 @@ function payExistingOrder(orderId, method) {
             }
         }
 
-        // ==================== REPORTS MODULE ====================
-        // ==================== REPORTS MODULE ====================
-        // ==================== REPORTS MODULE ====================
+        // ==================== VARIABLES PARA LA GRÁFICA ====================
+        let reportChartMode = 'weekly'; 
+        let reportSelectedMonth = new Date().getMonth();
+        let reportSelectedYear = new Date().getFullYear();
+        let salesChartInstance = null; // Guarda la gráfica para poder destruirla y redibujarla
+
         // ==================== REPORTS MODULE ====================
         function renderReports(container) {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             
-            // Calcular los últimos 7 días para la gráfica
             const last7Days = [...Array(7)].map((_, i) => {
                 const d = new Date();
-                d.setDate(d.getDate() - (6 - i)); // De más antiguo a hoy
+                d.setDate(d.getDate() - (6 - i)); 
                 d.setHours(0, 0, 0, 0);
                 return d;
-            });
-
-            const chartLabels = last7Days.map(d => d.toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric' }));
-            
-            // Obtener ventas por día para la gráfica
-            const chartData = last7Days.map(date => {
-                return state.sales
-                    .filter(s => {
-                        const saleDate = new Date(s.timestamp);
-                        saleDate.setHours(0, 0, 0, 0);
-                        return saleDate.getTime() === date.getTime();
-                    })
-                    .reduce((sum, s) => sum + s.total, 0);
             });
 
             // Totales de Hoy y Semana
@@ -4332,47 +4298,148 @@ function payExistingOrder(orderId, method) {
                     </div>
 
                     <div class="glass bg-white/60 border border-white rounded-2xl p-6 shadow-sm mb-6">
-                        <h3 class="font-extrabold text-lg mb-4 text-theme-text border-b border-theme-beige pb-3">📊 Tendencia de Ingresos</h3>
-                        <div class="w-full h-72">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 border-b border-theme-beige pb-3 gap-3">
+                            <h3 class="font-extrabold text-lg text-theme-text">📊 Tendencia de Ingresos</h3>
+                            
+                            <div class="flex items-center gap-2">
+                                <select id="chartModeSelect" onchange="changeChartMode(this.value)" class="bg-white border border-theme-beige rounded-lg px-3 py-1.5 text-sm font-bold text-theme-text outline-none focus:border-theme-green shadow-sm">
+                                    <option value="weekly" ${reportChartMode === 'weekly' ? 'selected' : ''}>Últimos 7 días</option>
+                                    <option value="monthly" ${reportChartMode === 'monthly' ? 'selected' : ''}>Por Mes</option>
+                                </select>
+                                
+                                <div id="monthNavControls" class="${reportChartMode === 'monthly' ? 'flex' : 'hidden'} items-center gap-1 bg-white border border-theme-beige rounded-lg px-2 py-1 shadow-sm">
+                                    <button onclick="navigateMonth(-1)" class="hover:bg-theme-beige px-2 py-0.5 rounded transition font-bold text-theme-text">&lt;</button>
+                                    <span id="currentMonthLabel" class="text-sm font-bold w-24 text-center text-theme-greenDark"></span>
+                                    <button onclick="navigateMonth(1)" class="hover:bg-theme-beige px-2 py-0.5 rounded transition font-bold text-theme-text">&gt;</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="w-full h-72 relative">
                             <canvas id="salesChart"></canvas>
                         </div>
                     </div>
                 </div>
             `;
 
-            setTimeout(() => {
-                const ctx = document.getElementById('salesChart');
-                if(ctx) {
-                    new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: chartLabels,
-                            datasets: [{
-                                label: 'Ingresos por día ($)',
-                                data: chartData,
-                                borderColor: '#7A9E7E',
-                                backgroundColor: 'rgba(167, 196, 170, 0.4)',
-                                borderWidth: 3,
-                                fill: true,
-                                tension: 0.3,
-                                pointBackgroundColor: '#4A504A',
-                                pointRadius: 4
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: { legend: { display: false } },
-                            scales: {
-                                y: { beginAtZero: true, grid: { color: '#EAE5D9' }, ticks: { callback: function(value) { return '$' + value; } } },
-                                x: { grid: { display: false } }
-                            }
-                        }
-                    });
-                }
-            }, 50);
+            // Inicializa la etiqueta del mes si está en modo mensual y dibuja la gráfica
+            if (reportChartMode === 'monthly') {
+                updateMonthLabel();
+            }
+            setTimeout(() => { updateSalesChart(); }, 50);
         }
 
+        // --- FUNCIONES DINÁMICAS PARA LA GRÁFICA ---
+        function updateMonthLabel() {
+            const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+            const labelEl = document.getElementById('currentMonthLabel');
+            if (labelEl) {
+                labelEl.textContent = `${monthNames[reportSelectedMonth]} ${reportSelectedYear}`;
+            }
+        }
+
+        function changeChartMode(mode) {
+            reportChartMode = mode;
+            const navControls = document.getElementById('monthNavControls');
+            if (mode === 'monthly') {
+                navControls.classList.remove('hidden');
+                navControls.classList.add('flex');
+                updateMonthLabel();
+            } else {
+                navControls.classList.add('hidden');
+                navControls.classList.remove('flex');
+            }
+            updateSalesChart();
+        }
+
+        function navigateMonth(direction) {
+            reportSelectedMonth += direction;
+            if (reportSelectedMonth < 0) {
+                reportSelectedMonth = 11;
+                reportSelectedYear--;
+            } else if (reportSelectedMonth > 11) {
+                reportSelectedMonth = 0;
+                reportSelectedYear++;
+            }
+            updateMonthLabel();
+            updateSalesChart();
+        }
+
+        function updateSalesChart() {
+            const ctx = document.getElementById('salesChart');
+            if(!ctx) return;
+
+            let labels = [];
+            let chartData = [];
+
+            if (reportChartMode === 'weekly') {
+                // Cálculo de los últimos 7 días
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const last7Days = [...Array(7)].map((_, i) => {
+                    const d = new Date(today);
+                    d.setDate(d.getDate() - (6 - i));
+                    return d;
+                });
+                
+                labels = last7Days.map(d => d.toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric' }));
+                chartData = last7Days.map(date => {
+                    return state.sales
+                        .filter(s => {
+                            const sd = new Date(s.timestamp);
+                            return sd.getFullYear() === date.getFullYear() && sd.getMonth() === date.getMonth() && sd.getDate() === date.getDate();
+                        })
+                        .reduce((sum, s) => sum + s.total, 0);
+                });
+            } else {
+                // Cálculo Mensual (Día por día del mes seleccionado)
+                const daysInMonth = new Date(reportSelectedYear, reportSelectedMonth + 1, 0).getDate();
+                for (let i = 1; i <= daysInMonth; i++) {
+                    labels.push(i.toString()); // Solo ponemos el número del día (1, 2, 3...)
+                    
+                    const dailyTotal = state.sales
+                        .filter(s => {
+                            const sd = new Date(s.timestamp);
+                            return sd.getFullYear() === reportSelectedYear && sd.getMonth() === reportSelectedMonth && sd.getDate() === i;
+                        })
+                        .reduce((sum, s) => sum + s.total, 0);
+                    chartData.push(dailyTotal);
+                }
+            }
+
+            // Destruir gráfica anterior para evitar sobreposición (Glitch de Chart.js)
+            if (salesChartInstance) {
+                salesChartInstance.destroy();
+            }
+
+            salesChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Ingresos por día ($)',
+                        data: chartData,
+                        borderColor: '#7A9E7E',
+                        backgroundColor: 'rgba(167, 196, 170, 0.4)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: '#4A504A',
+                        pointRadius: reportChartMode === 'monthly' ? 2 : 4 // Puntos más pequeños si es mensual
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#EAE5D9' }, ticks: { callback: function(value) { return '$' + value; } } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        // ==================== GENERADOR DE REPORTES DIARIO/SEMANAL ====================
         function generateReport(type) {
             const today = new Date();
             let filteredSales = [];
