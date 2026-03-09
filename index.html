@@ -1893,19 +1893,20 @@ function processPayment(method) {
         window.isMobileCartOpen = false;
 
         function toggleMobileCart() {
-            window.isMobileCartOpen = !window.isMobileCartOpen;
             const panel = document.getElementById('tableCartPanel');
+            if (!panel) return;
             
-            if (panel) {
-                if (window.isMobileCartOpen) {
-                    // Si se abre, quitamos el estado "oculto" y forzamos el estado "visible"
-                    panel.classList.remove('translate-y-full');
-                    panel.classList.add('translate-y-0');
-                } else {
-                    // Si se oculta, quitamos el estado "visible" y forzamos el estado "oculto"
-                    panel.classList.remove('translate-y-0');
-                    panel.classList.add('translate-y-full');
-                }
+            // Leemos la pantalla directamente: Si tiene la clase 'translate-y-full' es porque está oculto abajo.
+            if (panel.classList.contains('translate-y-full')) {
+                // Entonces lo subimos
+                window.isMobileCartOpen = true;
+                panel.classList.remove('translate-y-full');
+                panel.classList.add('translate-y-0');
+            } else {
+                // Si no la tiene, es porque está arriba, así que lo bajamos
+                window.isMobileCartOpen = false;
+                panel.classList.remove('translate-y-0');
+                panel.classList.add('translate-y-full');
             }
         }
 
