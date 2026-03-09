@@ -3422,10 +3422,11 @@ function saveNewProduct() {
             const todayMovements = cr.movements.filter(m =>
                 new Date(m.timestamp).toDateString() === new Date().toDateString()
             );
-            const cashSales = todayMovements.filter(m => m.type === 'sale' && m.paymentMethod === 'cash')
-                .reduce((sum, m) => sum + m.amount, 0);
-            const transferSales = todayMovements.filter(m => m.type === 'sale' && m.paymentMethod === 'transfer')
-                .reduce((sum, m) => sum + m.amount, 0);
+            
+            // Sumas de ingresos y egresos
+            const cashSales = todayMovements.filter(m => m.type === 'sale' && m.paymentMethod === 'cash').reduce((sum, m) => sum + m.amount, 0);
+            const transferSales = todayMovements.filter(m => m.type === 'sale' && m.paymentMethod === 'transfer').reduce((sum, m) => sum + m.amount, 0);
+            const totalExpenses = todayMovements.filter(m => m.type === 'expense').reduce((sum, m) => sum + Math.abs(m.amount), 0);
 
             container.innerHTML = `
                 <div class="animate-slideIn">
@@ -3446,30 +3447,32 @@ function saveNewProduct() {
                                         <span class="font-bold text-theme-textMuted">Abierta por:</span>
                                         <span class="font-extrabold text-theme-text">${state.users.find(u => u.id === cr.openedBy)?.name || 'Sistema'}</span>
                                     </div>
-                                    <div class="flex justify-between p-3 rounded-xl bg-white border border-theme-beige shadow-sm">
-                                        <span class="font-bold text-theme-textMuted">Hora apertura:</span>
-                                        <span class="font-extrabold text-theme-text">${new Date(cr.openedAt).toLocaleTimeString('es-MX')}</span>
-                                    </div>
                                     <div class="flex justify-between p-3 rounded-xl bg-theme-bg border border-theme-beige shadow-inner">
                                         <span class="font-bold text-theme-textMuted">Fondo inicial:</span>
                                         <span class="font-extrabold text-theme-text">$${cr.initialAmount.toLocaleString()}</span>
                                     </div>
                                     <div class="flex justify-between p-3 rounded-xl bg-green-50 border border-green-200">
-                                        <span class="font-bold text-green-700">Ventas efectivo:</span>
+                                        <span class="font-bold text-green-700">Ingresos efectivo:</span>
                                         <span class="font-extrabold text-green-600">+$${cashSales.toLocaleString()}</span>
                                     </div>
-                                    <div class="flex justify-between p-3 rounded-xl bg-blue-50 border border-blue-200">
-                                        <span class="font-bold text-blue-700">Ventas transferencia:</span>
-                                        <span class="font-extrabold text-blue-600">+$${transferSales.toLocaleString()}</span>
+                                    <div class="flex justify-between p-3 rounded-xl bg-red-50 border border-red-200">
+                                        <span class="font-bold text-red-700">Gastos / Retiros:</span>
+                                        <span class="font-extrabold text-red-600">-$${totalExpenses.toLocaleString()}</span>
                                     </div>
                                     <div class="flex justify-between p-5 rounded-2xl bg-white border-2 border-theme-green shadow-sm mt-4">
-                                        <span class="font-extrabold text-lg text-theme-text">En caja (efectivo):</span>
-                                        <span class="font-extrabold text-2xl text-theme-greenDark">$${(cr.initialAmount + cashSales).toLocaleString()}</span>
+                                        <span class="font-extrabold text-lg text-theme-text">Dinero Físico en Caja:</span>
+                                        <span class="font-extrabold text-2xl text-theme-greenDark">$${(cr.initialAmount + cashSales - totalExpenses).toLocaleString()}</span>
                                     </div>
                                 </div>
-                                <button onclick="showCloseCashModal()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-4 rounded-xl shadow-md transition">
-                                    🔒 Hacer Corte de Caja
-                                </button>
+                                
+                                <div class="grid grid-cols-2 gap-3">
+                                    <button onclick="showAddExpenseModal()" class="w-full bg-red-100 hover:bg-red-200 text-red-700 border border-red-300 font-bold py-4 rounded-xl shadow-sm transition flex justify-center items-center gap-2">
+                                        ➖ Registrar Gasto
+                                    </button>
+                                    <button onclick="showCloseCashModal()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-4 rounded-xl shadow-md transition flex justify-center items-center gap-2">
+                                        🔒 Corte de Caja
+                                    </button>
+                                </div>
                             ` : `
                                 <div class="text-center py-12">
                                     <p class="text-theme-textMuted mb-6 font-medium text-lg">La caja se encuentra cerrada</p>
@@ -3486,14 +3489,16 @@ function saveNewProduct() {
                                 ${todayMovements.length > 0 ? todayMovements.slice().reverse().map(m => `
                                     <div class="flex items-center justify-between p-4 rounded-xl bg-white border border-theme-beige shadow-sm">
                                         <div>
-                                            <p class="font-extrabold text-theme-text">${m.type === 'sale' ? '💰 Venta' : m.type === 'open' ? '🔓 Apertura' : '🔒 Cierre'}</p>
-                                            <p class="text-xs font-bold text-theme-textMuted mt-1">${new Date(m.timestamp).toLocaleTimeString('es-MX')}</p>
+                                            <p class="font-extrabold text-theme-text flex items-center gap-2">
+                                                ${m.type === 'sale' ? '💰 Venta' : m.type === 'expense' ? '💸 Gasto' : m.type === 'open' ? '🔓 Apertura' : '🔒 Cierre'}
+                                            </p>
+                                            <p class="text-xs font-bold text-theme-textMuted mt-1">${new Date(m.timestamp).toLocaleTimeString('es-MX')} ${m.description ? `• ${m.description}` : ''}</p>
                                         </div>
                                         <div class="text-right">
-                                            <p class="font-extrabold text-lg ${m.amount >= 0 ? 'text-green-600' : 'text-red-600'}">
-                                                ${m.amount >= 0 ? '+' : ''}$${m.amount.toLocaleString()}
+                                            <p class="font-extrabold text-lg ${m.type === 'expense' ? 'text-red-600' : m.amount >= 0 ? 'text-green-600' : 'text-theme-text'}">
+                                                ${m.type === 'expense' ? '-' : m.amount >= 0 ? '+' : ''}$${Math.abs(m.amount).toLocaleString()}
                                             </p>
-                                            ${m.paymentMethod ? `<p class="text-xs font-bold mt-1 ${m.paymentMethod === 'cash' ? 'text-green-600 bg-green-100' : 'text-blue-600 bg-blue-100'} inline-block px-2 py-0.5 rounded-md">${m.paymentMethod === 'cash' ? 'Efectivo' : 'Transferencia'}</p>` : ''}
+                                            ${m.paymentMethod ? `<p class="text-[10px] font-bold mt-1 ${m.paymentMethod === 'cash' ? 'text-green-600 bg-green-100' : 'text-blue-600 bg-blue-100'} inline-block px-2 py-0.5 rounded-md uppercase">${m.paymentMethod === 'cash' ? 'Efectivo' : 'Transf.'}</p>` : ''}
                                         </div>
                                     </div>
                                 `).join('') : '<p class="text-theme-textMuted font-medium text-center py-12">Sin movimientos registrados hoy</p>'}
@@ -3504,53 +3509,13 @@ function saveNewProduct() {
             `;
         }
 
-        function showOpenCashModal() {
-            const modal = document.getElementById('modalContainer');
-            modal.innerHTML = `
-                <div class="glass bg-white/90 rounded-3xl p-6 w-full max-w-md animate-slideIn shadow-2xl border-2 border-white">
-                    <h3 class="text-xl font-bold mb-4 text-theme-greenDark">🔓 Abrir Caja</h3>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-bold mb-2 text-theme-text">Fondo inicial (efectivo)</label>
-                            <input type="number" id="initialAmount" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl text-xl font-bold focus:outline-none focus:border-theme-green transition text-theme-text" placeholder="0">
-                        </div>
-                        <div class="grid grid-cols-2 gap-3 pt-2">
-                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text">Cancelar</button>
-                            <button onclick="openCashRegister()" class="btn-primary py-3 rounded-xl font-bold shadow-md">Abrir Caja</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            modal.classList.remove('hidden');
-        }
-
-        function openCashRegister() {
-            const initialAmount = parseFloat(document.getElementById('initialAmount').value) || 0;
-
-            state.cashRegister = {
-                isOpen: true,
-                openedBy: currentUser.id,
-                openedAt: new Date().toISOString(),
-                initialAmount,
-                movements: [{
-                    type: 'open',
-                    amount: initialAmount,
-                    timestamp: new Date().toISOString()
-                }]
-            };
-
-            logActivity('CASH_OPEN', `Caja abierta con fondo de $${initialAmount}`);
-            saveToStorage();
-            showToast('Caja abierta correctamente', 'success');
-            closeModal();
-            renderCashRegister(document.getElementById('contentArea'));
-        }
-
         function showCloseCashModal() {
             const cr = state.cashRegister;
-            const cashSales = cr.movements.filter(m => m.type === 'sale' && m.paymentMethod === 'cash')
-                .reduce((sum, m) => sum + m.amount, 0);
-            const expectedCash = cr.initialAmount + cashSales;
+            const cashSales = cr.movements.filter(m => m.type === 'sale' && m.paymentMethod === 'cash').reduce((sum, m) => sum + m.amount, 0);
+            const totalExpenses = cr.movements.filter(m => m.type === 'expense').reduce((sum, m) => sum + Math.abs(m.amount), 0);
+            
+            // FÓRMULA CORREGIDA: Fondo + Ventas en efectivo - Gastos
+            const expectedCash = cr.initialAmount + cashSales - totalExpenses;
 
             const modal = document.getElementById('modalContainer');
             modal.innerHTML = `
@@ -3558,7 +3523,7 @@ function saveNewProduct() {
                     <h3 class="text-xl font-bold mb-4 text-theme-greenDark">🔒 Corte de Caja</h3>
                     <div class="space-y-4">
                         <div class="p-4 rounded-xl bg-theme-bg border border-theme-beige text-center">
-                            <p class="text-sm font-bold text-theme-textMuted">Efectivo esperado en caja</p>
+                            <p class="text-sm font-bold text-theme-textMuted">Efectivo esperado en caja (Ya resta gastos)</p>
                             <p class="text-3xl font-extrabold text-theme-greenDark mt-1">$${expectedCash.toLocaleString()}</p>
                         </div>
                         <div>
@@ -3580,6 +3545,7 @@ function saveNewProduct() {
             modal.classList.remove('hidden');
         }
 
+        
         function calculateDifference(expected) {
             const counted = parseFloat(document.getElementById('countedCash').value) || 0;
             const diff = counted - expected;
@@ -3651,6 +3617,75 @@ function saveNewProduct() {
                 window.open(whatsappUrl, '_blank');
             }
         }
+
+        // ==================== REGISTRO DE GASTOS (EGRESOS) ====================
+        function showAddExpenseModal() {
+            const modal = document.getElementById('modalContainer');
+            modal.innerHTML = `
+                <div class="glass bg-white/90 rounded-3xl p-6 w-[95%] max-w-md animate-slideIn shadow-2xl border-2 border-red-300">
+                    <h3 class="text-xl font-extrabold mb-4 text-red-600 flex items-center gap-2">💸 Registrar Salida de Dinero</h3>
+                    <p class="text-sm text-theme-textMuted mb-4 font-medium">Este dinero se restará automáticamente del efectivo físico en caja.</p>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-bold mb-1 text-theme-text">Monto Retirado ($)</label>
+                            <input type="number" id="expenseAmount" class="w-full px-4 py-3 bg-white border-2 border-red-200 rounded-xl focus:outline-none focus:border-red-500 font-extrabold text-2xl text-center text-red-600 shadow-inner" placeholder="0">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold mb-1 text-theme-text">Concepto / Descripción</label>
+                            <input type="text" id="expenseDesc" class="w-full px-4 py-3 bg-white border border-theme-beige rounded-xl focus:outline-none focus:border-red-400 font-medium text-sm" placeholder="Ej. Pago de garrafones de agua, Proveedor de carne...">
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3 pt-4 border-t border-theme-beige mt-2">
+                            <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text shadow-sm">Cancelar</button>
+                            <button onclick="saveExpense()" class="bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-bold shadow-md transition">Guardar Gasto</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+            setTimeout(() => document.getElementById('expenseAmount').focus(), 100);
+        }
+
+        function saveExpense() {
+            const amount = parseFloat(document.getElementById('expenseAmount').value);
+            const desc = document.getElementById('expenseDesc').value.trim();
+
+            if (isNaN(amount) || amount <= 0) {
+                showToast('Ingresa un monto válido mayor a 0', 'warning'); return;
+            }
+            if (!desc) {
+                showToast('Ingresa el motivo del gasto', 'warning'); return;
+            }
+
+            // 1. Guardar en el historial de la Caja Actual
+            state.cashRegister.movements.push({
+                type: 'expense',
+                amount: amount,
+                description: desc,
+                timestamp: new Date().toISOString()
+            });
+
+            // 2. Guardar en el Registro Global de Egresos (Para Reportes Mensuales)
+            if (!state.expenses) state.expenses = [];
+            state.expenses.push({
+                id: Date.now(),
+                amount: amount,
+                description: desc,
+                timestamp: new Date().toISOString(),
+                userId: currentUser.id,
+                userName: currentUser.name
+            });
+
+            logActivity('EXPENSE_ADD', `Retiro de caja: $${amount} por ${desc}`);
+            saveToStorage();
+            
+            showToast('Gasto registrado y descontado de caja', 'success');
+            closeModal();
+            renderCashRegister(document.getElementById('contentArea')); // Refresca la vista
+        }
+
+
 
         // ==================== ORDERS MODULE ====================
      // ==================== ORDERS MODULE ====================
@@ -4323,13 +4358,12 @@ function saveNewProduct() {
         }
 
         // ==================== REPORTE MENSUAL COMPLETO (PDF) ====================
-        // ==================== REPORTE MENSUAL COMPLETO (PDF) ====================
-        // ==================== REPORTE MENSUAL COMPLETO (PDF) ====================
         function generateMonthlyReport() {
             try {
                 // 1. Escudos de seguridad: Asegurar que existan los arreglos
                 if (!state.sales) state.sales = [];
                 if (!state.inventory) state.inventory = [];
+                if (!state.expenses) state.expenses = []; // Escudo para gastos
 
                 const now = new Date();
                 const currentMonthName = now.toLocaleString('es-MX', { month: 'long', year: 'numeric' }).toUpperCase();
@@ -4337,26 +4371,37 @@ function saveNewProduct() {
                 const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
                 const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
-                // Filtrar ventas del mes actual
+                // Filtrar ventas y gastos del mes actual
                 const monthlySales = state.sales.filter(s => {
                     if (!s.timestamp) return false;
                     const sDate = new Date(s.timestamp);
                     return sDate >= firstDay && sDate <= lastDay;
                 });
 
-                // 2. Resumen Financiero Seguro
+                const monthlyExpenses = state.expenses.filter(e => {
+                    if (!e.timestamp) return false;
+                    const eDate = new Date(e.timestamp);
+                    return eDate >= firstDay && eDate <= lastDay;
+                });
+
+                // 2. Matemáticas Financieras
                 const totalIncome = monthlySales.reduce((sum, s) => sum + (s.total || 0), 0);
                 const cashIncome = monthlySales.filter(s => s.paymentMethod === 'cash').reduce((sum, s) => sum + (s.total || 0), 0);
                 const transferIncome = monthlySales.filter(s => s.paymentMethod === 'transfer').reduce((sum, s) => sum + (s.total || 0), 0);
+                
+                // NUEVO: Sumar gastos y sacar ganancia neta
+                const totalEgresos = monthlyExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+                const netProfit = totalIncome - totalEgresos;
+
                 const totalTickets = monthlySales.length;
                 const averageTicket = totalTickets > 0 ? (totalIncome / totalTickets).toFixed(2) : "0.00";
 
-                // 3. Ranking de Productos (Ignora items corruptos)
+                // 3. Ranking de Productos
                 const productStats = {};
                 monthlySales.forEach(sale => {
                     if (sale.items && Array.isArray(sale.items)) {
                         sale.items.forEach(item => {
-                            if (!item.name) return; // Si el item no tiene nombre, lo salta
+                            if (!item.name) return; 
                             if (!productStats[item.name]) {
                                 productStats[item.name] = { qty: 0, revenue: 0 };
                             }
@@ -4385,42 +4430,57 @@ function saveNewProduct() {
                             <div class="text-center border-b-2 border-black pb-4 mb-6 break-inside-avoid">
                                 <img src="rufaza.jpg" alt="Logo Rufaza" class="w-20 h-20 mx-auto mb-2 object-contain grayscale-0 print:grayscale" onerror="this.style.display='none'">
                                 <h2 class="text-3xl font-extrabold uppercase tracking-widest text-theme-greenDark">Reporte de Resultados</h2>
-                                <p class="text-lg font-bold mt-1 text-gray-600">SUCURSAL PRINCIPAL</p>
+                                <p class="text-lg font-bold mt-1 text-gray-600">SUCURSAL ${typeof currentBranch !== 'undefined' && currentBranch === 'sucursal_principal' ? 'PRINCIPAL' : 'CENTRO'}</p>
                                 <p class="text-sm text-gray-500 mt-1 font-bold">Mes de proceso: ${currentMonthName}</p>
-                                <p class="text-xs text-gray-400 mt-1">Generado el: ${new Date().toLocaleString('es-MX')} por ${currentUser ? currentUser.name : 'Sistema'}</p>
                             </div>
 
                             <div class="mb-6 break-inside-avoid">
-                                <h3 class="text-lg font-bold border-b border-gray-300 mb-3 pb-1">💰 Resumen Financiero Mensual</h3>
-                                <div class="grid grid-cols-4 gap-4 text-center">
-                                    <div class="p-4 bg-gray-100 rounded-lg border border-gray-300">
-                                        <p class="text-[10px] font-bold text-gray-600 uppercase">Ingresos Totales</p>
-                                        <p class="text-xl font-extrabold text-green-600 mt-1">$${totalIncome.toLocaleString()}</p>
+                                <h3 class="text-lg font-bold border-b border-gray-300 mb-3 pb-1">💰 Estado de Resultados Mensual</h3>
+                                
+                                <div class="flex flex-col gap-3">
+                                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                        <span class="font-bold text-gray-700">1. Ingresos Brutos (Ventas Totales)</span>
+                                        <span class="text-xl font-extrabold text-green-600">+$${totalIncome.toLocaleString()}</span>
                                     </div>
-                                    <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                                        <p class="text-[10px] font-bold text-gray-600 uppercase">En Efectivo</p>
-                                        <p class="text-lg font-bold text-black mt-1">$${cashIncome.toLocaleString()}</p>
+                                    
+                                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                        <div>
+                                            <span class="font-bold text-gray-700 block">2. Gastos Operativos (Egresos)</span>
+                                            <span class="text-[10px] text-gray-500 font-medium">Insumos, sueldos, servicios sacados de caja</span>
+                                        </div>
+                                        <span class="text-xl font-extrabold text-red-600">-$${totalEgresos.toLocaleString()}</span>
                                     </div>
-                                    <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                                        <p class="text-[10px] font-bold text-gray-600 uppercase">Transferencias</p>
-                                        <p class="text-lg font-bold text-black mt-1">$${transferIncome.toLocaleString()}</p>
-                                    </div>
-                                    <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                                        <p class="text-[10px] font-bold text-gray-600 uppercase">Ticket Promedio</p>
-                                        <p class="text-lg font-bold text-blue-600 mt-1">$${averageTicket}</p>
+
+                                    <div class="flex justify-between items-center p-4 bg-gray-800 text-white rounded-xl shadow-md mt-2">
+                                        <span class="font-extrabold text-lg uppercase tracking-wider">Ganancia Neta</span>
+                                        <span class="text-3xl font-extrabold text-green-400">$${netProfit.toLocaleString()}</span>
                                     </div>
                                 </div>
-                                <p class="text-sm font-medium text-gray-500 mt-2 text-right">Total de tickets procesados: <strong>${totalTickets}</strong></p>
+
+                                <div class="grid grid-cols-3 gap-4 text-center mt-4">
+                                    <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                        <p class="text-[10px] font-bold text-gray-600 uppercase">Cobros Efectivo</p>
+                                        <p class="text-base font-bold text-black mt-1">$${cashIncome.toLocaleString()}</p>
+                                    </div>
+                                    <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                        <p class="text-[10px] font-bold text-gray-600 uppercase">Cobros Transf.</p>
+                                        <p class="text-base font-bold text-black mt-1">$${transferIncome.toLocaleString()}</p>
+                                    </div>
+                                    <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                        <p class="text-[10px] font-bold text-blue-700 uppercase">Ticket Promedio</p>
+                                        <p class="text-base font-bold text-blue-700 mt-1">$${averageTicket}</p>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="mb-8 break-inside-avoid">
-                                <h3 class="text-lg font-bold border-b border-gray-300 mb-3 pb-1">Top 15 Productos Más Vendidos</h3>
+                                <h3 class="text-lg font-bold border-b border-gray-300 mb-3 pb-1">🍕 Top 15 Productos Más Vendidos</h3>
                                 <table style="width: 100%; text-align: left; border-collapse: collapse; font-size: 14px;">
                                     <thead>
                                         <tr style="background-color: #f3f4f6; border-bottom: 2px solid #d1d5db;">
                                             <th style="padding: 8px;">Producto</th>
-                                            <th style="padding: 8px; text-align: center;">Cantidad Vendida</th>
-                                            <th style="padding: 8px; text-align: right;">Ingresos Brutos</th>
+                                            <th style="padding: 8px; text-align: center;">Vendidos</th>
+                                            <th style="padding: 8px; text-align: right;">Ingresos Generados</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -4435,46 +4495,25 @@ function saveNewProduct() {
                                     </tbody>
                                 </table>
                             </div>
-
-                            <div class="break-inside-avoid">
-                                <h3 class="text-lg font-bold border-b border-gray-300 mb-3 pb-1">📊 Estado Operativo Actual</h3>
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div class="p-4 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-between">
-                                        <div>
-                                            <p class="text-sm font-bold text-gray-700">Capital en Inventario (Aprox)</p>
-                                            <p class="text-xs text-gray-500">Valor de mercancía en bodega</p>
-                                        </div>
-                                        <p class="text-2xl font-extrabold text-black">$${totalValue.toLocaleString()}</p>
-                                    </div>
-                                    <div class="p-4 ${lowStockItems > 0 ? 'bg-red-50 border-red-200 text-red-700' : 'bg-green-50 border-green-200 text-green-700'} rounded-lg border flex items-center justify-between">
-                                        <div>
-                                            <p class="text-sm font-bold">Alertas de Reabastecimiento</p>
-                                            <p class="text-xs opacity-80">Insumos por debajo del mínimo</p>
-                                        </div>
-                                        <p class="text-2xl font-extrabold">${lowStockItems} insumos</p>
-                                    </div>
-                                </div>
+                            
+                            <div class="text-center pt-6 border-t border-gray-300 text-[10px] text-gray-500 font-bold">
+                                SISTEMA PIZZAMANAGER PRO • IMPRESO EL ${new Date().toLocaleString('es-MX')}
                             </div>
                         </div>
 
                         <div class="px-6 md:px-8 pb-6 pt-4 bg-white rounded-b-3xl">
                             <div class="flex gap-3 border-t border-gray-200 pt-6">
-                                <button onclick="closeModal()" class="flex-1 py-3 bg-gray-200 text-black font-bold rounded-xl hover:bg-gray-300 transition">
-                                    Cerrar
-                                </button>
-                                <button onclick="downloadMonthlyPDF()" id="pdfMonthlyBtn" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-3 font-bold rounded-xl shadow-md flex items-center justify-center gap-2 transition">
-                                    📥 Descargar Reporte Mensual PDF
-                                </button>
+                                <button onclick="closeModal()" class="flex-1 py-3 bg-gray-200 text-black font-bold rounded-xl hover:bg-gray-300 transition">Cerrar</button>
+                                <button onclick="downloadMonthlyPDF()" id="pdfMonthlyBtn" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-3 font-bold rounded-xl shadow-md flex items-center justify-center gap-2 transition">📥 Descargar Reporte PDF</button>
                             </div>
                         </div>
-
                     </div>
                 `;
                 modal.classList.remove('hidden');
                 
             } catch (error) {
                 console.error("Error al generar reporte mensual:", error);
-                showToast("Ocurrió un error al cargar los datos: " + error.message, "error");
+                showToast("Error al procesar: " + error.message, "error");
             }
         }
 
