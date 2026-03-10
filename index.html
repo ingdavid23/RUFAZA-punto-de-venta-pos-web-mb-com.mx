@@ -4550,22 +4550,39 @@ function payExistingOrder(orderId, method) {
         }
 
         // ==================== REPORTE DE INVENTARIO (PDF) ====================
-        // ==================== REPORTE DE INVENTARIO (PDF) ====================
-        // ==================== REPORTE DE INVENTARIO (PDF) ====================
+        // ==================== REPORTE DE INVENTARIO SEMANAL (PDF) ====================
         function generateInventoryReport() {
-            const todayStr = new Date().toDateString();
+            // Calcular fecha de hace 7 días
+            const today = new Date();
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(today.getDate() - 7);
+            sevenDaysAgo.setHours(0, 0, 0, 0);
+
+            const dateRangeStr = `Del ${sevenDaysAgo.toLocaleDateString('es-MX')} al ${today.toLocaleDateString('es-MX')}`;
             
             const totalValue = state.inventory.reduce((sum, item) => sum + (item.stock * item.cost), 0);
             const lowStockItems = state.inventory.filter(i => i.stock <= i.minStock);
 
-            const todayEntries = state.inventoryMovements.filter(m => 
-                m.type === 'entry' && new Date(m.timestamp).toDateString() === todayStr
+            // 1. Calcular Entradas (Últimos 7 días)
+            const weeklyEntries = state.inventoryMovements.filter(m => 
+                m.type === 'entry' && new Date(m.timestamp) >= sevenDaysAgo
             );
 
-            const todaySales = state.sales.filter(s => new Date(s.timestamp).toDateString() === todayStr);
+            // Agrupar entradas semanales por insumo (Suma las compras del mismo producto)
+            const groupedEntriesMap = {};
+            weeklyEntries.forEach(e => {
+                if (!groupedEntriesMap[e.itemId]) {
+                    groupedEntriesMap[e.itemId] = { name: e.itemName, qty: 0 };
+                }
+                groupedEntriesMap[e.itemId].qty += e.quantity;
+            });
+            const groupedEntries = Object.values(groupedEntriesMap).sort((a, b) => b.qty - a.qty);
+
             const outputsMap = {}; 
             
-            todaySales.forEach(sale => {
+            // 2. Calcular Salidas de las Ventas Terminadas (Cobradas) en los últimos 7 días
+            const weeklySales = state.sales.filter(s => new Date(s.timestamp) >= sevenDaysAgo);
+            weeklySales.forEach(sale => {
                 sale.items.forEach(cartItem => {
                     const product = state.products.find(p => p.id === cartItem.productId);
                     if (product && product.ingredients) {
@@ -4577,7 +4594,25 @@ function payExistingOrder(orderId, method) {
                 });
             });
 
-            const todayOutputs = Object.keys(outputsMap).map(itemId => {
+            // 3. Sumar Salidas de los Pedidos en Curso actuales (Mesas sin pagar)
+            const activeOrdersWeekly = state.orders.filter(o => 
+                new Date(o.createdAt) >= sevenDaysAgo && 
+                o.status !== 'cancelled'
+            );
+            activeOrdersWeekly.forEach(order => {
+                order.items.forEach(cartItem => {
+                    const product = state.products.find(p => p.id === cartItem.productId);
+                    if (product && product.ingredients) {
+                        product.ingredients.forEach(ing => {
+                            if (!outputsMap[ing.id]) outputsMap[ing.id] = 0;
+                            outputsMap[ing.id] += ing.qty * cartItem.quantity;
+                        });
+                    }
+                });
+            });
+
+            // 4. Formatear la lista para el PDF
+            const weeklyOutputs = Object.keys(outputsMap).map(itemId => {
                 const invItem = state.inventory.find(i => i.id === parseInt(itemId));
                 return {
                     name: invItem ? invItem.name : 'Insumo Eliminado',
@@ -4610,33 +4645,35 @@ function payExistingOrder(orderId, method) {
                         </div>
 
                         <div class="mb-8 break-inside-avoid">
-                            <h3 class="text-lg font-bold border-b border-gray-300 mb-3 pb-1">🔄 Movimientos de Hoy</h3>
+                            <h3 class="text-lg font-bold border-b border-gray-300 mb-1 pb-1">🔄 Movimientos de la Semana</h3>
+                            <p class="text-[11px] text-gray-500 mb-4 font-bold uppercase">${dateRangeStr}</p>
+                            
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <h4 class="font-bold text-sm text-green-700 mb-2">📥 Entradas Registradas</h4>
-                                    ${todayEntries.length > 0 ? `
+                                    <h4 class="font-bold text-sm text-green-700 mb-2">📥 Entradas Sumadas</h4>
+                                    ${groupedEntries.length > 0 ? `
                                         <ul class="text-sm space-y-1">
-                                            ${todayEntries.map(e => `
+                                            ${groupedEntries.map(e => `
                                                 <li class="flex justify-between border-b border-gray-100 py-1">
-                                                    <span>${e.itemName}</span>
-                                                    <span class="font-bold text-green-600">+${e.quantity}</span>
+                                                    <span>${e.name}</span>
+                                                    <span class="font-bold text-green-600">+${e.qty.toFixed(2)}</span>
                                                 </li>
                                             `).join('')}
                                         </ul>
-                                    ` : '<p class="text-xs text-gray-500 italic">No hubo compras/entradas hoy.</p>'}
+                                    ` : '<p class="text-xs text-gray-500 italic">No hubo compras/entradas registradas.</p>'}
                                 </div>
                                 <div>
                                     <h4 class="font-bold text-sm text-red-700 mb-2">📤 Salidas (Por Ventas)</h4>
-                                    ${todayOutputs.length > 0 ? `
+                                    ${weeklyOutputs.length > 0 ? `
                                         <ul class="text-sm space-y-1">
-                                            ${todayOutputs.map(o => `
+                                            ${weeklyOutputs.map(o => `
                                                 <li class="flex justify-between border-b border-gray-100 py-1">
                                                     <span>${o.name}</span>
                                                     <span class="font-bold text-red-600">-${o.qty.toFixed(2)} ${o.unit}</span>
                                                 </li>
                                             `).join('')}
                                         </ul>
-                                    ` : '<p class="text-xs text-gray-500 italic">No se ha registrado consumo hoy.</p>'}
+                                    ` : '<p class="text-xs text-gray-500 italic">No se ha registrado consumo en los últimos 7 días.</p>'}
                                 </div>
                             </div>
                         </div>
@@ -4679,7 +4716,6 @@ function payExistingOrder(orderId, method) {
             `;
             modal.classList.remove('hidden');
         }
-
         // ==================== GENERADOR DIRECTO DE PDF ====================
        // ==================== GENERADOR DIRECTO DE PDF ====================
        // ==================== GENERADOR DIRECTO DE PDF ====================
