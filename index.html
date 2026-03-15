@@ -4043,7 +4043,7 @@ function payExistingOrder(orderId, method) {
                                 <p class="text-xl font-extrabold text-theme-text mt-1">$${order.total.toLocaleString()}</p>
                             </div>
                             <div class="p-3 rounded-xl bg-blue-50 border border-blue-200 shadow-inner">
-                                <p class="text-[10px] text-blue-700 font-bold uppercase tracking-wider">Ya Abonado</p>
+                                <p class="text-[10px] text-blue-700 font-bold uppercase tracking-wider">Ya pago</p>
                                 <p class="text-xl font-extrabold text-blue-600 mt-1">$${paidAmount.toLocaleString()}</p>
                             </div>
                         </div>
@@ -4054,14 +4054,14 @@ function payExistingOrder(orderId, method) {
                         </div>
                         
                         <div class="p-4 bg-theme-bg rounded-xl border border-theme-beige mt-2">
-                            <p class="text-sm font-bold mb-3 text-theme-text text-center border-b border-theme-beige pb-2">Método de abono: <span class="text-theme-greenDark">${methodLabel}</span></p>
+                            <p class="text-sm font-bold mb-3 text-theme-text text-center border-b border-theme-beige pb-2">Método de pagp: <span class="text-theme-greenDark">${methodLabel}</span></p>
                             
                             <label class="block text-xs font-bold mb-1 text-theme-text">¿Cuánto va a pagar en este momento?</label>
                             <input type="number" id="partialPaymentAmount" class="w-full px-4 py-3 mb-3 bg-white border-2 border-theme-beige rounded-xl text-2xl text-center focus:outline-none focus:border-theme-green font-extrabold text-theme-text shadow-inner" 
                                 value="${remaining}" max="${remaining}" oninput="calculatePartialChange(${remaining}, '${method}')">
                                 
                             ${method === 'cash' ? `
-                                <label class="block text-xs font-bold mb-1 text-theme-text mt-2">¿Con cuánto billete paga el cliente?</label>
+                                <label class="block text-xs font-bold mb-1 text-theme-text mt-2">¿Con cuánto efectivo paga el cliente?</label>
                                 <input type="number" id="orderCashReceived" class="w-full px-4 py-3 bg-white border-2 border-green-200 rounded-xl text-xl text-center focus:outline-none focus:border-green-500 font-bold text-green-700 shadow-inner" 
                                     placeholder="0" oninput="calculatePartialChange(${remaining}, 'cash')">
                             ` : ''}
@@ -4074,7 +4074,7 @@ function payExistingOrder(orderId, method) {
 
                         <div class="grid grid-cols-2 gap-3 pt-2">
                             <button onclick="closeModal()" class="py-3.5 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text shadow-sm">Cancelar</button>
-                            <button onclick="processPartialPayment(${order.id}, '${method}')" id="confirmOrderPaymentBtn" class="btn-primary py-3.5 rounded-xl font-bold shadow-md" ${method === 'cash' ? 'disabled' : ''}>Abonar</button>
+                            <button onclick="processPartialPayment(${order.id}, '${method}')" id="confirmOrderPaymentBtn" class="btn-primary py-3.5 rounded-xl font-bold shadow-md" ${method === 'cash' ? 'disabled' : ''}>pagar</button>
                         </div>
                     </div>
                 </div>
