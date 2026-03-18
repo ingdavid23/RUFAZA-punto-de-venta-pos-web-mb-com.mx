@@ -3029,10 +3029,11 @@ function renderProducts(container) {
                                                     ${!available && p.active ? '<span class="text-[10px] font-bold inline-block px-2 py-1 rounded-md bg-red-500 text-white shadow-md animate-pulse-custom">Faltan insumos</span>' : ''}
                                                 </div>
                                                 <div class="flex gap-1 bg-theme-bg p-1 rounded-xl border border-theme-beige">
-                                                    <button onclick="editProduct(${p.id})" class="p-2 hover:bg-white rounded-lg transition text-sm">✏️</button>
-                                                    <button onclick="toggleProductActive(${p.id})" class="p-2 hover:bg-white rounded-lg transition text-sm">
+                                                    <button onclick="editProduct(${p.id})" class="p-2 hover:bg-white rounded-lg transition text-sm" title="Editar Producto">✏️</button>
+                                                    <button onclick="toggleProductActive(${p.id})" class="p-2 hover:bg-white rounded-lg transition text-sm" title="${p.active ? 'Ocultar Producto' : 'Activar Producto'}">
                                                         ${p.active ? '🟢' : '🔴'}
                                                     </button>
+                                                    <button onclick="confirmDeleteProduct(${p.id})" class="p-2 hover:bg-red-50 text-red-500 rounded-lg transition text-sm" title="Eliminar Producto">🗑️</button>
                                                 </div>
                                             </div>
                                         </div>
@@ -3352,6 +3353,47 @@ function saveNewProduct() {
                 console.error("Error al guardar el producto:", error);
                 showToast('❌ Error al guardar: ' + error.message, 'error');
             }
+        }
+
+        // ==================== ELIMINACIÓN DE PRODUCTOS ====================
+        function confirmDeleteProduct(productId) {
+            const product = state.products.find(p => p.id === productId);
+            if (!product) return;
+
+            const modal = document.getElementById('modalContainer');
+            modal.innerHTML = `
+                <div class="glass bg-white/90 rounded-3xl p-6 w-[95%] max-w-md animate-slideIn shadow-2xl border-2 border-red-300 text-center">
+                    <div class="text-5xl mb-4 drop-shadow-md">⚠️</div>
+                    <h3 class="text-xl font-extrabold mb-2 text-red-600">¿Eliminar Producto?</h3>
+                    <p class="text-sm text-theme-text font-medium mb-6">Estás a punto de eliminar <strong>${product.name}</strong> del menú. Esta acción no se puede deshacer.</p>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="closeModal()" class="py-3 rounded-xl bg-white hover:bg-theme-beige border border-theme-beige transition font-bold text-theme-text shadow-sm">Cancelar</button>
+                        <button onclick="deleteProduct(${product.id})" class="bg-red-500 hover:bg-red-600 text-white py-3 rounded-xl font-bold shadow-md transition">Sí, Eliminar</button>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        function deleteProduct(productId) {
+            const product = state.products.find(p => p.id === productId);
+            if (!product) return;
+
+            // 1. Filtrar (eliminar) el producto del estado
+            state.products = state.products.filter(p => p.id !== productId);
+            
+            // 2. Registrar la acción
+            logActivity('PRODUCT_DELETE', `Producto eliminado permanentemente: ${product.name}`);
+            
+            // 3. Guardar en base de datos y sincronizar con sucursales si aplica
+            saveToStorage();
+            if (typeof syncMenuToBranches === 'function') syncMenuToBranches();
+            
+            // 4. Mostrar mensaje y recargar la vista
+            showToast(`Producto ${product.name} eliminado`, 'success');
+            closeModal();
+            renderProducts(document.getElementById('contentArea'));
         }
 
         // ==================== USERS MODULE ====================
